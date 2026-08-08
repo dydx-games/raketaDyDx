@@ -24,6 +24,7 @@ function getTelegramUser() {
 }
 
 const ME = getTelegramUser();
+window.ME = ME; // доступ из index.html (например, чтобы Арена знала, участвует ли уже этот игрок)
 
 window.Multiplayer = {
     ME, channel: null, advanceTimer: null,
@@ -120,8 +121,15 @@ window.Multiplayer = {
     onCrashUpdate(state) {
         this.roundState = state;
         const C = window.Crash; if (!C) return;
+        // Лента "ставки других игроков" раньше обновлялась ТОЛЬКО через Realtime-подписку,
+        // а нужные таблицы никогда не были включены в публикацию realtime — подписка
+        // тихо не срабатывала вообще ни у кого. Теперь дёргаем ленту на каждом обычном
+        // опросе (2 раза в секунду) — это не зависит от настроек Realtime и работает
+        // гарантированно. Вызываем ДО проверки dedup ниже, потому что новая ставка
+        // может появиться, даже когда статус/start_at раунда не изменились.
+        this.renderCrashFeed();
         let sig = `${state.status}|${state.start_at}|${state.next_round_at}`;
-        if (sig === this.lastCrashSig) return; // ничего не изменилось — не дёргаем анимацию заново
+        if (sig === this.lastCrashSig) return; // анимацию заново не дёргаем — она уже идёт
         this.lastCrashSig = sig;
         if (state.status === 'waiting') C.syncWaiting(state.next_round_at);
         else if (state.status === 'flying') C.syncFlying(state.start_at);
@@ -205,7 +213,7 @@ window.Multiplayer = {
         if (sig === this.lastRouletteSig) return;
         this.lastRouletteSig = sig;
         if (state.status === 'waiting') R.syncWaiting(state.join_deadline);
-        else if (state.status === 'spinning') R.syncSpinning();
+        else if (state.status === 'spinning') R.syncSpinning(state.winning_color);
         else if (state.status === 'finished') R.syncFinished(state.winning_color);
     },
     async rouletteBet(color, amount) {

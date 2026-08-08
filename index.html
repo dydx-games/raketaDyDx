@@ -211,6 +211,8 @@
 
         .roulette-board { margin: 10px 10px 0; background: var(--bg-panel); border-radius: var(--border-radius); border: 1px solid #1f222b; overflow: hidden; position: relative; height: 90px; display: flex; align-items: center; }
         .roulette-track { display: flex; gap: 4px; padding: 0 4px; will-change: transform; }
+        #r-countdown { text-align: center; font-size: 13px; color: var(--text-muted); margin: 8px 10px 0; min-height: 16px; }
+        #r-countdown.spin { color: var(--gold); font-weight: 600; }
         .r-item { width: 60px; min-width: 60px; height: 60px; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 20px; font-weight: 800; color: #fff; box-shadow: inset 0 -3px 0 rgba(0,0,0,0.2); }
         .r-red { background: var(--red); } .r-black { background: var(--black); } .r-green { background: var(--green); }
         .r-pointer { position: absolute; left: 50%; top: 5px; bottom: 5px; width: 3px; background: var(--gold); transform: translateX(-50%); z-index: 10; box-shadow: 0 0 8px var(--gold); border-radius: 4px; }
@@ -337,6 +339,7 @@
         <div class="game-view" id="view-roulette">
             <div class="history-strip" id="roulette-history"></div>
             <div class="roulette-board" id="r-board"><div class="r-pointer"></div><div class="roulette-track" id="r-track"></div></div>
+            <div id="r-countdown"></div>
             <div class="panel" style="margin-bottom: 20px;">
                 <div class="panel-title">Сумма ставки</div>
                 <div class="bet-row">
@@ -1214,12 +1217,35 @@
                 }
             }, 250);
         },
+        // Позиция ракеты на кривой в момент "прошло el миллисекунд с начала полёта".
+        // Вынесено в отдельную функцию, чтобы ей мог пользоваться и обычный тик
+        // (tickMP), и восстановление следа "на пропущенном участке" (syncFlying).
+        posAt(el) {
+            let mult = Math.exp(0.00012 * el); if (mult >= MAX_MUL) mult = MAX_MUL;
+            let dm = Math.min(mult, 10); let t = Math.log(dm) / Math.log(10);
+            return { mx: this.maxX * t, my: this.maxY * Math.pow(t, 3), t };
+        },
         syncFlying(startAtIso) {
             if (this.timer) clearInterval(this.timer); if (this.anim) cancelAnimationFrame(this.anim);
             this.state = 1; this.startTime = new Date(startAtIso).getTime();
-            this.lastX = 0; this.lastY = 0; this.rot = 45; this.path = `M 40 ${this.h - 40}`;
+            this.lastX = 0; this.lastY = 0; this.rot = 45;
             document.getElementById('crash-card').classList.add('flying'); document.getElementById('crash-status').innerText = 'Полет...';
             if(this.bet.pl) window.Stats.addCrash();
+
+            // Если раунд уже летит какое-то время (например, страницу только что
+            // обновили или заново открыли приложение посреди полёта) — достраиваем
+            // след от старта до текущей точки по той же кривой, а не рисуем его
+            // одной прямой линией "было-стало".
+            let now = (window.Multiplayer ? window.Multiplayer.serverNow() : Date.now());
+            let elapsedNow = Math.max(0, now - this.startTime);
+            this.path = `M 40 ${this.h - 40}`;
+            const STEPS = 40;
+            let stepMs = elapsedNow / STEPS;
+            for (let i = 1; i <= STEPS && stepMs > 0; i++) {
+                let p = this.posAt(i * stepMs);
+                this.path += ` L ${40 + p.mx} ${this.h - 40 - p.my}`;
+            }
+
             this.anim = requestAnimationFrame(() => this.tickMP());
         },
         tickMP() {
@@ -1245,11 +1271,11 @@
             document.getElementById('crash-mult').innerText = this.mult.toFixed(2)+'x'; this.updBtns();
             let speed = Math.max(0.2, 3 - (this.mult * 0.15)); document.getElementById('crash-card').style.setProperty('--star-speed', speed + 's');
 
-            let dm = Math.min(this.mult, 10); let t = Math.log(dm) / Math.log(10); let mx = this.maxX * t; let my = this.maxY * Math.pow(t, 3);
-            let idealAng = Math.atan2(this.maxY*3*Math.pow(t,2), this.maxX) * (180/Math.PI); this.rot = 45 - idealAng;
+            let p = this.posAt(el);
+            let idealAng = Math.atan2(this.maxY*3*Math.pow(p.t,2), this.maxX) * (180/Math.PI); this.rot = 45 - idealAng;
 
-            document.getElementById('crash-rocket-wrap').style.transform = `translate(${mx}px, ${-my}px) rotate(${this.rot}deg)`;
-            this.path += ` L ${40+mx} ${this.h-40-my}`; document.getElementById('crash-trail').setAttribute('d', this.path);
+            document.getElementById('crash-rocket-wrap').style.transform = `translate(${p.mx}px, ${-p.my}px) rotate(${this.rot}deg)`;
+            this.path += ` L ${40+p.mx} ${this.h-40-p.my}`; document.getElementById('crash-trail').setAttribute('d', this.path);
             this.anim = requestAnimationFrame(() => this.tickMP());
         },
         syncCrashed(targetMultiplier) {
@@ -1324,23 +1350,36 @@
             this.rTr();
             if (this.cdTimer) clearInterval(this.cdTimer);
             let target = deadlineIso ? new Date(deadlineIso).getTime() : Date.now();
+            const cdEl = document.getElementById('r-countdown');
+            if (cdEl) cdEl.className = '';
             this.cdTimer = setInterval(() => {
                 let mpNow = (window.Multiplayer ? window.Multiplayer.serverNow() : Date.now());
                 let rem = Math.max(0, Math.ceil((target - mpNow)/1000));
-                let el = document.getElementById('r-board'); if (el) el.setAttribute('data-cd', rem);
+                if (cdEl) cdEl.innerText = `Ставки закрываются через ${rem}с`;
                 if (rem <= 0) clearInterval(this.cdTimer);
             }, 250);
         },
-        syncSpinning() {
+        syncSpinning(winningColor) {
             this.lk = true;
             document.getElementById('r-btn-red').disabled = true; document.getElementById('r-btn-green').disabled = true; document.getElementById('r-btn-black').disabled = true;
-            let ti = 110 + Math.floor(Math.random()*37); // визуально случайная точка остановки, финальный цвет придёт в syncFinished
+            const cdEl = document.getElementById('r-countdown');
+            if (cdEl) { cdEl.className = 'spin'; cdEl.innerText = 'Крутим барабан...'; }
+            // Ищем в дорожке слот именно того цвета, который сервер уже выбрал победителем
+            // (winningColor приходит сразу, как только раунд перешёл в spinning — на этом
+            // этапе ставки уже закрыты, так что подглядеть исход заранее нельзя).
+            // Раньше здесь была ПОЛНОСТЬЮ случайная точка остановки, из-за чего колесо
+            // визуально останавливалось на случайном цвете, а не на реальном исходе.
+            let candidates = [];
+            for (let j = 110; j < this.tC.length; j++) { if (this.tC[j].c === winningColor) candidates.push(j); }
+            let ti = candidates.length ? candidates[Math.floor(Math.random() * candidates.length)] : (110 + Math.floor(Math.random() * 37));
             let bC = (document.getElementById('r-board').clientWidth || 400) / 2;
             let fX = -((ti*this.iW)+(this.iW/2) - bC);
             const t = document.getElementById('r-track'); t.style.transition = 'transform 4s cubic-bezier(0.1,0,0.1,1)'; t.style.transform = `translate3d(${fX}px,0,0)`;
             this._spinTi = ti;
         },
         syncFinished(winningColor) {
+            const cdEl = document.getElementById('r-countdown');
+            if (cdEl) { cdEl.className = ''; cdEl.innerText = `Выпало: ${winningColor === 'green' ? 'зеро' : winningColor === 'red' ? 'красное' : 'чёрное'}`; }
             this.h.unshift(winningColor); if(this.h.length > 20) this.h.pop(); LS.s('dydx_roulette_h', this.h); this.rndH();
             if (this.myBetColor) {
                 if (this.myBetColor === winningColor) window.App.toast(`Выигрыш! Выпало ${winningColor}`, 'success');
@@ -1570,13 +1609,19 @@
             this.currentState = state; this.currentBets = bets || [];
             document.getElementById('arena-center').innerText = `Банк: ${state.pot || 0}`;
             let statusEl = document.getElementById('arena-status');
+            let btn = document.getElementById('arena-btn');
+            let myBet = (window.ME && this.currentBets) ? this.currentBets.find(b => b.telegram_id === window.ME.id) : null;
             if (state.status === 'waiting') {
-                let rem = state.join_deadline ? Math.max(0, Math.ceil((new Date(state.join_deadline).getTime() - Date.now())/1000)) : 0;
+                let mpNow = (window.Multiplayer ? window.Multiplayer.serverNow() : Date.now());
+                let rem = state.join_deadline ? Math.max(0, Math.ceil((new Date(state.join_deadline).getTime() - mpNow)/1000)) : 0;
                 statusEl.innerText = `Сбор ставок... ${rem}с (нужно от 2 игроков)`;
+                if (btn) { btn.disabled = false; btn.className = 'main-btn btn-gold'; btn.innerText = myBet ? '➕ ДОБАВИТЬ СТАВКУ' : '🎯 ЗАНЯТЬ МЕСТО'; }
             } else if (state.status === 'spinning') {
                 statusEl.innerText = 'Крутим колесо...';
+                if (btn) { btn.disabled = true; btn.className = 'main-btn btn-disabled'; btn.innerText = 'ИДЁТ РОЗЫГРЫШ'; }
             } else if (state.status === 'finished') {
                 statusEl.innerText = '🎉 Раунд завершён!';
+                if (btn) { btn.disabled = true; btn.className = 'main-btn btn-disabled'; btn.innerText = 'ЖДИТЕ'; }
             }
             this.renderWheel();
             this.renderPlayersList();
@@ -1761,6 +1806,6 @@
 
 <!-- МУЛЬТИПЛЕЕР: общий раунд Ракеты, Рулетки, Арены, промокоды, Дурак, маркетплейс -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="multiplayer-client.js?v=8"></script>
+<script src="multiplayer-client.js?v=9"></script>
 </body>
 </html>
