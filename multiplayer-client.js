@@ -188,7 +188,9 @@ window.Multiplayer = {
         if (state.status === 'finished' && state.winner_telegram_id) {
             const bal = await this.getBalance(); if (bal !== null) { window.App.balance = bal; window.App.updBalUI(); }
             let iWon = state.winner_telegram_id === ME.id;
-            window.App.toast(iWon ? '🎉 Вы выиграли банк на Арене!' : 'Арена: победитель забрал банк', iWon ? 'success' : '');
+            let winnerBet = this.arenaBets.find(b => b.telegram_id === state.winner_telegram_id);
+            let winnerName = winnerBet ? (winnerBet.username || 'Игрок') : 'Игрок';
+            window.App.toast(iWon ? '🎉 Вы выиграли банк на Арене!' : `Арена: банк забрал ${winnerName}`, iWon ? 'success' : '');
         }
     },
     async refreshArenaBets() {
