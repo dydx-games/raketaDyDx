@@ -15,7 +15,11 @@ function getTelegramUser() {
         const tg = window.Telegram.WebApp;
         if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
             const u = tg.initDataUnsafe.user;
-            return { id: String(u.id), username: u.username || u.first_name || 'Игрок', avatar_url: u.photo_url || null };
+            // Показываем НИК (имя из профиля Telegram), а не @username — так игроков
+            // видно так же, как в самом Telegram, а не по техническому логину,
+            // который у многих вообще не задан.
+            let nick = [u.first_name, u.last_name].filter(Boolean).join(' ').trim();
+            return { id: String(u.id), username: nick || u.username || 'Игрок', avatar_url: u.photo_url || null };
         }
     } catch (e) {}
     let id = localStorage.getItem('dydx_fallback_id');
@@ -35,10 +39,17 @@ window.Multiplayer = {
     dailyCd: null,
 
     async init() {
+        // Только СОЗДАНИЕ новой записи — таблица users защищена от прямого UPDATE
+        // с клиента (см. "revoke update on users" в схеме), это намеренно, чтобы
+        // никто не мог накрутить себе баланс. Поэтому обновление ника/аватара для
+        // уже существующих игроков идёт отдельным вызовом через защищённую
+        // функцию update_profile() ниже — она меняет только username/avatar_url,
+        // баланс не трогает вообще.
         await sb.from('users').upsert(
             { telegram_id: ME.id, username: ME.username, avatar_url: ME.avatar_url },
             { onConflict: 'telegram_id', ignoreDuplicates: true }
         );
+        await sb.rpc('update_profile', { p_telegram_id: ME.id, p_username: ME.username, p_avatar_url: ME.avatar_url });
 
         const bal = await this.getBalance();
         if (bal !== null) { window.App.balance = bal; window.App.updBalUI(); }
@@ -62,6 +73,7 @@ window.Multiplayer = {
 
         this.refreshDailyStatus();
         this.refreshDurakRoomList();
+        this.startDurakLobbyPolling();
         this.refreshMyNfts();
         this.refreshMarketListings();
         setInterval(() => this.refreshMarketListings(), 5000); // лента лотов обновляется каждые 5с
@@ -157,6 +169,18 @@ window.Multiplayer = {
             <span>${b.username || 'Игрок'}</span><span>${b.amount}</span>
             <span style="color:${b.cashed_out_multiplier ? 'var(--green)' : 'var(--text-muted)'}">${b.cashed_out_multiplier ? Number(b.cashed_out_multiplier).toFixed(2)+'x' : '...'}</span>
         </div>`).join('');
+        // Мини-фича: бейдж самой крупной ставки раунда — считаем из уже
+        // загруженных данных, отдельный запрос к серверу не нужен.
+        const topEl = document.getElementById('crash-feed-top');
+        if (topEl) {
+            if (data.length) {
+                const top = data.reduce((a, b) => Number(b.amount) > Number(a.amount) ? b : a, data[0]);
+                topEl.innerText = `🔥 Топ ставка: ${top.username || 'Игрок'} — ${top.amount}`;
+                topEl.style.display = '';
+            } else {
+                topEl.style.display = 'none';
+            }
+        }
     },
     async placeBet(amount) {
         const { data, error } = await sb.rpc('place_bet', { p_telegram_id: ME.id, p_username: ME.username, p_amount: amount });
@@ -194,8 +218,10 @@ window.Multiplayer = {
         }
     },
     async refreshArenaBets() {
-        if (!this.arenaState || !this.arenaState.join_deadline) { this.arenaBets = []; return; }
-        const { data } = await sb.from('arena_bets').select('*').eq('round_key', this.arenaState.join_deadline).order('id');
+        // round_key существует всегда (с момента открытия раунда), в отличие
+        // от join_deadline — тот может быть null, пока не набралось 2 игрока.
+        if (!this.arenaState || !this.arenaState.round_key) { this.arenaBets = []; return; }
+        const { data } = await sb.from('arena_bets').select('*').eq('round_key', this.arenaState.round_key).order('id');
         this.arenaBets = data || [];
         if (window.ArenaUI) window.ArenaUI.render(this.arenaState, this.arenaBets);
     },
@@ -211,12 +237,26 @@ window.Multiplayer = {
     onRouletteUpdate(state) {
         this.rouletteState = state;
         const R = window.Roulette; if (!R) return;
+        // Список ставок этого раунда — обновляем на каждом опросе (не только при
+        // смене статуса), чтобы новые ставки других игроков появлялись сразу.
+        this.renderRouletteBets(state.join_deadline);
         let sig = `${state.status}|${state.join_deadline}|${state.winning_color}`;
         if (sig === this.lastRouletteSig) return;
         this.lastRouletteSig = sig;
         if (state.status === 'waiting') R.syncWaiting(state.join_deadline);
         else if (state.status === 'spinning') R.syncSpinning(state.winning_color);
         else if (state.status === 'finished') R.syncFinished(state.winning_color);
+    },
+    async renderRouletteBets(roundKey) {
+        if (!roundKey) return;
+        const { data } = await sb.from('roulette_bets').select('*').eq('round_key', roundKey).order('id', { ascending: false }).limit(30);
+        const el = document.getElementById('roulette-bets-list'); if (!el || !data) return;
+        const colorRu = { red: 'красное', black: 'чёрное', green: 'зеро' };
+        el.innerHTML = data.map(b => `<div class="live-bet-row">
+            <span>${b.username || 'Игрок'}</span>
+            <span style="color:${b.color === 'red' ? '#e74c3c' : b.color === 'black' ? '#ccc' : '#2ecc71'}">${colorRu[b.color] || b.color}</span>
+            <span>${b.amount}</span>
+        </div>`).join('');
     },
     async rouletteBet(color, amount) {
         const { data, error } = await sb.rpc('roulette_bet', { p_telegram_id: ME.id, p_username: ME.username, p_color: color, p_amount: amount });
@@ -229,6 +269,23 @@ window.Multiplayer = {
     async refreshDurakRoomList() {
         const { data } = await sb.from('durak_rooms').select('id, status, bet, host_username').eq('status', 'waiting').order('created_at', { ascending: false });
         if (window.DurakUI) window.DurakUI.renderRoomList(data || []);
+    },
+    // Страховка: список комнат и сама партия раньше обновлялись ТОЛЬКО через
+    // Realtime-подписку на durak_rooms, а эта таблица никогда не была включена
+    // в публикацию realtime — то есть у Дурака в принципе не было способа узнать
+    // о ходах соперника или новых комнатах. Включаем публикацию (см. SQL), и
+    // ДОПОЛНИТЕЛЬНО держим лёгкий опрос как страховку — так игра работает,
+    // даже если с realtime что-то не так на конкретном проекте.
+    durakLobbyPollTimer: null,
+    durakRoomPollTimer: null,
+    startDurakLobbyPolling() {
+        if (this.durakLobbyPollTimer) return;
+        this.durakLobbyPollTimer = setInterval(() => this.refreshDurakRoomList(), 3000);
+    },
+    stopDurakRoomPolling() {
+        if (this.durakRoomPollTimer) { clearInterval(this.durakRoomPollTimer); this.durakRoomPollTimer = null; }
+        if (this.durakRoomChannel) { sb.removeChannel(this.durakRoomChannel); this.durakRoomChannel = null; }
+        this.myDurakRoomId = null;
     },
     onDurakRoomsChange(payload) {
         this.refreshDurakRoomList();
@@ -254,17 +311,30 @@ window.Multiplayer = {
     },
     async subscribeDurakRoom(roomId, silent) {
         if (this.durakRoomChannel) sb.removeChannel(this.durakRoomChannel);
+        if (this.durakRoomPollTimer) { clearInterval(this.durakRoomPollTimer); this.durakRoomPollTimer = null; }
+        this.durakRoomLastUpdatedAt = null;
         const { data: room } = await sb.from('durak_rooms').select('*').eq('id', roomId).single();
         if (!room) return;
         const role = room.host_telegram_id === ME.id ? 'host' : room.guest_telegram_id === ME.id ? 'guest' : null;
         if (!role) return;
         if (!silent && window.DurakUI) window.DurakUI.enterTable(roomId, role);
         if (window.DurakUI) window.DurakUI.render(room);
+        this.durakRoomLastUpdatedAt = room.updated_at;
         this.durakRoomChannel = sb.channel('durak-room-' + roomId)
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'durak_rooms', filter: `id=eq.${roomId}` }, (p) => {
+                this.durakRoomLastUpdatedAt = p.new.updated_at;
                 if (window.DurakUI) window.DurakUI.render(p.new);
             })
             .subscribe();
+        // Страховка на случай, если Realtime по какой-то причине не доставит событие —
+        // раз в секунду проверяем, не сменился ли updated_at, и если да, перерисовываем стол.
+        this.durakRoomPollTimer = setInterval(async () => {
+            const { data: r } = await sb.from('durak_rooms').select('*').eq('id', roomId).single();
+            if (!r) return;
+            if (r.updated_at === this.durakRoomLastUpdatedAt) return;
+            this.durakRoomLastUpdatedAt = r.updated_at;
+            if (window.DurakUI) window.DurakUI.render(r);
+        }, 1000);
     },
     async durakPlay(roomId, card) {
         const { data: room } = await sb.from('durak_rooms').select('attacker, host_telegram_id, guest_telegram_id, table_cards').eq('id', roomId).single();

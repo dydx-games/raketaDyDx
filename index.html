@@ -331,6 +331,7 @@
             </div>
             <div class="panel" style="margin-bottom: 20px;" id="crash-live-feed-panel">
                 <div class="panel-title">Ставки других игроков</div>
+                <div id="crash-feed-top" style="display:none; font-size:11px; color:var(--gold); margin-bottom:6px;"></div>
                 <div id="crash-live-feed" style="display:flex; flex-direction:column; gap:4px; font-size:11px; max-height:150px; overflow-y:auto;"></div>
             </div>
         </div>
@@ -355,6 +356,7 @@
                     <button class="r-btn r-btn-green" id="r-btn-green" onclick="Roulette.play('green')">ЗЕРО<br><span style="font-size:10px;opacity:0.8">36x</span></button>
                     <button class="r-btn r-btn-black" id="r-btn-black" onclick="Roulette.play('black')">ЧЕРНОЕ<br><span style="font-size:10px;opacity:0.8">2x</span></button>
                 </div>
+                <div id="roulette-bets-list" style="margin-top:10px; display:flex; flex-direction:column; gap:4px; font-size:11px; max-height:150px; overflow-y:auto;"></div>
             </div>
         </div>
 
@@ -1154,7 +1156,7 @@
             let r = document.getElementById('crash-rocket'); r.innerText = '🚀'; r.className = '';
             document.getElementById('crash-rocket-wrap').style.transform = `translate(0,0) rotate(45deg)`; document.getElementById('crash-trail').setAttribute('d', '');
 
-            let rT = Math.random()<0.03 ? 1.00 : parseFloat(Math.min(MAX_MUL, 0.97/(1-Math.pow(Math.random(), 0.8))).toFixed(2));
+            let rT = Math.random()<0.03 ? 1.00 : parseFloat(Math.min(MAX_MUL, 0.97/(1-Math.pow(Math.random(), 1.5))).toFixed(2));
             this.target = Math.min(rT, MAX_MUL);
 
             let t = 8; this.updBtns(); document.getElementById('crash-status').innerText = `Запуск через ${t}с`;
@@ -1612,9 +1614,16 @@
             let btn = document.getElementById('arena-btn');
             let myBet = (window.ME && this.currentBets) ? this.currentBets.find(b => b.telegram_id === window.ME.id) : null;
             if (state.status === 'waiting') {
-                let mpNow = (window.Multiplayer ? window.Multiplayer.serverNow() : Date.now());
-                let rem = state.join_deadline ? Math.max(0, Math.ceil((new Date(state.join_deadline).getTime() - mpNow)/1000)) : 0;
-                statusEl.innerText = `Сбор ставок... ${rem}с (нужно от 2 игроков)`;
+                if (state.join_deadline) {
+                    let mpNow = (window.Multiplayer ? window.Multiplayer.serverNow() : Date.now());
+                    let rem = Math.max(0, Math.ceil((new Date(state.join_deadline).getTime() - mpNow)/1000));
+                    statusEl.innerText = `Сбор ставок... ${rem}с`;
+                } else {
+                    // Таймер ещё не стартовал — ждём второго игрока, никаких убегающих
+                    // секунд не показываем, чтобы не выглядело как "досчитал и пропал".
+                    let need = Math.max(0, 2 - this.currentBets.length);
+                    statusEl.innerText = need > 0 ? `Ждём игроков... (нужно ещё ${need})` : 'Ждём игроков...';
+                }
                 if (btn) { btn.disabled = false; btn.className = 'main-btn btn-gold'; btn.innerText = myBet ? '➕ ДОБАВИТЬ СТАВКУ' : '🎯 ЗАНЯТЬ МЕСТО'; }
             } else if (state.status === 'spinning') {
                 statusEl.innerText = 'Крутим колесо...';
@@ -1657,10 +1666,15 @@
         },
         spinTo(winnerAngle) {
             const wheel = document.getElementById('arena-wheel');
+            // Аватарки — отдельный слой поверх колеса (нужно для наложения круглых
+            // фото), поэтому вращать нужно ОБА элемента синхронно, иначе цветной
+            // диск крутится, а кружки с игроками остаются на месте.
+            const avatars = document.getElementById('arena-avatars');
             let fullSpins = 5 * 360;
             let rotation = fullSpins + (360 - winnerAngle);
-            wheel.style.transition = 'none'; wheel.style.transform = 'rotate(0deg)'; void wheel.offsetWidth;
-            wheel.style.transition = 'transform 5s cubic-bezier(0.15,0.85,0.2,1)'; wheel.style.transform = `rotate(${rotation}deg)`;
+            [wheel, avatars].forEach(el => { el.style.transition = 'none'; el.style.transform = 'rotate(0deg)'; });
+            void wheel.offsetWidth;
+            [wheel, avatars].forEach(el => { el.style.transition = 'transform 5s cubic-bezier(0.15,0.85,0.2,1)'; el.style.transform = `rotate(${rotation}deg)`; });
         }
     };
 
@@ -1695,6 +1709,7 @@
         },
         exitTable() {
             this.currentRoomId = null; this.myRole = null;
+            if (window.Multiplayer) window.Multiplayer.stopDurakRoomPolling();
             document.getElementById('durak-lobby').style.display = 'block';
             document.getElementById('durak-table').style.display = 'none';
         },
@@ -1730,7 +1745,7 @@
             document.getElementById('durak-pass-btn').style.display = (iAmAttacker && (room.table_cards||[]).length > 0 && !hasUndefended) ? 'block' : 'none';
 
             if (room.status === 'finished') {
-                let iWon = room.winner_telegram_id && window.Multiplayer && room.winner_telegram_id === window.Multiplayer.ME.id;
+                let iWon = room.winner_telegram_id && window.ME && room.winner_telegram_id === window.ME.id;
                 window.App.toast(room.winner_telegram_id ? (iWon ? '🏆 Вы выиграли банк!' : 'Игра окончена — соперник забрал банк') : 'Ничья, ставки возвращены', iWon ? 'success' : '');
                 setTimeout(() => this.exitTable(), 3000);
             }
@@ -1772,7 +1787,7 @@
         // Вызывается из multiplayer-client.js при обновлении списка лотов
         setListings(all) {
             this.allListings = all.filter(l => l.status === 'active');
-            this.myListings = this.allListings.filter(l => window.Multiplayer && l.seller_telegram_id === window.Multiplayer.ME.id);
+            this.myListings = this.allListings.filter(l => window.ME && l.seller_telegram_id === window.ME.id);
             this.render();
         },
         render() {
@@ -1780,7 +1795,7 @@
             if (!window.Multiplayer) { el.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:11px; padding:10px 0;">Маркетплейс работает только в мультиплеере</div>`; return; }
             let list = this.tab === 'mine' ? this.myListings : this.allListings;
             if (!list.length) { el.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:11px; padding:10px 0;">${this.tab === 'mine' ? 'У вас нет активных лотов' : 'Пока никто ничего не продаёт'}</div>`; return; }
-            let myId = window.Multiplayer.ME.id;
+            let myId = window.ME && window.ME.id;
             el.innerHTML = list.map(l => {
                 let isMine = l.seller_telegram_id === myId;
                 let color = `var(--r-${l.tier})`;
@@ -1806,6 +1821,6 @@
 
 <!-- МУЛЬТИПЛЕЕР: общий раунд Ракеты, Рулетки, Арены, промокоды, Дурак, маркетплейс -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="multiplayer-client.js?v=9"></script>
+<script src="multiplayer-client.js?v=13"></script>
 </body>
 </html>
