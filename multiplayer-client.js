@@ -6,7 +6,7 @@
 // =========================================================
 
 const SUPABASE_URL = 'https://kgtheatplbbknrddlqsq.supabase.co';
-const SUPABASE_ANON_KEY = 'ВСТАВЬТЕ_СЮДА_ANON_KEY';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtndGhlYXRwbGJia25yZGRscXNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYxOTA4MjcsImV4cCI6MjEwMTc2NjgyN30.cklnXKo9SzIsNKLSqjztABKRnAtF6aMRnlxfM0w_S8s';
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
