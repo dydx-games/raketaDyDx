@@ -1,8 +1,5 @@
 // =========================================================
 // dy/dx МУЛЬТИПЛЕЕР — клиентская интеграция с Supabase (полная версия)
-// Подключите ПОСЛЕ основного game-скрипта, перед </body>:
-//   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-//   <script src="multiplayer-client.js"></script>
 // =========================================================
 
 const SUPABASE_URL = 'https://kgtheatplbbknrddlqsq.supabase.co';
@@ -27,7 +24,7 @@ const ME = getTelegramUser();
 
 window.Multiplayer = {
     ME, channel: null, advanceTimer: null,
-    roundState: null,          // crash
+    roundState: null,
     arenaState: null, arenaBets: [],
     rouletteState: null,
     durakRoomsChannel: null, durakRoomChannel: null, myDurakRoomId: null,
@@ -42,10 +39,6 @@ window.Multiplayer = {
         const bal = await this.getBalance();
         if (bal !== null) { window.App.balance = bal; window.App.updBalUI(); }
 
-        // Каждые 500мс: двигаем раунды вперёд + опрашиваем открытые "_public" окна состояния.
-        // ВАЖНО: crash_state/arena_state/roulette_state — закрытые таблицы (чтобы никто не подсмотрел
-        // исход заранее), поэтому Realtime на них подписаться нельзя — вместо этого опрашиваем
-        // отдельные "_public" представления, где скрытые поля видны только после завершения раунда.
         this.advanceTimer = setInterval(async () => {
             sb.rpc('advance_crash_round');
             sb.rpc('advance_arena_round');
@@ -77,16 +70,15 @@ window.Multiplayer = {
         this.refreshDurakRoomList();
         this.refreshMyNfts();
         this.refreshMarketListings();
-        setInterval(() => this.refreshMarketListings(), 5000); // лента лотов обновляется каждые 5с
+        setInterval(() => this.refreshMarketListings(), 5000);
     },
 
-    // ================= КРАШ (РАКЕТА) =================
     lastCrashSig: null, lastArenaSig: null, lastRouletteSig: null,
     onCrashUpdate(state) {
         this.roundState = state;
         const C = window.Crash; if (!C) return;
         let sig = `${state.status}|${state.start_at}|${state.next_round_at}`;
-        if (sig === this.lastCrashSig) return; // ничего не изменилось — не дёргаем анимацию заново
+        if (sig === this.lastCrashSig) return;
         this.lastCrashSig = sig;
         if (state.status === 'waiting') C.syncWaiting(state.next_round_at);
         else if (state.status === 'flying') C.syncFlying(state.start_at);
@@ -121,7 +113,6 @@ window.Multiplayer = {
         return data[0].win_amount;
     },
 
-    // ================= АРЕНА =================
     async onArenaUpdate(state) {
         this.arenaState = state;
         await this.refreshArenaBets();
@@ -152,7 +143,6 @@ window.Multiplayer = {
         return true;
     },
 
-    // ================= МУЛЬТИПЛЕЕРНАЯ РУЛЕТКА =================
     onRouletteUpdate(state) {
         this.rouletteState = state;
         const R = window.Roulette; if (!R) return;
@@ -170,7 +160,6 @@ window.Multiplayer = {
         return true;
     },
 
-    // ================= ДУРАК =================
     async refreshDurakRoomList() {
         const { data } = await sb.from('durak_rooms').select('id, status, bet, host_username').eq('status', 'waiting').order('created_at', { ascending: false });
         if (window.DurakUI) window.DurakUI.renderRoomList(data || []);
@@ -238,7 +227,6 @@ window.Multiplayer = {
         const bal = await this.getBalance(); if (bal !== null) { window.App.balance = bal; window.App.updBalUI(); }
     },
 
-    // ================= ПРОМОКОДЫ =================
     async redeemPromo(code) {
         if (!code || !code.trim()) return window.App.toast('Введите код', 'error');
         const { data, error } = await sb.rpc('redeem_promo', { p_code: code.trim().toUpperCase(), p_telegram_id: ME.id });
@@ -248,7 +236,6 @@ window.Multiplayer = {
         if (r.success) { window.App.balance = Number(r.new_balance); window.App.updBalUI(); }
     },
 
-    // ================= ЕЖЕДНЕВНЫЙ БОНУС =================
     async claimDaily() {
         const { data, error } = await sb.rpc('claim_daily_bonus', { p_telegram_id: ME.id });
         if (error) { window.App.toast('Ошибка сети', 'error'); return; }
@@ -278,7 +265,6 @@ window.Multiplayer = {
         return data ? Number(data.balance) : null;
     },
 
-    // ================= МАРКЕТПЛЕЙС УЛУЧШЕННЫХ ПОДАРКОВ =================
     async upgradeGiftServer(gift, cost, baseRarity) {
         const { data, error } = await sb.rpc('upgrade_gift_server', {
             p_telegram_id: ME.id, p_username: ME.username,
@@ -289,7 +275,6 @@ window.Multiplayer = {
             return null;
         }
         const bal = await this.getBalance(); if (bal !== null) { window.App.balance = bal; window.App.updBalUI(); }
-        // забираем id только что созданного NFT (последний по времени у этого владельца с такими же трейтами)
         const { data: mine } = await sb.from('user_nfts').select('*').eq('owner_telegram_id', ME.id).order('id', { ascending: false }).limit(1);
         const created = mine && mine[0];
         return {
