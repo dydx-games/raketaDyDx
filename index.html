@@ -1201,7 +1201,8 @@
             let target = nextRoundAtIso ? new Date(nextRoundAtIso).getTime() : Date.now();
             let zeroSince = null;
             this.timer = setInterval(() => {
-                let rem = Math.max(0, Math.ceil((target - Date.now()) / 1000));
+                let mpNow = (window.Multiplayer ? window.Multiplayer.serverNow() : Date.now());
+                let rem = Math.max(0, Math.ceil((target - mpNow) / 1000));
                 document.getElementById('crash-status').innerText = `Запуск через ${rem}с`;
                 if (rem <= 0) {
                     if (!zeroSince) zeroSince = Date.now();
@@ -1223,7 +1224,11 @@
         },
         tickMP() {
             if (this.state !== 1) return;
-            let el = Date.now() - this.startTime; this.mult = Math.exp(0.00012 * el);
+            let now = (window.Multiplayer ? window.Multiplayer.serverNow() : Date.now());
+            // Защита: даже с синхронизацией часов возможна доля секунды сетевой
+            // задержки между стартом на сервере и получением её клиентом.
+            // Не даём множителю уйти ниже 1.00x.
+            let el = Math.max(0, now - this.startTime); this.mult = Math.exp(0.00012 * el);
             if (this.mult >= MAX_MUL) {
                 this.mult = MAX_MUL;
                 // Аварийная защита: если залипли на потолке дольше 3с без вестей от сервера —
@@ -1320,7 +1325,8 @@
             if (this.cdTimer) clearInterval(this.cdTimer);
             let target = deadlineIso ? new Date(deadlineIso).getTime() : Date.now();
             this.cdTimer = setInterval(() => {
-                let rem = Math.max(0, Math.ceil((target - Date.now())/1000));
+                let mpNow = (window.Multiplayer ? window.Multiplayer.serverNow() : Date.now());
+                let rem = Math.max(0, Math.ceil((target - mpNow)/1000));
                 let el = document.getElementById('r-board'); if (el) el.setAttribute('data-cd', rem);
                 if (rem <= 0) clearInterval(this.cdTimer);
             }, 250);
@@ -1755,6 +1761,6 @@
 
 <!-- МУЛЬТИПЛЕЕР: общий раунд Ракеты, Рулетки, Арены, промокоды, Дурак, маркетплейс -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="multiplayer-client.js?v=6"></script>
+<script src="multiplayer-client.js?v=7"></script>
 </body>
 </html>

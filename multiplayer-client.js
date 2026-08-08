@@ -72,10 +72,25 @@ window.Multiplayer = {
     // чтобы игра продолжала работать в любом случае.
     useCombinedState: true,
 
+    // Разница между часами СЕРВЕРА и часами БРАУЗЕРА, в миллисекундах.
+    // Нужна потому, что часы устройства (особенно в Telegram WebView,
+    // эмуляторах, некоторых Android-прошивках) могут отставать или спешить
+    // на несколько секунд. Ракета считает множитель как разницу между
+    // "сейчас" и временем старта, полученным от сервера — если часы
+    // браузера не совпадают с сервером, множитель посчитается неверно
+    // (например, покажет 0.23x вместо честного 1.00x+ в первые доли секунды
+    // полёта). serverNow() — это Date.now(), скорректированный на эту
+    // разницу, и его нужно использовать вместо Date.now() везде, где время
+    // сравнивается с временем от сервера (start_at, crash_at, next_round_at
+    // и т.п.).
+    clockOffsetMs: 0,
+    serverNow() { return Date.now() + this.clockOffsetMs; },
+
     async pollGameState() {
         if (this.useCombinedState) {
             const { data: st, error } = await sb.rpc('get_game_state');
             if (!error && st) {
+                if (st.server_now) this.clockOffsetMs = new Date(st.server_now).getTime() - Date.now();
                 if (st.crash)    this.onCrashUpdate(st.crash);
                 if (st.arena)    await this.onArenaUpdate(st.arena);
                 if (st.roulette) this.onRouletteUpdate(st.roulette);
