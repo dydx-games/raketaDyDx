@@ -42,20 +42,27 @@ window.Multiplayer = {
         const bal = await this.getBalance();
         if (bal !== null) { window.App.balance = bal; window.App.updBalUI(); }
 
-        // Каждые 500мс любой открытый клиент двигает все раунды вперёд — заменяет серверный cron
-        this.advanceTimer = setInterval(() => {
+        // Каждые 500мс: двигаем раунды вперёд + опрашиваем открытые "_public" окна состояния.
+        // ВАЖНО: crash_state/arena_state/roulette_state — закрытые таблицы (чтобы никто не подсмотрел
+        // исход заранее), поэтому Realtime на них подписаться нельзя — вместо этого опрашиваем
+        // отдельные "_public" представления, где скрытые поля видны только после завершения раунда.
+        this.advanceTimer = setInterval(async () => {
             sb.rpc('advance_crash_round');
             sb.rpc('advance_arena_round');
             sb.rpc('advance_roulette_round');
+
+            const { data: cs } = await sb.from('crash_state_public').select('*').eq('id', 1).single();
+            if (cs) this.onCrashUpdate(cs);
+            const { data: as } = await sb.from('arena_state_public').select('*').eq('id', 1).single();
+            if (as) this.onArenaUpdate(as);
+            const { data: rs } = await sb.from('roulette_state_public').select('*').eq('id', 1).single();
+            if (rs) this.onRouletteUpdate(rs);
         }, 500);
 
         this.channel = sb.channel('game-sync')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'crash_state' }, (p) => this.onCrashUpdate(p.new))
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'crash_bets' }, (p) => this.onCrashBet(p.new))
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'crash_bets' }, (p) => this.onCrashCashout(p.new))
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'arena_state' }, (p) => this.onArenaUpdate(p.new))
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'arena_bets' }, () => this.refreshArenaBets())
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'roulette_state' }, (p) => this.onRouletteUpdate(p.new))
             .on('postgres_changes', { event: '*', schema: 'public', table: 'durak_rooms' }, (p) => this.onDurakRoomsChange(p))
             .subscribe();
 
@@ -71,9 +78,13 @@ window.Multiplayer = {
     },
 
     // ================= КРАШ (РАКЕТА) =================
+    lastCrashSig: null, lastArenaSig: null, lastRouletteSig: null,
     onCrashUpdate(state) {
         this.roundState = state;
         const C = window.Crash; if (!C) return;
+        let sig = `${state.status}|${state.start_at}|${state.next_round_at}`;
+        if (sig === this.lastCrashSig) return; // ничего не изменилось — не дёргаем анимацию заново
+        this.lastCrashSig = sig;
         if (state.status === 'waiting') C.syncWaiting(state.next_round_at);
         else if (state.status === 'flying') C.syncFlying(state.start_at);
         else if (state.status === 'crashed') C.syncCrashed(state.target_multiplier);
@@ -112,6 +123,9 @@ window.Multiplayer = {
         this.arenaState = state;
         await this.refreshArenaBets();
         if (window.ArenaUI) window.ArenaUI.render(state, this.arenaBets);
+        let sig = `${state.status}|${state.join_deadline}|${state.winner_angle}`;
+        if (sig === this.lastArenaSig) return;
+        this.lastArenaSig = sig;
         if (state.status === 'spinning' && state.winner_angle !== null && window.ArenaUI) {
             window.ArenaUI.spinTo(Number(state.winner_angle));
         }
@@ -139,6 +153,9 @@ window.Multiplayer = {
     onRouletteUpdate(state) {
         this.rouletteState = state;
         const R = window.Roulette; if (!R) return;
+        let sig = `${state.status}|${state.join_deadline}|${state.winning_color}`;
+        if (sig === this.lastRouletteSig) return;
+        this.lastRouletteSig = sig;
         if (state.status === 'waiting') R.syncWaiting(state.join_deadline);
         else if (state.status === 'spinning') R.syncSpinning();
         else if (state.status === 'finished') R.syncFinished(state.winning_color);
