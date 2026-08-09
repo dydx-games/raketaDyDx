@@ -76,7 +76,9 @@ window.Multiplayer = {
         this.startDurakLobbyPolling();
         this.refreshMyNfts();
         this.refreshMarketListings();
+        this.refreshTycoon();
         setInterval(() => this.refreshMarketListings(), 5000); // лента лотов обновляется каждые 5с
+        setInterval(() => this.refreshTycoon(), 5000); // доход Империи — тоже раз в 5с
     },
 
     // ================= ОПРОС СОСТОЯНИЯ =================
@@ -433,6 +435,26 @@ window.Multiplayer = {
             tier: n.tier, ts: new Date(n.created_at).getTime()
         }));
         window.Gifts.render();
+    },
+    async refreshTycoon() {
+        const { data, error } = await sb.rpc('tycoon_get_state', { p_telegram_id: ME.id });
+        if (error || !data) return;
+        if (window.TycoonUI) window.TycoonUI.render(data);
+    },
+    async tycoonBuy(buildingId) {
+        const { data, error } = await sb.rpc('tycoon_buy', { p_telegram_id: ME.id, p_building_id: buildingId });
+        if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return; }
+        window.App.toast(data[0].message, 'success');
+        const bal = await this.getBalance(); if (bal !== null) { window.App.balance = bal; window.App.updBalUI(); }
+        this.refreshTycoon();
+    },
+    async tycoonCollect() {
+        const { data, error } = await sb.rpc('tycoon_collect', { p_telegram_id: ME.id });
+        if (error || !data) { window.App.toast('Ошибка', 'error'); return; }
+        if (!data[0].success) { window.App.toast(data[0].message || 'Пока нечего собирать', ''); return; }
+        window.App.toast(`+${data[0].collected} фишек!`, 'success');
+        if (data[0].new_balance !== null) { window.App.balance = data[0].new_balance; window.App.updBalUI(); }
+        this.refreshTycoon();
     },
     async refreshMarketListings() {
         const { data } = await sb.from('market_listings')

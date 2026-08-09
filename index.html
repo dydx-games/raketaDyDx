@@ -90,6 +90,13 @@
 
         /* МАРКЕТПЛЕЙС */
         .market-card { display: flex; align-items: center; gap: 10px; background: var(--bg-panel); border-radius: 10px; padding: 10px; position: relative; overflow: hidden; border: 1px solid #1f222b; }
+        .tycoon-card { display: flex; align-items: center; gap: 10px; background: var(--bg-panel); border-radius: 10px; padding: 10px; border: 1px solid #1f222b; }
+        .tycoon-card-emoji { font-size: 26px; width: 40px; text-align: center; flex-shrink: 0; }
+        .tycoon-card-info { flex: 1; min-width: 0; }
+        .tycoon-card-title { font-size: 12px; font-weight: 700; }
+        .tycoon-card-sub { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+        .tycoon-buy-btn { flex-shrink: 0; background: var(--gold); color: #1a1a1a; border: none; border-radius: 8px; padding: 8px 10px; font-size: 11px; font-weight: 700; cursor: pointer; min-width: 70px; }
+        .tycoon-buy-btn:disabled { background: #333; color: #777; cursor: not-allowed; }
         .market-card-bg { position: absolute; inset: 0; opacity: 0.2; z-index: 0; }
         .market-card > * { position: relative; z-index: 1; }
         .market-card-emoji { font-size: 28px; }
@@ -497,6 +504,20 @@
             </div>
         </div>
 
+        <!-- TYCOON -->
+        <div class="game-view" id="view-tycoon">
+            <div class="panel" style="margin-bottom: 12px;">
+                <div class="panel-title">🏛️ Ваша Империя</div>
+                <div id="tycoon-schedule" style="font-size:11px; color:var(--text-muted); margin-bottom:8px;"></div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <div style="font-size:11px; color:var(--text-muted);">Доход: <span id="tycoon-income-rate">0</span>/ч</div>
+                    <div style="font-size:11px; color:var(--text-muted);">Всего заработано: <span id="tycoon-total-earned">0</span></div>
+                </div>
+                <button class="main-btn btn-gold" id="tycoon-collect-btn" onclick="TycoonUI.collect()">💰 СОБРАТЬ: <span id="tycoon-pending">0</span></button>
+            </div>
+            <div id="tycoon-catalog" style="display:flex; flex-direction:column; gap:8px;"></div>
+        </div>
+
         <!-- DURAK -->
         <div class="game-view" id="view-durak">
             <div id="durak-lobby">
@@ -515,6 +536,7 @@
             <div id="durak-table" style="display:none;">
                 <div class="panel">
                     <div class="panel-title" id="durak-turn-info">Ход...</div>
+                    <div id="durak-deck-info" style="text-align:center; font-size:11px; color:var(--text-muted); margin-bottom:8px;"></div>
                     <div class="durak-opp-hand" id="durak-opp-hand"></div>
                     <div class="durak-table-cards" id="durak-table-cards"></div>
                     <div class="durak-my-hand" id="durak-my-hand"></div>
@@ -594,6 +616,7 @@
         <div class="nav-item" onclick="App.s('tower', this, 'Башенка')"><div class="nav-icon">🗼</div><span>Tower</span></div>
         <div class="nav-item" onclick="App.s('mines', this, 'Минное поле')"><div class="nav-icon">💣</div><span>Mines</span></div>
         <div class="nav-item" onclick="App.s('arena', this, 'Арена')"><div class="nav-icon">🎯</div><span>Арена</span></div>
+        <div class="nav-item" onclick="App.s('tycoon', this, 'Империя')"><div class="nav-icon">🏛️</div><span>Империя</span></div>
         <div class="nav-item" onclick="App.s('durak', this, 'Дурак')"><div class="nav-icon">🃏</div><span>Дурак</span></div>
         <div class="nav-item" onclick="App.s('profile', this, 'Профиль')"><div class="nav-icon">👤</div><span>Профиль</span></div>
         <div class="nav-item" onclick="App.s('tasks', this, 'Задания')"><div class="nav-icon">📋</div><span>Задания</span></div>
@@ -763,6 +786,7 @@
             document.getElementById('app-subtitle').innerText = title;
             try { el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }); } catch(e) {}
             if(id === 'crash') setTimeout(() => window.Crash.posM(), 50);
+            if(id === 'tycoon' && window.Multiplayer) window.Multiplayer.refreshTycoon();
         },
         toast(msg, type='') {
             const c = document.getElementById('toast-container'); if(c.children.length > 2) c.firstElementChild.remove();
@@ -1366,11 +1390,17 @@
             document.getElementById('r-btn-red').disabled = true; document.getElementById('r-btn-green').disabled = true; document.getElementById('r-btn-black').disabled = true;
             const cdEl = document.getElementById('r-countdown');
             if (cdEl) { cdEl.className = 'spin'; cdEl.innerText = 'Крутим барабан...'; }
+            // Дорожка колеса (this.tC) строится в rTr(), который раньше вызывался
+            // ТОЛЬКО из syncWaiting(). Если приложение открылось/обновилось прямо
+            // во время вращения — syncWaiting ни разу не вызывался, this.tC пуст,
+            // и поиск ячейки нужного цвета ниже проваливался в случайный фолбэк,
+            // никак не связанный с настоящим исходом. Отсюда и был баг
+            // "выпало одно, а колесо показало другое". Строим дорожку здесь же,
+            // если она ещё не готова.
+            if (!this.tC || this.tC.length < 150) this.rTr();
             // Ищем в дорожке слот именно того цвета, который сервер уже выбрал победителем
             // (winningColor приходит сразу, как только раунд перешёл в spinning — на этом
             // этапе ставки уже закрыты, так что подглядеть исход заранее нельзя).
-            // Раньше здесь была ПОЛНОСТЬЮ случайная точка остановки, из-за чего колесо
-            // визуально останавливалось на случайном цвете, а не на реальном исходе.
             let candidates = [];
             for (let j = 110; j < this.tC.length; j++) { if (this.tC[j].c === winningColor) candidates.push(j); }
             let ti = candidates.length ? candidates[Math.floor(Math.random() * candidates.length)] : (110 + Math.floor(Math.random() * 37));
@@ -1728,6 +1758,14 @@
                 ? (room.winner_telegram_id ? '🏆 Игра завершена' : 'Игра завершена')
                 : (iAmAttacker ? 'Ваш ход — атака ⚔️' : iAmDefender ? 'Ваш ход — защита 🛡️' : 'Ход соперника...');
 
+            const deckEl = document.getElementById('durak-deck-info');
+            if (deckEl) {
+                let deckCount = (room.deck || []).length;
+                let trumpSym = room.trump_suit ? this.suitSym(room.trump_suit) : '?';
+                let trumpColor = room.trump_suit ? this.suitColor(room.trump_suit) : '';
+                deckEl.innerHTML = `В колоде: ${deckCount} · Козырь: <span style="color:${trumpColor === 'red' ? '#e74c3c' : '#eee'}">${trumpSym}</span> · У соперника: ${(oppHand || []).length}`;
+            }
+
             document.getElementById('durak-opp-hand').innerHTML = (oppHand || []).map(() => `<div class="card-back"></div>`).join('');
 
             let tableEl = document.getElementById('durak-table-cards');
@@ -1759,6 +1797,55 @@
     };
 
     // ---- МАРКЕТПЛЕЙС: UI-обёртка, вся логика — на сервере (multiplayer-client.js) ----
+    window.TycoonUI = {
+        state: null,
+        tickTimer: null,
+        render(data) {
+            this.state = data;
+            if (this.tickTimer) clearInterval(this.tickTimer);
+            let incomeEl = document.getElementById('tycoon-income-rate'); if (incomeEl) incomeEl.innerText = data.income_per_hour || 0;
+            let totalEl = document.getElementById('tycoon-total-earned'); if (totalEl) totalEl.innerText = data.total_earned || 0;
+
+            let mult = Number(data.multiplier) || 1;
+            let schedEl = document.getElementById('tycoon-schedule');
+            if (schedEl) {
+                schedEl.innerText = mult >= 1.5 ? '🌆 Вечер — наплыв посетителей, доход ×1.5'
+                    : mult <= 0.6 ? '🌙 Глубокая ночь — посетителей мало, доход ×0.6'
+                    : '☀️ Обычный поток посетителей, доход ×1.0';
+            }
+
+            // Живой счётчик между опросами сервера — копится плавно, а не скачками раз в 5с
+            let base = Number(data.pending) || 0;
+            let perSec = ((Number(data.income_per_hour) || 0) * mult) / 3600;
+            let started = Date.now();
+            const pendEl = document.getElementById('tycoon-pending');
+            const tick = () => { if (pendEl) pendEl.innerText = Math.floor(base + perSec * ((Date.now() - started) / 1000)); };
+            tick();
+            this.tickTimer = setInterval(tick, 1000);
+
+            this.renderCatalog(data);
+        },
+        renderCatalog(data) {
+            const el = document.getElementById('tycoon-catalog'); if (!el) return;
+            const owned = data.owned || {};
+            const myBalance = (window.App && window.App.balance) || 0;
+            el.innerHTML = (data.catalog || []).map(c => {
+                let qty = owned[c.id] || 0;
+                let cost = Math.floor(c.base_cost * Math.pow(c.cost_growth, qty));
+                let canAfford = myBalance >= cost;
+                return `<div class="tycoon-card">
+                    <div class="tycoon-card-emoji">${c.emoji}</div>
+                    <div class="tycoon-card-info">
+                        <div class="tycoon-card-title">${c.name}${qty > 0 ? ` <span style="color:var(--gold)">×${qty}</span>` : ''}</div>
+                        <div class="tycoon-card-sub">+${c.income_per_hour}/ч за шт. · цена: ${cost}</div>
+                    </div>
+                    <button class="tycoon-buy-btn" ${canAfford ? '' : 'disabled'} onclick="TycoonUI.buy('${c.id}')">Купить</button>
+                </div>`;
+            }).join('');
+        },
+        buy(id) { if (window.Multiplayer) window.Multiplayer.tycoonBuy(id); },
+        collect() { if (window.Multiplayer) window.Multiplayer.tycoonCollect(); }
+    };
     window.MarketUI = {
         tab: 'all', allListings: [], myListings: [],
         showTab(tab, btn) {
@@ -1821,6 +1908,6 @@
 
 <!-- МУЛЬТИПЛЕЕР: общий раунд Ракеты, Рулетки, Арены, промокоды, Дурак, маркетплейс -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="multiplayer-client.js?v=13"></script>
+<script src="multiplayer-client.js?v=14"></script>
 </body>
 </html>
