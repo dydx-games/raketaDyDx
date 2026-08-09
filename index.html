@@ -97,6 +97,18 @@
         .tycoon-card-sub { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
         .tycoon-buy-btn { flex-shrink: 0; background: var(--gold); color: #1a1a1a; border: none; border-radius: 8px; padding: 8px 10px; font-size: 11px; font-weight: 700; cursor: pointer; min-width: 70px; }
         .tycoon-buy-btn:disabled { background: #333; color: #777; cursor: not-allowed; }
+        .crypto-card { background: var(--bg-panel); border-radius: 10px; padding: 12px; border: 1px solid #1f222b; }
+        .crypto-card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .crypto-card-price { font-size: 18px; font-weight: 800; }
+        .crypto-card-change { font-size: 11px; font-weight: 700; padding: 2px 6px; border-radius: 6px; }
+        .crypto-card-change.up { color: #2ecc71; background: rgba(46,204,113,0.12); }
+        .crypto-card-change.down { color: #e74c3c; background: rgba(231,76,60,0.12); }
+        .crypto-holding-info { font-size: 10px; color: var(--text-muted); margin: 6px 0; }
+        .crypto-trade-row { display: flex; gap: 6px; margin-top: 8px; }
+        .crypto-input { flex: 1; background: var(--bg-panel-light); border: 1px solid #2a2e3a; color: #fff; padding: 8px; border-radius: 8px; font-size: 12px; text-align: center; }
+        .crypto-btn { border: none; border-radius: 8px; padding: 8px 12px; font-size: 11px; font-weight: 700; cursor: pointer; }
+        .crypto-btn-buy { background: #2ecc71; color: #0a0a0a; }
+        .crypto-btn-sell { background: #e74c3c; color: #fff; }
         .market-card-bg { position: absolute; inset: 0; opacity: 0.2; z-index: 0; }
         .market-card > * { position: relative; z-index: 1; }
         .market-card-emoji { font-size: 28px; }
@@ -518,6 +530,16 @@
             <div id="tycoon-catalog" style="display:flex; flex-direction:column; gap:8px;"></div>
         </div>
 
+        <!-- CRYPTO -->
+        <div class="game-view" id="view-crypto">
+            <div class="panel" style="margin-bottom: 12px;">
+                <div style="font-size:10px; color:var(--text-muted); background:rgba(231,76,60,0.1); border:1px solid rgba(231,76,60,0.3); border-radius:8px; padding:8px;">
+                    ⚠️ Все монеты и курсы в этом разделе — <b>ненастоящие</b>, существуют только внутри игры. Курс двигает бот случайными шагами, реальной денежной стоимости монеты не имеют и не могут быть обменены на деньги.
+                </div>
+            </div>
+            <div id="crypto-coins-list" style="display:flex; flex-direction:column; gap:10px;"></div>
+        </div>
+
         <!-- DURAK -->
         <div class="game-view" id="view-durak">
             <div id="durak-lobby">
@@ -617,6 +639,7 @@
         <div class="nav-item" onclick="App.s('mines', this, 'Минное поле')"><div class="nav-icon">💣</div><span>Mines</span></div>
         <div class="nav-item" onclick="App.s('arena', this, 'Арена')"><div class="nav-icon">🎯</div><span>Арена</span></div>
         <div class="nav-item" onclick="App.s('tycoon', this, 'Империя')"><div class="nav-icon">🏛️</div><span>Империя</span></div>
+        <div class="nav-item" onclick="App.s('crypto', this, 'Крипто')"><div class="nav-icon">📈</div><span>Крипто</span></div>
         <div class="nav-item" onclick="App.s('durak', this, 'Дурак')"><div class="nav-icon">🃏</div><span>Дурак</span></div>
         <div class="nav-item" onclick="App.s('profile', this, 'Профиль')"><div class="nav-icon">👤</div><span>Профиль</span></div>
         <div class="nav-item" onclick="App.s('tasks', this, 'Задания')"><div class="nav-icon">📋</div><span>Задания</span></div>
@@ -635,6 +658,24 @@
 </div>
 
 <!-- МОДАЛКА БАНКА -->
+<div class="modal-overlay" id="tos-modal" style="z-index:2000;">
+    <div class="modal-content" style="max-width:420px; width:90%; text-align:left;">
+        <h3 style="margin-top:0; text-align:center;">Пользовательское соглашение</h3>
+        <div style="max-height:260px; overflow-y:auto; font-size:12px; line-height:1.5; color:var(--text-muted); background:rgba(255,255,255,0.03); border-radius:8px; padding:10px; margin-bottom:12px;">
+            <p><b>Только для лиц старше 18 лет.</b></p>
+            <p>Внутренние «фишки» — виртуальная валюта без реальной денежной стоимости. Их нельзя купить за деньги и нельзя вывести/обменять на деньги, криптовалюту или иное имущество. Все игровые режимы носят исключительно развлекательный характер.</p>
+            <p>Используя приложение, вы соглашаетесь не создавать несколько аккаунтов для получения повторных бонусов, не использовать автоматизированные средства и не пытаться получить несанкционированный доступ к системе. Администрация вправе ограничить доступ при нарушении правил.</p>
+            <p>Обрабатываются только данные вашего профиля Telegram (идентификатор, имя, аватар) — для отображения в игре и сохранения прогресса. Данные не передаются третьим лицам, кроме случаев, предусмотренных законом.</p>
+            <p style="margin-bottom:0;">Полный текст соглашения: [ССЫЛКА НА ДОКУМЕНТ]</p>
+        </div>
+        <label style="display:flex; align-items:center; gap:8px; font-size:12px; margin-bottom:14px; cursor:pointer;">
+            <input type="checkbox" id="tos-checkbox" onchange="document.getElementById('tos-accept-btn').disabled = !this.checked">
+            Мне есть 18 лет, я прочитал(а) и принимаю условия соглашения
+        </label>
+        <button class="modal-btn" id="tos-accept-btn" style="background:var(--gold); color:#000;" disabled onclick="App.acceptTos()">Принять и продолжить</button>
+    </div>
+</div>
+
 <div class="modal-overlay" id="topup-modal" onclick="if(event.target.id==='topup-modal') App.closeTopUp()">
     <div class="modal-content">
         <h3 style="margin-bottom: 12px; color: var(--gold); font-size:16px;">Банк лудомана</h3>
@@ -776,6 +817,16 @@
             document.getElementById('topup-input').value = ''; this.refreshTopUpUI();
         },
         resetBalance() { this.balance = 1000; this.updBalUI(); this.toast('Баланс сброшен', 'success'); this.closeTopUp(); },
+        async acceptTos() {
+            const cb = document.getElementById('tos-checkbox'); if (!cb || !cb.checked) return;
+            const btn = document.getElementById('tos-accept-btn'); if (btn) btn.disabled = true;
+            try {
+                if (window.sb && window.ME) {
+                    await window.sb.rpc('accept_tos', { p_telegram_id: window.ME.id });
+                }
+            } catch (e) { /* если функция ещё не создана — не блокируем игру навсегда */ }
+            const modal = document.getElementById('tos-modal'); if (modal) modal.classList.remove('active');
+        },
         clearCache() { localStorage.clear(); location.reload(); },
         s(id, el, title) {
             if(window.Crash && window.Crash.state === 1 && window.Crash.bet.pl && !window.Crash.bet.o) return this.toast('Нельзя выйти во время полета!', 'error');
@@ -787,6 +838,7 @@
             try { el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }); } catch(e) {}
             if(id === 'crash') setTimeout(() => window.Crash.posM(), 50);
             if(id === 'tycoon' && window.Multiplayer) window.Multiplayer.refreshTycoon();
+            if(id === 'crypto' && window.Multiplayer) window.Multiplayer.refreshCrypto();
         },
         toast(msg, type='') {
             const c = document.getElementById('toast-container'); if(c.children.length > 2) c.firstElementChild.remove();
@@ -1807,11 +1859,13 @@
             let totalEl = document.getElementById('tycoon-total-earned'); if (totalEl) totalEl.innerText = data.total_earned || 0;
 
             let mult = Number(data.multiplier) || 1;
+            let vh = data.virtual_hour;
+            let vhStr = (typeof vh === 'number') ? ` (${String(vh).padStart(2,'0')}:00 в игре)` : '';
             let schedEl = document.getElementById('tycoon-schedule');
             if (schedEl) {
-                schedEl.innerText = mult >= 1.5 ? '🌆 Вечер — наплыв посетителей, доход ×1.5'
+                schedEl.innerText = (mult >= 1.5 ? '🌆 Вечер — наплыв посетителей, доход ×1.5'
                     : mult <= 0.6 ? '🌙 Глубокая ночь — посетителей мало, доход ×0.6'
-                    : '☀️ Обычный поток посетителей, доход ×1.0';
+                    : '☀️ Обычный поток посетителей, доход ×1.0') + vhStr;
             }
 
             // Живой счётчик между опросами сервера — копится плавно, а не скачками раз в 5с
@@ -1845,6 +1899,70 @@
         },
         buy(id) { if (window.Multiplayer) window.Multiplayer.tycoonBuy(id); },
         collect() { if (window.Multiplayer) window.Multiplayer.tycoonCollect(); }
+    };
+    window.CryptoUI = {
+        state: null,
+        render(data) {
+            this.state = data;
+            const el = document.getElementById('crypto-coins-list'); if (!el) return;
+            const holdings = data.holdings || {};
+            const history = data.history || {};
+            const myBalance = (window.App && window.App.balance) || 0;
+
+            el.innerHTML = (data.coins || []).map(c => {
+                const h = history[c.id] || [];
+                const hold = holdings[c.id] || { qty: 0, avg_buy_price: 0 };
+                const first = h.length ? h[0] : c.price;
+                const changePct = first > 0 ? (((c.price - first) / first) * 100).toFixed(2) : '0.00';
+                const isUp = c.price >= first;
+                const svg = this.buildSparkline(h.length ? h : [c.price, c.price]);
+                const myValue = Math.floor(hold.qty * c.price);
+                const pnl = hold.qty > 0 ? Math.floor((c.price - hold.avg_buy_price) * hold.qty) : 0;
+
+                return `<div class="crypto-card">
+                    <div class="crypto-card-head">
+                        <div><b>${c.name}</b> <span style="color:var(--text-muted); font-size:11px;">${c.symbol}</span></div>
+                        <div class="crypto-card-change ${isUp ? 'up' : 'down'}">${isUp ? '▲' : '▼'} ${changePct}%</div>
+                    </div>
+                    <div class="crypto-card-price">${c.price.toLocaleString()} фишек</div>
+                    <div style="font-size:10px; color:var(--text-muted); margin-bottom:4px;">
+                        Капитализация: ${(c.market_cap || 0).toLocaleString()} · В обращении: ${(c.circulating_supply || 0).toFixed(2)} из ${(c.total_supply || 0).toLocaleString()}
+                    </div>
+                    ${svg}
+                    ${hold.qty > 0 ? `<div class="crypto-holding-info">У вас: ${hold.qty.toFixed(4)} ${c.symbol} · стоимость сейчас: ${myValue.toLocaleString()} · P&L: <span style="color:${pnl>=0?'#2ecc71':'#e74c3c'}">${pnl>=0?'+':''}${pnl.toLocaleString()}</span></div>` : ''}
+                    <div class="crypto-trade-row">
+                        <input type="number" class="crypto-input" id="crypto-buy-${c.id}" placeholder="Фишек на покупку">
+                        <button class="crypto-btn crypto-btn-buy" onclick="CryptoUI.buy('${c.id}')">Купить</button>
+                    </div>
+                    ${hold.qty > 0 ? `<div class="crypto-trade-row">
+                        <button class="crypto-btn crypto-btn-sell" style="flex:1;" onclick="CryptoUI.sellPortion('${c.id}', 0.5)">Продать 50%</button>
+                        <button class="crypto-btn crypto-btn-sell" style="flex:1;" onclick="CryptoUI.sellPortion('${c.id}', 1)">Продать всё</button>
+                    </div>` : ''}
+                </div>`;
+            }).join('');
+        },
+        buildSparkline(prices) {
+            const w = 280, h = 50;
+            const min = Math.min(...prices), max = Math.max(...prices);
+            const range = (max - min) || 1;
+            const pts = prices.map((p, i) => `${(i/(prices.length-1||1))*w},${h - ((p-min)/range)*h}`).join(' ');
+            const up = prices[prices.length-1] >= prices[0];
+            return `<svg width="100%" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="display:block; margin:6px 0;">
+                <polyline points="${pts}" fill="none" stroke="${up ? '#2ecc71' : '#e74c3c'}" stroke-width="2" vector-effect="non-scaling-stroke"/>
+            </svg>`;
+        },
+        buy(coinId) {
+            const inp = document.getElementById('crypto-buy-' + coinId);
+            const amount = Math.floor(Number(inp && inp.value));
+            if (!amount || amount <= 0) { window.App.toast('Введите сумму', 'error'); return; }
+            if (window.Multiplayer) window.Multiplayer.cryptoBuy(coinId, amount);
+        },
+        sellPortion(coinId, fraction) {
+            const hold = (this.state && this.state.holdings && this.state.holdings[coinId]) || null;
+            if (!hold || !hold.qty) return;
+            const qty = hold.qty * fraction;
+            if (window.Multiplayer) window.Multiplayer.cryptoSell(coinId, qty);
+        }
     };
     window.MarketUI = {
         tab: 'all', allListings: [], myListings: [],
@@ -1908,6 +2026,6 @@
 
 <!-- МУЛЬТИПЛЕЕР: общий раунд Ракеты, Рулетки, Арены, промокоды, Дурак, маркетплейс -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="multiplayer-client.js?v=14"></script>
+<script src="multiplayer-client.js?v=16"></script>
 </body>
 </html>

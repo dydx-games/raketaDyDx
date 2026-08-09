@@ -9,6 +9,7 @@ const SUPABASE_URL = 'https://kgtheatplbbknrddlqsq.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtndGhlYXRwbGJia25yZGRscXNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYxOTA4MjcsImV4cCI6MjEwMTc2NjgyN30.cklnXKo9SzIsNKLSqjztABKRnAtF6aMRnlxfM0w_S8s';
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+window.sb = sb; // доступ из index.html (например, для модалки соглашения)
 
 function getTelegramUser() {
     try {
@@ -51,6 +52,23 @@ window.Multiplayer = {
         );
         await sb.rpc('update_profile', { p_telegram_id: ME.id, p_username: ME.username, p_avatar_url: ME.avatar_url });
 
+        // Бан и соглашение — до старта остальной инициализации, чтобы никто не
+        // успел поиграть в обход. Если колонки banned/tos_accepted_at ещё не
+        // созданы (SQL не применён), select вернёт null вместо ошибки — тогда
+        // просто пропускаем проверку, чтобы не сломать игру тем, кто ещё не
+        // накатил файлы 11/12.
+        try {
+            const { data: urow } = await sb.from('users').select('banned, tos_accepted_at').eq('telegram_id', ME.id).single();
+            if (urow && urow.banned) {
+                document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#e74c3c;font-weight:700;text-align:center;padding:20px;">Аккаунт заблокирован администрацией</div>';
+                return;
+            }
+            if (urow && !urow.tos_accepted_at) {
+                const modal = document.getElementById('tos-modal');
+                if (modal) modal.classList.add('active');
+            }
+        } catch (e) { /* колонки ещё не созданы — не блокируем игру */ }
+
         const bal = await this.getBalance();
         if (bal !== null) { window.App.balance = bal; window.App.updBalUI(); }
 
@@ -77,8 +95,10 @@ window.Multiplayer = {
         this.refreshMyNfts();
         this.refreshMarketListings();
         this.refreshTycoon();
+        this.refreshCrypto();
         setInterval(() => this.refreshMarketListings(), 5000); // лента лотов обновляется каждые 5с
         setInterval(() => this.refreshTycoon(), 5000); // доход Империи — тоже раз в 5с
+        setInterval(() => this.refreshCrypto(), 3000); // курс крипты — почаще, тик бота каждые 2с
     },
 
     // ================= ОПРОС СОСТОЯНИЯ =================
@@ -435,6 +455,25 @@ window.Multiplayer = {
             tier: n.tier, ts: new Date(n.created_at).getTime()
         }));
         window.Gifts.render();
+    },
+    async refreshCrypto() {
+        const { data, error } = await sb.rpc('crypto_get_state', { p_telegram_id: ME.id });
+        if (error || !data) return;
+        if (window.CryptoUI) window.CryptoUI.render(data);
+    },
+    async cryptoBuy(coinId, chipsAmount) {
+        const { data, error } = await sb.rpc('crypto_buy', { p_telegram_id: ME.id, p_coin_id: coinId, p_chips_amount: chipsAmount });
+        if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return; }
+        window.App.toast('Куплено!', 'success');
+        const bal = await this.getBalance(); if (bal !== null) { window.App.balance = bal; window.App.updBalUI(); }
+        this.refreshCrypto();
+    },
+    async cryptoSell(coinId, qty) {
+        const { data, error } = await sb.rpc('crypto_sell', { p_telegram_id: ME.id, p_coin_id: coinId, p_qty: qty });
+        if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return; }
+        window.App.toast(`Продано за ${data[0].proceeds} фишек`, 'success');
+        const bal = await this.getBalance(); if (bal !== null) { window.App.balance = bal; window.App.updBalUI(); }
+        this.refreshCrypto();
     },
     async refreshTycoon() {
         const { data, error } = await sb.rpc('tycoon_get_state', { p_telegram_id: ME.id });
