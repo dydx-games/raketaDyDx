@@ -103,6 +103,17 @@
         .crypto-card-price.up { color: #2ecc71; }
         .crypto-card-price.down { color: #e74c3c; }
         .crypto-bars { display: flex; align-items: flex-end; gap: 2px; height: 90px; margin: 8px 0; }
+        .hub-category { font-size: 12px; font-weight: 800; color: var(--gold); letter-spacing: 0.5px; margin: 18px 10px 8px; text-transform: uppercase; }
+        .hub-grid { display: flex; flex-direction: column; gap: 10px; padding: 0 10px; }
+        .hub-card { display: flex; align-items: center; gap: 12px; background: var(--bg-panel); border: 1px solid #1f222b; border-radius: 14px; padding: 12px; cursor: pointer; position: relative; overflow: hidden; transition: transform 0.1s; }
+        .hub-card:active { transform: scale(0.98); }
+        .hub-card-emoji { width: 56px; height: 56px; min-width: 56px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 30px; background: radial-gradient(circle at 30% 30%, rgba(215,180,93,0.25), rgba(20,22,28,0.5)); }
+        .hub-card-info { flex: 1; min-width: 0; }
+        .hub-card-title { font-weight: 800; font-size: 14px; }
+        .hub-card-desc { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+        .hub-live-badge { position: absolute; top: 8px; right: 10px; background: #e74c3c; color: #fff; font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 6px; display: flex; align-items: center; gap: 3px; }
+        .hub-live-dot { width: 5px; height: 5px; border-radius: 50%; background: #fff; animation: pulseDot 1.2s infinite; }
+        @keyframes pulseDot { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
         .crypto-bar { flex: 1; border-radius: 2px 2px 0 0; min-height: 2px; }
         .crypto-bar.up { background: #2ecc71; } .crypto-bar.down { background: #e74c3c; }
         .crypto-card-change { font-size: 11px; font-weight: 700; padding: 2px 6px; border-radius: 6px; }
@@ -173,9 +184,9 @@
         .gift-reveal-nft-badge { font-size: 9px; font-weight: 900; letter-spacing: 1px; background: linear-gradient(135deg, var(--gold), #fff, var(--gold)); -webkit-background-clip: text; background-clip: text; color: transparent; text-transform: uppercase; }
         .gift-reveal-traits { font-size: 10px; color: var(--text-muted); text-align: center; line-height: 1.6; }
 
-        .bottom-nav { display: flex; justify-content: flex-start; align-items: center; height: var(--nav-h); background-color: var(--bg-panel); border-top: 1px solid #1f222b; flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom); z-index: 100; box-sizing: content-box; overflow-x: auto; scrollbar-width: none; }
+        .bottom-nav { display: flex; justify-content: space-around; align-items: center; height: var(--nav-h); background-color: var(--bg-panel); border-top: 1px solid #1f222b; flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom); z-index: 100; box-sizing: content-box; }
         .bottom-nav::-webkit-scrollbar { display: none; }
-        .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: var(--text-muted); font-size: 9px; font-weight: 700; text-transform: uppercase; cursor: pointer; transition: 0.2s; min-width: 22%; flex-shrink: 0; height: 100%; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: var(--text-muted); font-size: 9px; font-weight: 700; text-transform: uppercase; cursor: pointer; transition: 0.2s; flex: 1; height: 100%; }
         .nav-item.active { color: var(--gold); }
         .nav-icon { font-size: 18px; filter: grayscale(100%) opacity(0.5); transition: 0.2s; }
         .nav-item.active .nav-icon { filter: none; transform: translateY(-2px); }
@@ -313,7 +324,7 @@
     <div class="toast-container" id="toast-container"></div>
 
     <header>
-        <div class="header-title"><h1>dy/dx</h1><span id="app-subtitle">Ракета</span></div>
+        <div class="header-title"><h1>dy/dx</h1><span id="app-subtitle">Игры</span></div>
         <div style="display:flex; align-items:center; gap:8px;">
             <div class="level-pill" onclick="Levels.openInfo()">
                 <div class="level-badge" id="level-badge">1</div>
@@ -330,7 +341,72 @@
 
     <div class="view-container">
         <!-- CRASH -->
-        <div class="game-view active" id="view-crash">
+        <!-- ХАБ: список игр по категориям -->
+        <div class="game-view active" id="view-games">
+            <div class="hub-category">🔴 Live-игры · общий раунд на всех</div>
+            <div class="hub-grid">
+                <div class="hub-card" onclick="App.s('crash', null, 'Ракета')">
+                    <div class="hub-live-badge"><span class="hub-live-dot"></span>LIVE</div>
+                    <div class="hub-card-emoji">🚀</div>
+                    <div class="hub-card-info"><div class="hub-card-title">Ракета</div><div class="hub-card-desc">Один полёт на всех — заберите до взрыва</div></div>
+                </div>
+                <div class="hub-card" onclick="App.s('roulette', null, 'Рулетка')">
+                    <div class="hub-live-badge"><span class="hub-live-dot"></span>LIVE</div>
+                    <div class="hub-card-emoji">🎡</div>
+                    <div class="hub-card-info"><div class="hub-card-title">Рулетка</div><div class="hub-card-desc">Красное, чёрное или зеро ×36</div></div>
+                </div>
+            </div>
+
+            <div class="hub-category">🤝 С другими игроками</div>
+            <div class="hub-grid">
+                <div class="hub-card" onclick="App.s('arena', null, 'Арена')">
+                    <div class="hub-card-emoji">🎯</div>
+                    <div class="hub-card-info"><div class="hub-card-title">Арена</div><div class="hub-card-desc">Одно колесо — победитель забирает банк</div></div>
+                </div>
+                <div class="hub-card" onclick="App.s('durak', null, 'Дурак')">
+                    <div class="hub-card-emoji">🃏</div>
+                    <div class="hub-card-info"><div class="hub-card-title">Дурак</div><div class="hub-card-desc">Классика на двоих на реальную ставку</div></div>
+                </div>
+            </div>
+
+            <div class="hub-category">⚡ Быстрые игры</div>
+            <div class="hub-grid">
+                <div class="hub-card" onclick="App.s('hilo', null, 'Hi-Lo')">
+                    <div class="hub-card-emoji">🔼</div>
+                    <div class="hub-card-info"><div class="hub-card-title">Hi-Lo</div><div class="hub-card-desc">Больше или меньше следующей карты?</div></div>
+                </div>
+                <div class="hub-card" onclick="App.s('coin', null, 'Монетка')">
+                    <div class="hub-card-emoji">🪙</div>
+                    <div class="hub-card-info"><div class="hub-card-title">Монетка</div><div class="hub-card-desc">Орёл или решка — растите множитель</div></div>
+                </div>
+                <div class="hub-card" onclick="App.s('upgrader', null, 'Апгрейдер')">
+                    <div class="hub-card-emoji">⚙️</div>
+                    <div class="hub-card-info"><div class="hub-card-title">Апгрейдер</div><div class="hub-card-desc">Рискните предметом ради лучшего</div></div>
+                </div>
+                <div class="hub-card" onclick="App.s('tower', null, 'Башенка')">
+                    <div class="hub-card-emoji">🗼</div>
+                    <div class="hub-card-info"><div class="hub-card-title">Башенка</div><div class="hub-card-desc">Поднимайтесь этаж за этажом</div></div>
+                </div>
+                <div class="hub-card" onclick="App.s('mines', null, 'Минное поле')">
+                    <div class="hub-card-emoji">💣</div>
+                    <div class="hub-card-info"><div class="hub-card-title">Mines</div><div class="hub-card-desc">Находите алмазы, обходите мины</div></div>
+                </div>
+            </div>
+
+            <div class="hub-category">🏛️ Бизнес</div>
+            <div class="hub-grid" style="margin-bottom: 20px;">
+                <div class="hub-card" onclick="App.s('tycoon', null, 'Империя')">
+                    <div class="hub-card-emoji">🏛️</div>
+                    <div class="hub-card-info"><div class="hub-card-title">Империя</div><div class="hub-card-desc">Стройте казино, получайте пассивный доход</div></div>
+                </div>
+                <div class="hub-card" onclick="App.s('crypto', null, 'Крипто')">
+                    <div class="hub-card-emoji">📈</div>
+                    <div class="hub-card-info"><div class="hub-card-title">Крипто</div><div class="hub-card-desc">Торгуйте dxxxcoin на своей бирже</div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="game-view" id="view-crash">
             <div class="history-strip" id="crash-history"></div>
             <div class="crash-card" id="crash-card">
                 <div class="space-bg"></div><div class="stars"></div>
@@ -612,8 +688,11 @@
                 <div class="panel-title">✨ Улучшенные подарки</div>
             </div>
             <div class="nft-gallery" id="nft-gallery"></div>
+        </div>
 
-            <div class="panel" style="margin: 14px 10px 0 10px;">
+        <!-- MARKET (вынесен из профиля в отдельную вкладку) -->
+        <div class="game-view" id="view-market">
+            <div class="panel" style="margin: 10px 10px 0 10px;">
                 <div class="panel-title">🛒 Маркетплейс</div>
                 <div class="bet-row" id="market-tabs" style="margin-bottom:10px;">
                     <button class="btn-small active" onclick="MarketUI.showTab('all', this)">Все лоты</button>
@@ -635,19 +714,10 @@
 
     <!-- НАВИГАЦИЯ -->
     <nav class="bottom-nav">
-        <div class="nav-item active" onclick="App.s('crash', this, 'Ракета')"><div class="nav-icon">🚀</div><span>Crash</span></div>
-        <div class="nav-item" onclick="App.s('roulette', this, 'Рулетка')"><div class="nav-icon">🎡</div><span>Рулетка</span></div>
-        <div class="nav-item" onclick="App.s('hilo', this, 'Hi-Lo')"><div class="nav-icon">🃏</div><span>Hi-Lo</span></div>
-        <div class="nav-item" onclick="App.s('coin', this, 'Монетка')"><div class="nav-icon">🪙</div><span>Монетка</span></div>
-        <div class="nav-item" onclick="App.s('upgrader', this, 'Апгрейдер')"><div class="nav-icon">⚙️</div><span>Upgrade</span></div>
-        <div class="nav-item" onclick="App.s('tower', this, 'Башенка')"><div class="nav-icon">🗼</div><span>Tower</span></div>
-        <div class="nav-item" onclick="App.s('mines', this, 'Минное поле')"><div class="nav-icon">💣</div><span>Mines</span></div>
-        <div class="nav-item" onclick="App.s('arena', this, 'Арена')"><div class="nav-icon">🎯</div><span>Арена</span></div>
-        <div class="nav-item" onclick="App.s('tycoon', this, 'Империя')"><div class="nav-icon">🏛️</div><span>Империя</span></div>
-        <div class="nav-item" onclick="App.s('crypto', this, 'Крипто')"><div class="nav-icon">📈</div><span>Крипто</span></div>
-        <div class="nav-item" onclick="App.s('durak', this, 'Дурак')"><div class="nav-icon">🃏</div><span>Дурак</span></div>
-        <div class="nav-item" onclick="App.s('profile', this, 'Профиль')"><div class="nav-icon">👤</div><span>Профиль</span></div>
+        <div class="nav-item active" id="nav-games" onclick="App.s('games', this, 'Игры')"><div class="nav-icon">🎮</div><span>Игры</span></div>
         <div class="nav-item" onclick="App.s('tasks', this, 'Задания')"><div class="nav-icon">📋</div><span>Задания</span></div>
+        <div class="nav-item" onclick="App.s('market', this, 'Магазин')"><div class="nav-icon">🛒</div><span>Магазин</span></div>
+        <div class="nav-item" onclick="App.s('profile', this, 'Профиль')"><div class="nav-icon">👤</div><span>Профиль</span></div>
     </nav>
 </div>
 
@@ -838,9 +908,12 @@
             if(window.Tower.pl || window.Mines.pl || window.Upgrader.pl || window.Roulette.pl || window.HiLo.pl || window.Coin.pl || window.Gifts.pl || window.Gifts.upgrading) return this.toast('Завершите игру!', 'error');
 
             document.querySelectorAll('.game-view').forEach(v => v.classList.remove('active')); document.getElementById(`view-${id}`).classList.add('active');
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); el.classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            // Карточки внутри хаба игр вызывают s(id, null, title) — у них нет
+            // собственного пункта навигации, поэтому подсвечиваем "Игры".
+            if (el) { el.classList.add('active'); try { el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }); } catch(e) {} }
+            else { const gamesNav = document.getElementById('nav-games'); if (gamesNav) gamesNav.classList.add('active'); }
             document.getElementById('app-subtitle').innerText = title;
-            try { el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }); } catch(e) {}
             if(id === 'crash') setTimeout(() => window.Crash.posM(), 50);
             if(id === 'tycoon' && window.Multiplayer) window.Multiplayer.refreshTycoon();
             if(id === 'crypto' && window.Multiplayer) window.Multiplayer.refreshCrypto();
@@ -2143,6 +2216,6 @@
 
 <!-- МУЛЬТИПЛЕЕР: общий раунд Ракеты, Рулетки, Арены, промокоды, Дурак, маркетплейс -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="multiplayer-client.js?v=17"></script>
+<script src="multiplayer-client.js?v=16"></script>
 </body>
 </html>
