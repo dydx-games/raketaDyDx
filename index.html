@@ -845,6 +845,7 @@
             if(id === 'crash') setTimeout(() => window.Crash.posM(), 50);
             if(id === 'tycoon' && window.Multiplayer) window.Multiplayer.refreshTycoon();
             if(id === 'crypto' && window.Multiplayer) window.Multiplayer.refreshCrypto();
+            if(id === 'roulette' && window.Roulette) setTimeout(() => window.Roulette.resync(), 50);
         },
         toast(msg, type='') {
             const c = document.getElementById('toast-container'); if(c.children.length > 2) c.firstElementChild.remove();
@@ -1430,6 +1431,7 @@
         },
         syncWaiting(deadlineIso) {
             this.pl = false; this.lk = false; this.myBetColor = null;
+            this._spinTi = undefined; this._lastWinningColor = null; // сброс для resync() — новый раунд, старая позиция неактуальна
             document.getElementById('r-btn-red').disabled = false; document.getElementById('r-btn-green').disabled = false; document.getElementById('r-btn-black').disabled = false;
             this.rTr();
             if (this.cdTimer) clearInterval(this.cdTimer);
@@ -1448,6 +1450,7 @@
             document.getElementById('r-btn-red').disabled = true; document.getElementById('r-btn-green').disabled = true; document.getElementById('r-btn-black').disabled = true;
             const cdEl = document.getElementById('r-countdown');
             if (cdEl) { cdEl.className = 'spin'; cdEl.innerText = 'Крутим барабан...'; }
+            this._lastWinningColor = winningColor; // нужно для resync() ниже
             // Дорожка колеса (this.tC) строится в rTr(), который раньше вызывался
             // ТОЛЬКО из syncWaiting(). Если приложение открылось/обновилось прямо
             // во время вращения — syncWaiting ни разу не вызывался, this.tC пуст,
@@ -1456,15 +1459,41 @@
             // "выпало одно, а колесо показало другое". Строим дорожку здесь же,
             // если она ещё не готова.
             if (!this.tC || this.tC.length < 150) this.rTr();
+            this._applySpinTransform(winningColor, true);
+        },
+        // ⚠ ГЛАВНЫЙ ФИКС: если вкладка Рулетки скрыта (display:none, пользователь
+        // на другой вкладке), у элемента r-board clientWidth = 0 — код откатывался
+        // на дефолтные 400px, и все дальнейшие расчёты позиции сдвигались: цвет
+        // выбирался правильно, а колесо визуально останавливалось на СОСЕДНЕЙ
+        // ячейке с другим цветом. Именно это давало "выпало чёрное, а показало
+        // красное" — не рассинхрон случайности, а ошибка геометрии.
+        // resync() вызывается при каждом переходе на вкладку Рулетки (App.s) и
+        // пересчитывает позицию УЖЕ РЕАЛЬНОЙ шириной экрана, без анимации —
+        // колесо мгновенно "допрыгивает" туда, где должно было стоять всё время.
+        resync() {
+            if (this._lastWinningColor && (this.lk || this._spinTi !== undefined)) {
+                this._applySpinTransform(this._lastWinningColor, false);
+            }
+        },
+        _applySpinTransform(winningColor, animate) {
+            if (!this.tC || this.tC.length < 150) this.rTr();
             // Ищем в дорожке слот именно того цвета, который сервер уже выбрал победителем
             // (winningColor приходит сразу, как только раунд перешёл в spinning — на этом
             // этапе ставки уже закрыты, так что подглядеть исход заранее нельзя).
             let candidates = [];
             for (let j = 110; j < this.tC.length; j++) { if (this.tC[j].c === winningColor) candidates.push(j); }
-            let ti = candidates.length ? candidates[Math.floor(Math.random() * candidates.length)] : (110 + Math.floor(Math.random() * 37));
-            let bC = (document.getElementById('r-board').clientWidth || 400) / 2;
+            // Если позиция уже была выбрана этим же раундом (например, resync() после
+            // syncSpinning()) — переиспользуем тот же индекс, чтобы колесо не "прыгало"
+            // на другую (пусть и того же цвета) ячейку при каждом заходе на вкладку.
+            let ti = (this._spinTi !== undefined && this.tC[this._spinTi] && this.tC[this._spinTi].c === winningColor)
+                ? this._spinTi
+                : (candidates.length ? candidates[Math.floor(Math.random() * candidates.length)] : (110 + Math.floor(Math.random() * 37)));
+            let boardEl = document.getElementById('r-board');
+            let bC = (boardEl && boardEl.clientWidth > 0 ? boardEl.clientWidth : 400) / 2;
             let fX = -((ti*this.iW)+(this.iW/2) - bC);
-            const t = document.getElementById('r-track'); t.style.transition = 'transform 4s cubic-bezier(0.1,0,0.1,1)'; t.style.transform = `translate3d(${fX}px,0,0)`;
+            const t = document.getElementById('r-track');
+            t.style.transition = animate ? 'transform 4s cubic-bezier(0.1,0,0.1,1)' : 'none';
+            t.style.transform = `translate3d(${fX}px,0,0)`;
             this._spinTi = ti;
         },
         syncFinished(winningColor) {
@@ -1921,29 +1950,94 @@
     window.CryptoUI = {
         state: null,
         lastPrices: {}, // цена с прошлого опроса — чтобы мигать только при РЕАЛЬНОМ изменении, не при каждой перерисовке
+        openCoinId: null,   // null = список монет; иначе — открыта карточка конкретной монеты
+        tradeMode: 'buy',   // 'buy' | 'sell' — что показывать внутри открытой карточки
+
         render(data) {
             this.state = data;
+            if (this.openCoinId) this.renderDetail(); else this.renderList();
+        },
+
+        // ---------------- СПИСОК МОНЕТ (компактные карточки, клик открывает детали) ----------------
+        renderList() {
             const el = document.getElementById('crypto-coins-list'); if (!el) return;
-            const holdings = data.holdings || {};
+            const data = this.state; if (!data) return;
             const history = data.history || {};
-            const myBalance = (window.App && window.App.balance) || 0;
 
             el.innerHTML = (data.coins || []).map(c => {
                 const h = history[c.id] || [];
-                const hold = holdings[c.id] || { qty: 0, avg_buy_price: 0 };
                 const first = h.length ? h[0] : c.price;
                 const changePct = first > 0 ? (((c.price - first) / first) * 100).toFixed(2) : '0.00';
                 const isUp = c.price >= first;
-                const svg = this.buildSparkline(h.length ? h : [c.price, c.price]);
-                const myValue = Math.floor(hold.qty * c.price);
-                const pnl = hold.qty > 0 ? Math.floor((c.price - hold.avg_buy_price) * hold.qty) : 0;
+                const svg = this.buildSparkline(h.length ? h : [c.price, c.price], 90);
 
                 const prevPrice = this.lastPrices[c.id];
                 const flashClass = (prevPrice !== undefined && c.price !== prevPrice)
                     ? (c.price > prevPrice ? 'flash-up' : 'flash-down') : '';
                 this.lastPrices[c.id] = c.price;
 
-                return `<div class="crypto-card ${flashClass}">
+                return `<div class="crypto-card ${flashClass}" style="cursor:pointer;" onclick="CryptoUI.openCoin('${c.id}')">
+                    <div class="crypto-card-head">
+                        <div><b>${c.name}</b> <span style="color:var(--text-muted); font-size:11px;">${c.symbol}</span></div>
+                        <div class="crypto-card-change ${isUp ? 'up' : 'down'}">${isUp ? '▲' : '▼'} ${changePct}%</div>
+                    </div>
+                    <div class="crypto-card-price ${isUp ? 'up' : 'down'}">${c.price.toLocaleString()} фишек</div>
+                    ${svg}
+                </div>`;
+            }).join('');
+        },
+
+        openCoin(coinId) { this.openCoinId = coinId; this.tradeMode = 'buy'; this.renderDetail(); },
+        closeCoin() { this.openCoinId = null; this.renderList(); },
+        setMode(mode) { this.tradeMode = mode; this.renderDetail(); },
+
+        // ---------------- ДЕТАЛЬНАЯ КАРТОЧКА ОДНОЙ МОНЕТЫ ----------------
+        renderDetail() {
+            const el = document.getElementById('crypto-coins-list'); if (!el) return;
+            const data = this.state; if (!data) return;
+            const c = (data.coins || []).find(x => x.id === this.openCoinId);
+            if (!c) { this.closeCoin(); return; } // монета исчезла из каталога — на всякий случай не зависаем на пустом экране
+
+            const holdings = data.holdings || {};
+            const history = data.history || {};
+            const hold = holdings[c.id] || { qty: 0, avg_buy_price: 0 };
+            const h = history[c.id] || [];
+            const first = h.length ? h[0] : c.price;
+            const changePct = first > 0 ? (((c.price - first) / first) * 100).toFixed(2) : '0.00';
+            const isUp = c.price >= first;
+            const svg = this.buildSparkline(h.length ? h : [c.price, c.price], 120);
+            const myValue = Math.floor(hold.qty * c.price);
+            const pnl = hold.qty > 0 ? Math.floor((c.price - hold.avg_buy_price) * hold.qty) : 0;
+
+            const buyPanel = `
+                <div class="crypto-trade-row">
+                    <input type="number" class="crypto-input" id="crypto-buy-${c.id}" placeholder="Фишек на покупку">
+                    <button class="crypto-btn crypto-btn-buy" onclick="CryptoUI.buy('${c.id}')">Купить</button>
+                </div>
+                <div class="crypto-trade-row">
+                    <button class="crypto-btn crypto-btn-buy" style="flex:1; opacity:0.85;" onclick="CryptoUI.buyPortion('${c.id}', 0.25)">25%</button>
+                    <button class="crypto-btn crypto-btn-buy" style="flex:1; opacity:0.85;" onclick="CryptoUI.buyPortion('${c.id}', 0.5)">50%</button>
+                    <button class="crypto-btn crypto-btn-buy" style="flex:1; opacity:0.85;" onclick="CryptoUI.buyPortion('${c.id}', 0.75)">75%</button>
+                    <button class="crypto-btn crypto-btn-buy" style="flex:1; opacity:0.85;" onclick="CryptoUI.buyPortion('${c.id}', 1)">MAX</button>
+                </div>`;
+
+            // На каждой кнопке продажи сразу видно, сколько фишек получите — считаем
+            // из уже загруженных данных (holdings.qty × доля × текущая цена), запрос
+            // к серверу для этого не нужен.
+            const sellPct = (fraction, label) => {
+                const est = Math.floor(hold.qty * fraction * c.price);
+                return `<button class="crypto-btn crypto-btn-sell" style="flex:1; display:flex; flex-direction:column; gap:2px; padding:6px 4px;" onclick="CryptoUI.sellPortion('${c.id}', ${fraction})">
+                    <span>${label}</span><span style="font-size:9px; opacity:0.85;">≈${est.toLocaleString()}</span>
+                </button>`;
+            };
+            const sellPanel = hold.qty > 0 ? `
+                <div class="crypto-trade-row">
+                    ${sellPct(0.25, '25%')}${sellPct(0.5, '50%')}${sellPct(0.75, '75%')}${sellPct(1, 'MAX')}
+                </div>` : `<div style="font-size:11px; color:var(--text-muted); text-align:center; padding:10px 0;">Нечего продавать — сначала купите монету</div>`;
+
+            el.innerHTML = `
+                <button class="crypto-btn" style="background:var(--bg-panel-light); color:var(--text-light); margin-bottom:10px;" onclick="CryptoUI.closeCoin()">← Ко всем монетам</button>
+                <div class="crypto-card">
                     <div class="crypto-card-head">
                         <div><b>${c.name}</b> <span style="color:var(--text-muted); font-size:11px;">${c.symbol}</span></div>
                         <div class="crypto-card-change ${isUp ? 'up' : 'down'}">${isUp ? '▲' : '▼'} ${changePct}%</div>
@@ -1954,19 +2048,17 @@
                     </div>
                     ${svg}
                     ${hold.qty > 0 ? `<div class="crypto-holding-info">У вас: ${hold.qty.toFixed(4)} ${c.symbol} · стоимость сейчас: ${myValue.toLocaleString()} · P&L: <span style="color:${pnl>=0?'#2ecc71':'#e74c3c'}">${pnl>=0?'+':''}${pnl.toLocaleString()}</span></div>` : ''}
-                    <div class="crypto-trade-row">
-                        <input type="number" class="crypto-input" id="crypto-buy-${c.id}" placeholder="Фишек на покупку">
-                        <button class="crypto-btn crypto-btn-buy" onclick="CryptoUI.buy('${c.id}')">Купить</button>
+
+                    <div style="display:flex; gap:6px; margin-top:10px; margin-bottom:6px;">
+                        <button class="crypto-btn" style="flex:1; ${this.tradeMode==='buy' ? 'background:var(--gold); color:#000;' : 'background:var(--bg-panel-light); color:var(--text-muted);'}" onclick="CryptoUI.setMode('buy')">Купить</button>
+                        <button class="crypto-btn" style="flex:1; ${this.tradeMode==='sell' ? 'background:var(--gold); color:#000;' : 'background:var(--bg-panel-light); color:var(--text-muted);'}" onclick="CryptoUI.setMode('sell')">Продать</button>
                     </div>
-                    ${hold.qty > 0 ? `<div class="crypto-trade-row">
-                        <button class="crypto-btn crypto-btn-sell" style="flex:1;" onclick="CryptoUI.sellPortion('${c.id}', 0.5)">Продать 50%</button>
-                        <button class="crypto-btn crypto-btn-sell" style="flex:1;" onclick="CryptoUI.sellPortion('${c.id}', 1)">Продать всё</button>
-                    </div>` : ''}
+                    ${this.tradeMode === 'buy' ? buyPanel : sellPanel}
                 </div>`;
-            }).join('');
         },
-        buildSparkline(prices) {
-            const w = 280, h = 50;
+
+        buildSparkline(prices, h) {
+            const w = 280;
             const min = Math.min(...prices), max = Math.max(...prices);
             const range = (max - min) || 1;
             const pts = prices.map((p, i) => `${(i/(prices.length-1||1))*w},${h - ((p-min)/range)*h}`).join(' ');
@@ -1979,6 +2071,12 @@
             const inp = document.getElementById('crypto-buy-' + coinId);
             const amount = Math.floor(Number(inp && inp.value));
             if (!amount || amount <= 0) { window.App.toast('Введите сумму', 'error'); return; }
+            if (window.Multiplayer) window.Multiplayer.cryptoBuy(coinId, amount);
+        },
+        buyPortion(coinId, fraction) {
+            const balance = (window.App && window.App.balance) || 0;
+            const amount = Math.floor(balance * fraction);
+            if (!amount || amount <= 0) { window.App.toast('Недостаточно фишек', 'error'); return; }
             if (window.Multiplayer) window.Multiplayer.cryptoBuy(coinId, amount);
         },
         sellPortion(coinId, fraction) {
