@@ -9,7 +9,7 @@
     <title>dy/dx лудка</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --bg-main: #090A0D; --bg-panel: #14161C; --bg-panel-light: #1E212B; --gold: #D7B45D; --text-light: #FFFFFF; --text-muted: #8E93A3; --green: #2ECC71; --red: #E74C3C; --black: #2a2e3a; --border-radius: 12px; --border-radius-sm: 6px; --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; --header-h: 50px; --nav-h: 60px; }
+        :root { --bg-main: #090A0D; --bg-panel: #14161C; --bg-panel-light: #1E212B; --gold: #D7B45D; --text-light: #FFFFFF; --text-muted: #8E93A3; --green: #2ECC71; --red: #E74C3C; --black: #2a2e3a; --border-radius: 18px; --border-radius-sm: 12px; --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; --header-h: 50px; --nav-h: 60px; --ease: cubic-bezier(0.25, 0.8, 0.25, 1); }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         body { background-color: var(--bg-main); color: var(--text-light); font-family: var(--font-family); font-size: 13px; overflow: hidden; display: flex; justify-content: center; height: 100vh; height: 100dvh; }
         #app { width: 100%; max-width: 430px; background-color: var(--bg-main); height: 100%; display: flex; flex-direction: column; position: relative; }
@@ -105,7 +105,7 @@
         .crypto-bars { display: flex; align-items: flex-end; gap: 2px; height: 90px; margin: 8px 0; }
         .hub-category { font-size: 12px; font-weight: 800; color: var(--gold); letter-spacing: 0.5px; margin: 18px 10px 8px; text-transform: uppercase; }
         .hub-grid { display: flex; flex-direction: column; gap: 10px; padding: 0 10px; }
-        .hub-card { display: flex; align-items: center; gap: 12px; background: var(--bg-panel); border: 1px solid #1f222b; border-radius: 14px; padding: 12px; cursor: pointer; position: relative; overflow: hidden; transition: transform 0.1s; }
+        .hub-card { display: flex; align-items: center; gap: 12px; background: var(--bg-panel); border: 1px solid #1f222b; border-radius: 18px; padding: 12px; cursor: pointer; position: relative; overflow: hidden; box-shadow: 0 4px 14px rgba(0,0,0,0.22); transition: transform 0.18s var(--ease), box-shadow 0.18s var(--ease); }
         .hub-card:active { transform: scale(0.98); }
         .hub-card-emoji { width: 56px; height: 56px; min-width: 56px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 30px; background: radial-gradient(circle at 30% 30%, rgba(215,180,93,0.25), rgba(20,22,28,0.5)); }
         .hub-card-info { flex: 1; min-width: 0; }
@@ -114,6 +114,14 @@
         .hub-live-badge { position: absolute; top: 8px; right: 10px; background: #e74c3c; color: #fff; font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 6px; display: flex; align-items: center; gap: 3px; }
         .hub-live-dot { width: 5px; height: 5px; border-radius: 50%; background: #fff; animation: pulseDot 1.2s infinite; }
         @keyframes pulseDot { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .shells-board { display: flex; justify-content: center; align-items: flex-end; gap: 16px; padding: 40px 10px 20px; min-height: 110px; }
+        .shell-cup { font-size: 52px; cursor: pointer; user-select: none; transition: transform 0.15s; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4)); }
+        .shell-cup:active { transform: scale(0.92); }
+        .shell-cup.revealed { cursor: default; }
+        .shell-cup.winner { animation: shellPop 0.4s ease-out; }
+        @keyframes shellShake { 0%,100% { transform: translateX(0) rotate(0); } 25% { transform: translateX(-10px) rotate(-8deg); } 75% { transform: translateX(10px) rotate(8deg); } }
+        .shell-cup.shuffling { animation: shellShake 0.28s ease-in-out infinite; }
+        @keyframes shellPop { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
         .crypto-bar { flex: 1; border-radius: 2px 2px 0 0; min-height: 2px; }
         .crypto-bar.up { background: #2ecc71; } .crypto-bar.down { background: #e74c3c; }
         .crypto-card-change { font-size: 11px; font-weight: 700; padding: 2px 6px; border-radius: 6px; }
@@ -186,7 +194,8 @@
 
         .bottom-nav { display: flex; justify-content: space-around; align-items: center; height: var(--nav-h); background-color: var(--bg-panel); border-top: 1px solid #1f222b; flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom); z-index: 100; box-sizing: content-box; }
         .bottom-nav::-webkit-scrollbar { display: none; }
-        .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: var(--text-muted); font-size: 9px; font-weight: 700; text-transform: uppercase; cursor: pointer; transition: 0.2s; flex: 1; height: 100%; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: var(--text-muted); font-size: 9px; font-weight: 700; text-transform: uppercase; cursor: pointer; transition: color 0.25s var(--ease), transform 0.15s var(--ease); flex: 1; height: 100%; }
+        .nav-item:active { transform: scale(0.92); }
         .nav-item.active { color: var(--gold); }
         .nav-icon { font-size: 18px; filter: grayscale(100%) opacity(0.5); transition: 0.2s; }
         .nav-item.active .nav-icon { filter: none; transform: translateY(-2px); }
@@ -197,7 +206,7 @@
         .game-view.active { display: flex; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .panel { margin: 10px 10px 0; background-color: var(--bg-panel); border-radius: var(--border-radius); padding: 10px; }
+        .panel { margin: 10px 10px 0; background-color: var(--bg-panel); border-radius: var(--border-radius); padding: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.25); transition: transform 0.2s var(--ease); }
         .panel-title { font-weight: 800; color: var(--text-muted); font-size: 10px; text-transform: uppercase; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;}
 
         .bet-row { display: flex; flex-direction: row; flex-wrap: nowrap; gap: 6px; margin-bottom: 8px; width: 100%; }
@@ -206,13 +215,15 @@
         .input-wrap { display: flex; align-items: center; background-color: var(--bg-panel-light); border-radius: var(--border-radius-sm); height: 34px; padding: 0 8px; flex: 1; min-width: 0; }
         .input-wrap input { width: 100%; background: none; border: none; color: var(--text-light); font-size: 14px; font-weight: 700; outline: none; min-width: 0; }
 
-        .btn-small { background-color: var(--bg-panel-light); color: var(--text-light); border: none; border-radius: 6px; padding: 0; height: 34px; font-size: 11px; font-weight: 700; cursor: pointer; transition: 0.1s; display: flex; justify-content: center; align-items: center; flex: 1; min-width: 0; white-space: nowrap; }
+        .btn-small { background-color: var(--bg-panel-light); color: var(--text-light); border: none; border-radius: var(--border-radius-sm); padding: 0; height: 34px; font-size: 11px; font-weight: 700; cursor: pointer; transition: transform 0.15s var(--ease), background-color 0.2s; display: flex; justify-content: center; align-items: center; flex: 1; min-width: 0; white-space: nowrap; }
+        .btn-small:active { transform: scale(0.94); }
         .quick-amounts .btn-small { height: 28px; background-color: #1a1d24; }
         .btn-small:active:not(:disabled) { opacity: 0.7; }
         .btn-small:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(50%); }
         .btn-small.active { background-color: var(--gold); color: #000; }
 
-        .main-btn { width: 100%; padding: 12px; border-radius: var(--border-radius-sm); border: none; font-size: 14px; font-weight: 800; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
+        .main-btn { width: 100%; padding: 12px; border-radius: var(--border-radius-sm); border: none; font-size: 14px; font-weight: 800; text-transform: uppercase; cursor: pointer; transition: transform 0.15s var(--ease), background-color 0.25s, box-shadow 0.25s; }
+        .main-btn:active { transform: scale(0.97); }
         .main-btn:active:not(:disabled) { transform: scale(0.98); }
         .btn-green { background: linear-gradient(135deg, var(--green) 0%, #27ae60 100%); color: #fff; }
         .btn-red { background: linear-gradient(135deg, var(--red) 0%, #c0392b 100%); color: #fff; }
@@ -337,6 +348,7 @@
     <div class="level-toast" id="level-toast">
         <div class="lt-num" id="lt-num">2</div>
         <div class="lt-label">Новый уровень!</div>
+        <div id="lt-reward" style="font-size:13px; color:var(--gold); font-weight:700; margin-top:6px;"></div>
     </div>
 
     <div class="view-container">
@@ -390,6 +402,10 @@
                 <div class="hub-card" onclick="App.s('mines', null, 'Минное поле')">
                     <div class="hub-card-emoji">💣</div>
                     <div class="hub-card-info"><div class="hub-card-title">Mines</div><div class="hub-card-desc">Находите алмазы, обходите мины</div></div>
+                </div>
+                <div class="hub-card" onclick="App.s('shells', null, 'Стаканчики')">
+                    <div class="hub-card-emoji">🥤</div>
+                    <div class="hub-card-info"><div class="hub-card-title">Стаканчики</div><div class="hub-card-desc">Угадайте, под каким стаканом шарик</div></div>
                 </div>
             </div>
 
@@ -568,6 +584,28 @@
                     <button class="btn-small" onclick="Mines.set(500)">500</button><button class="btn-small" onclick="Mines.set(1000)">1K</button>
                 </div>
                 <button class="main-btn btn-green" id="mines-btn" onclick="Mines.action()">💣 ИГРАТЬ</button>
+            </div>
+        </div>
+
+        <!-- SHELLS -->
+        <div class="game-view" id="view-shells">
+            <div class="shells-board" id="shells-board"></div>
+            <div class="panel" style="margin-bottom: 20px;">
+                <div class="tower-info"><span>Множитель: <span id="shells-mult" style="color:var(--gold)">2.91x</span></span><span>Выигрыш: <span id="shells-win" style="color:var(--green)">0</span></span></div>
+                <div class="bet-row" style="margin-bottom: 8px;">
+                    <div class="input-wrap" style="flex:2;"><input type="number" id="shells-bet" value="100"></div>
+                    <button class="btn-small" onclick="Shells.mod('half')">1/2</button><button class="btn-small" onclick="Shells.mod('double')">2x</button><button class="btn-small" onclick="Shells.mod('max')">MAX</button>
+                </div>
+                <div class="bet-row" style="margin-bottom: 10px;">
+                    <button class="btn-small active" id="shells-cup-3" onclick="Shells.setCups(3)">3 · 2.91x</button>
+                    <button class="btn-small" id="shells-cup-4" onclick="Shells.setCups(4)">4 · 3.88x</button>
+                    <button class="btn-small" id="shells-cup-5" onclick="Shells.setCups(5)">5 · 4.85x</button>
+                </div>
+                <div class="quick-amounts">
+                    <button class="btn-small" onclick="Shells.set(50)">50</button><button class="btn-small" onclick="Shells.set(100)">100</button>
+                    <button class="btn-small" onclick="Shells.set(500)">500</button><button class="btn-small" onclick="Shells.set(1000)">1K</button>
+                </div>
+                <button class="main-btn btn-green" id="shells-btn" onclick="Shells.action()">🥤 ИГРАТЬ</button>
             </div>
         </div>
 
@@ -807,10 +845,19 @@
         addWin(amount) {
             amount = Math.floor(Number(amount)); if(!amount || amount <= 0) return;
             this.xp += amount;
-            let leveledUp = false;
-            while (this.xp >= this.need(this.lvl)) { this.lvl++; leveledUp = true; }
+            let leveledUp = false; let totalReward = 0;
+            while (this.xp >= this.need(this.lvl)) {
+                this.lvl++; leveledUp = true;
+                totalReward += this.lvl * 500; // награда растёт с каждым уровнем
+            }
             this.save(); this.render();
-            if (leveledUp) this.popup();
+            if (leveledUp) {
+                // Важно: используем chgBal, а НЕ App.win() — win() сам вызывает
+                // Levels.addWin(), и если бы наградные фишки шли через win(),
+                // это дало бы ещё опыта и могло зациклить/накрутить уровни.
+                if (totalReward > 0 && window.App) window.App.chgBal(totalReward);
+                this.popup(totalReward);
+            }
         },
         render() {
             let badge = document.getElementById('level-badge'); let fill = document.getElementById('level-bar-fill');
@@ -823,10 +870,11 @@
             fill.style.width = pct + '%';
             if (window.Gifts) window.Gifts.render();
         },
-        popup() {
+        popup(reward) {
             let t = document.getElementById('level-toast'); document.getElementById('lt-num').innerText = this.lvl;
+            let rEl = document.getElementById('lt-reward'); if (rEl) rEl.innerText = reward ? `+${reward.toLocaleString()} фишек` : '';
             t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 1800);
-            window.App.toast(`Новый уровень: ${this.lvl}!`, 'success');
+            window.App.toast(`Новый уровень: ${this.lvl}!${reward ? ' Награда ' + reward.toLocaleString() + ' фишек' : ''}`, 'success');
         },
         openInfo() {
             let prevReq = this.lvl === 1 ? 0 : this.need(this.lvl - 1); let nextReq = this.need(this.lvl);
@@ -840,7 +888,7 @@
             let bStr = localStorage.getItem('dydx_balance'); this.balance = bStr ? Math.floor(parseFloat(bStr)) : 1000;
             if(isNaN(this.balance) || this.balance < 0) this.balance = 1000;
 
-            window.Stats.init(); window.Levels.init(); window.Gifts.init(); window.Tasks.init(); window.Roulette.init(); window.Upgrader.init(); window.Tower.init(); window.Mines.init(); window.Crash.init(); window.HiLo.init(); window.Coin.init();
+            window.Stats.init(); window.Levels.init(); window.Gifts.init(); window.Tasks.init(); window.Roulette.init(); window.Upgrader.init(); window.Tower.init(); window.Mines.init(); window.Shells.init(); window.Crash.init(); window.HiLo.init(); window.Coin.init();
             this.updBalUI();
         },
         updBalUI() {
@@ -905,7 +953,7 @@
         clearCache() { localStorage.clear(); location.reload(); },
         s(id, el, title) {
             if(window.Crash && window.Crash.state === 1 && window.Crash.bet.pl && !window.Crash.bet.o) return this.toast('Нельзя выйти во время полета!', 'error');
-            if(window.Tower.pl || window.Mines.pl || window.Upgrader.pl || window.Roulette.pl || window.HiLo.pl || window.Coin.pl || window.Gifts.pl || window.Gifts.upgrading) return this.toast('Завершите игру!', 'error');
+            if(window.Tower.pl || window.Mines.pl || window.Shells.pl || window.Upgrader.pl || window.Roulette.pl || window.HiLo.pl || window.Coin.pl || window.Gifts.pl || window.Gifts.upgrading) return this.toast('Завершите игру!', 'error');
 
             document.querySelectorAll('.game-view').forEach(v => v.classList.remove('active')); document.getElementById(`view-${id}`).classList.add('active');
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -1793,6 +1841,68 @@
             }
         },
         eG() { this.pl=false; this.lk=false; document.getElementById('mines-btn').className='main-btn btn-green'; document.getElementById('mines-btn').innerText='💣 ИГРАТЬ'; document.getElementById('mines-count').disabled=false; const cs = document.getElementById('mines-grid').children; for(let i=0; i<25; i++){ if(!cs[i].classList.contains('revealed')){ cs[i].classList.add('revealed'); cs[i].style.opacity='0.5'; cs[i].innerText=this.g[i]===1?'💣':'💎'; } } }
+    };
+
+    window.Shells = {
+        pl: false, lk: false, b: 0, cups: 3, mult: 2.91, winIdx: 0,
+        init() { this.renderBoard(); },
+        mod(act) { if(this.pl) return; let v = Math.floor(Number(document.getElementById('shells-bet').value)) || 0; if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById('shells-bet').value = Math.max(0, Math.min(v, window.App.balance)); },
+        set(v) { if(!this.pl) document.getElementById('shells-bet').value=v; },
+        setCups(n) {
+            if (this.pl) return;
+            this.cups = n; this.mult = Math.round(0.97*n*100)/100;
+            document.getElementById('shells-mult').innerText = this.mult.toFixed(2)+'x';
+            [3,4,5].forEach(c => { const el = document.getElementById('shells-cup-'+c); if (el) el.classList.toggle('active', c===n); });
+            this.renderBoard();
+        },
+        renderBoard() {
+            const board = document.getElementById('shells-board'); if (!board) return;
+            board.innerHTML = '';
+            for (let i=0; i<this.cups; i++) {
+                let el = document.createElement('div'); el.className = 'shell-cup'; el.id = 'shell-'+i; el.innerText = '🥤';
+                el.onclick = () => this.pick(i);
+                board.appendChild(el);
+            }
+        },
+        action() {
+            if (this.pl) return;
+            this.b = Math.floor(Number(document.getElementById('shells-bet').value));
+            if(!this.b || isNaN(this.b) || this.b<=0) return window.App.toast('Неверная ставка','error');
+            if(this.b>window.App.balance) return window.App.toast('Недостаточно фишек', 'error');
+            window.App.chgBal(-this.b); window.Stats.addBet(); this.pl = true; this.lk = true;
+            document.getElementById('shells-win').innerText = Math.floor(this.b*this.mult);
+            document.getElementById('shells-btn').className = 'main-btn btn-disabled'; document.getElementById('shells-btn').innerText = 'Перемешиваем...';
+            this.winIdx = Math.floor(Math.random()*this.cups);
+            // Шарик никогда физически не двигается по экрану — только имитация тряски
+            // всех стаканов разом, поэтому честно случайный выбор невозможно отследить взглядом.
+            document.querySelectorAll('.shell-cup').forEach(el => el.classList.add('shuffling'));
+            setTimeout(() => {
+                document.querySelectorAll('.shell-cup').forEach(el => el.classList.remove('shuffling'));
+                this.lk = false;
+                document.getElementById('shells-btn').innerText = 'Выберите стакан';
+            }, 1400);
+        },
+        pick(i) {
+            if (!this.pl || this.lk) return;
+            this.lk = true;
+            const cupEls = document.querySelectorAll('.shell-cup');
+            cupEls.forEach((el, idx) => {
+                el.classList.add('revealed');
+                if (idx === this.winIdx) { el.innerText = '🔴'; el.classList.add('winner'); }
+            });
+            setTimeout(() => {
+                if (i === this.winIdx) {
+                    let win = Math.floor(this.b * this.mult);
+                    window.App.win(win);
+                } else {
+                    window.App.toast('Мимо! Шарик был под другим стаканом', 'error');
+                }
+                this.pl = false;
+                document.getElementById('shells-btn').className = 'main-btn btn-green'; document.getElementById('shells-btn').innerText = '🥤 ИГРАТЬ';
+                document.getElementById('shells-win').innerText = '0';
+                setTimeout(() => this.renderBoard(), 1200);
+            }, 700);
+        }
     };
 
     // ---- АРЕНА: UI-обёртка, вся логика раунда — на сервере (multiplayer-client.js) ----
