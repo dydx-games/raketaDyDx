@@ -99,7 +99,13 @@
         .tycoon-buy-btn:disabled { background: #333; color: #777; cursor: not-allowed; }
         .crypto-card { background: var(--bg-panel); border-radius: 10px; padding: 12px; border: 1px solid #1f222b; }
         .crypto-card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-        .crypto-card-price { font-size: 18px; font-weight: 800; }
+        .crypto-card-price { font-size: 18px; font-weight: 800; transition: color 0.3s; }
+        .crypto-card-price.up { color: #2ecc71; }
+        .crypto-card-price.down { color: #e74c3c; }
+        @keyframes flashUp { 0% { background: rgba(46,204,113,0.35); } 100% { background: transparent; } }
+        @keyframes flashDown { 0% { background: rgba(231,76,60,0.35); } 100% { background: transparent; } }
+        .crypto-card.flash-up { animation: flashUp 0.6s ease-out; }
+        .crypto-card.flash-down { animation: flashDown 0.6s ease-out; }
         .crypto-card-change { font-size: 11px; font-weight: 700; padding: 2px 6px; border-radius: 6px; }
         .crypto-card-change.up { color: #2ecc71; background: rgba(46,204,113,0.12); }
         .crypto-card-change.down { color: #e74c3c; background: rgba(231,76,60,0.12); }
@@ -689,7 +695,7 @@
 </div>
 
 <script>
-    const MAX_MUL = 10000; const MAX_WIN = 500000;
+    const MAX_MUL = 10000; const MAX_WIN = 5000000; // было 500000
 
     // БЕЗОПАСНЫЙ ДОСТУП К LOCAL STORAGE (ЗАЩИТА ОТ КРАША ПРИ ЗАПУСКЕ)
     const LS = {
@@ -1546,8 +1552,19 @@
                 if(!this.b || isNaN(this.b) || this.b<=0) return window.App.toast('Неверная ставка','error'); if(this.b>window.App.balance) return window.App.toast('Недостаточно фишек', 'error');
                 window.App.chgBal(-this.b); window.Stats.addBet(); this.pl = true; this.m = 1; this.s = 0;
                 document.getElementById('coin-start-controls').style.display = 'none'; document.getElementById('coin-game-controls').style.display = 'block';
-                document.getElementById('coin-btn').className = 'main-btn btn-gold'; document.getElementById('coin-btn').innerText = `ЗАБРАТЬ ${this.b}`;
-            } else { if(this.lk) return; this.lk = true; let win = Math.floor(this.b * this.m); window.App.win(win); this.rUI(); }
+                // Кнопка "Забрать" появляется только ПОСЛЕ первого удачного броска (см. guess()) —
+                // до этого множитель ещё 1x, забирать нечего (это были бы просто свои же деньги
+                // обратно), а раньше клик по ней сразу же засчитывался как "победа" с полным
+                // опытом и шансом дропа подарка — можно было бесконечно фармить и то, и другое
+                // без всякого риска.
+                document.getElementById('coin-btn').className = 'main-btn btn-disabled'; document.getElementById('coin-btn').innerText = 'Выберите орёл или решку';
+            } else {
+                // Защита и здесь тоже (не только в интерфейсе) — даже если кнопка почему-то
+                // осталась кликабельной, без хотя бы одного успешного броска выигрыша не начисляем.
+                if(this.lk) return;
+                if(this.s === 0) { this.lk = true; window.App.chgBal(this.b); this.rUI(); return; }
+                this.lk = true; let win = Math.floor(this.b * this.m); window.App.win(win); this.rUI();
+            }
         },
         guess(choice) {
             if(!this.pl||this.lk) return; this.lk = true; let c = document.getElementById('coin-obj'); c.classList.add('flipping');
@@ -1556,7 +1573,8 @@
                 if(result === 'head') { c.innerText = 'О'; c.style.background = 'radial-gradient(circle at 30% 30%, #F1C40F, #D35400)'; } else { c.innerText = 'Р'; c.style.background = 'radial-gradient(circle at 30% 30%, #bdc3c7, #7f8c8d)'; }
                 if(choice === result) {
                     this.s++; this.m *= 1.96; if(this.m>MAX_MUL) this.m=MAX_MUL;
-                    document.getElementById('coin-streak').innerText = this.s; document.getElementById('coin-win').innerText = Math.floor(this.b * this.m); document.getElementById('coin-btn').innerText = `ЗАБРАТЬ ${Math.floor(this.b * this.m)}`;
+                    document.getElementById('coin-streak').innerText = this.s; document.getElementById('coin-win').innerText = Math.floor(this.b * this.m);
+                    document.getElementById('coin-btn').className = 'main-btn btn-gold'; document.getElementById('coin-btn').innerText = `ЗАБРАТЬ ${Math.floor(this.b * this.m)}`;
                     window.Tasks.chk('coinflip', this.s);
                     if(this.m===MAX_MUL){window.App.win(Math.floor(this.b * this.m));this.rUI();} else this.lk = false;
                 } else { window.App.toast('Мимо!', 'error'); setTimeout(() => this.rUI(), 2000); }
@@ -1902,6 +1920,7 @@
     };
     window.CryptoUI = {
         state: null,
+        lastPrices: {}, // цена с прошлого опроса — чтобы мигать только при РЕАЛЬНОМ изменении, не при каждой перерисовке
         render(data) {
             this.state = data;
             const el = document.getElementById('crypto-coins-list'); if (!el) return;
@@ -1919,12 +1938,17 @@
                 const myValue = Math.floor(hold.qty * c.price);
                 const pnl = hold.qty > 0 ? Math.floor((c.price - hold.avg_buy_price) * hold.qty) : 0;
 
-                return `<div class="crypto-card">
+                const prevPrice = this.lastPrices[c.id];
+                const flashClass = (prevPrice !== undefined && c.price !== prevPrice)
+                    ? (c.price > prevPrice ? 'flash-up' : 'flash-down') : '';
+                this.lastPrices[c.id] = c.price;
+
+                return `<div class="crypto-card ${flashClass}">
                     <div class="crypto-card-head">
                         <div><b>${c.name}</b> <span style="color:var(--text-muted); font-size:11px;">${c.symbol}</span></div>
                         <div class="crypto-card-change ${isUp ? 'up' : 'down'}">${isUp ? '▲' : '▼'} ${changePct}%</div>
                     </div>
-                    <div class="crypto-card-price">${c.price.toLocaleString()} фишек</div>
+                    <div class="crypto-card-price ${isUp ? 'up' : 'down'}">${c.price.toLocaleString()} фишек</div>
                     <div style="font-size:10px; color:var(--text-muted); margin-bottom:4px;">
                         Капитализация: ${(c.market_cap || 0).toLocaleString()} · В обращении: ${(c.circulating_supply || 0).toFixed(2)} из ${(c.total_supply || 0).toLocaleString()}
                     </div>
