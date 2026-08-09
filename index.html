@@ -99,13 +99,15 @@
         .tycoon-buy-btn:disabled { background: #333; color: #777; cursor: not-allowed; }
         .crypto-card { background: var(--bg-panel); border-radius: 10px; padding: 12px; border: 1px solid #1f222b; }
         .crypto-card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-        .crypto-card-price { font-size: 18px; font-weight: 800; transition: color 0.3s; }
+        .crypto-card-price { font-size: 18px; font-weight: 800; }
         .crypto-card-price.up { color: #2ecc71; }
         .crypto-card-price.down { color: #e74c3c; }
-        @keyframes flashUp { 0% { background: rgba(46,204,113,0.35); } 100% { background: transparent; } }
-        @keyframes flashDown { 0% { background: rgba(231,76,60,0.35); } 100% { background: transparent; } }
-        .crypto-card.flash-up { animation: flashUp 0.6s ease-out; }
-        .crypto-card.flash-down { animation: flashDown 0.6s ease-out; }
+        /* Биржа растянута на всю ширину экрана, а не ограничена шириной #app (430px) —
+           приём "побега" из родительского контейнера через отрицательный margin. */
+        #view-crypto { width: 100vw; max-width: 100vw; margin-left: calc(-50vw + 50%); padding: 0 10px; box-sizing: border-box; }
+        .crypto-bars { display: flex; align-items: flex-end; gap: 2px; height: 90px; margin: 8px 0; }
+        .crypto-bar { flex: 1; border-radius: 2px 2px 0 0; min-height: 2px; }
+        .crypto-bar.up { background: #2ecc71; } .crypto-bar.down { background: #e74c3c; }
         .crypto-card-change { font-size: 11px; font-weight: 700; padding: 2px 6px; border-radius: 6px; }
         .crypto-card-change.up { color: #2ecc71; background: rgba(46,204,113,0.12); }
         .crypto-card-change.down { color: #e74c3c; background: rgba(231,76,60,0.12); }
@@ -1949,7 +1951,6 @@
     };
     window.CryptoUI = {
         state: null,
-        lastPrices: {}, // цена с прошлого опроса — чтобы мигать только при РЕАЛЬНОМ изменении, не при каждой перерисовке
         openCoinId: null,   // null = список монет; иначе — открыта карточка конкретной монеты
         tradeMode: 'buy',   // 'buy' | 'sell' — что показывать внутри открытой карточки
 
@@ -1969,20 +1970,15 @@
                 const first = h.length ? h[0] : c.price;
                 const changePct = first > 0 ? (((c.price - first) / first) * 100).toFixed(2) : '0.00';
                 const isUp = c.price >= first;
-                const svg = this.buildSparkline(h.length ? h : [c.price, c.price], 90);
+                const bars = this.buildBars(h.length ? h : [c.price, c.price], 70);
 
-                const prevPrice = this.lastPrices[c.id];
-                const flashClass = (prevPrice !== undefined && c.price !== prevPrice)
-                    ? (c.price > prevPrice ? 'flash-up' : 'flash-down') : '';
-                this.lastPrices[c.id] = c.price;
-
-                return `<div class="crypto-card ${flashClass}" style="cursor:pointer;" onclick="CryptoUI.openCoin('${c.id}')">
+                return `<div class="crypto-card" style="cursor:pointer;" onclick="CryptoUI.openCoin('${c.id}')">
                     <div class="crypto-card-head">
                         <div><b>${c.name}</b> <span style="color:var(--text-muted); font-size:11px;">${c.symbol}</span></div>
                         <div class="crypto-card-change ${isUp ? 'up' : 'down'}">${isUp ? '▲' : '▼'} ${changePct}%</div>
                     </div>
                     <div class="crypto-card-price ${isUp ? 'up' : 'down'}">${c.price.toLocaleString()} фишек</div>
-                    ${svg}
+                    ${bars}
                 </div>`;
             }).join('');
         },
@@ -2005,7 +2001,7 @@
             const first = h.length ? h[0] : c.price;
             const changePct = first > 0 ? (((c.price - first) / first) * 100).toFixed(2) : '0.00';
             const isUp = c.price >= first;
-            const svg = this.buildSparkline(h.length ? h : [c.price, c.price], 120);
+            const bars = this.buildBars(h.length ? h : [c.price, c.price], 140);
             const myValue = Math.floor(hold.qty * c.price);
             const pnl = hold.qty > 0 ? Math.floor((c.price - hold.avg_buy_price) * hold.qty) : 0;
 
@@ -2046,7 +2042,7 @@
                     <div style="font-size:10px; color:var(--text-muted); margin-bottom:4px;">
                         Капитализация: ${(c.market_cap || 0).toLocaleString()} · В обращении: ${(c.circulating_supply || 0).toFixed(2)} из ${(c.total_supply || 0).toLocaleString()}
                     </div>
-                    ${svg}
+                    ${bars}
                     ${hold.qty > 0 ? `<div class="crypto-holding-info">У вас: ${hold.qty.toFixed(4)} ${c.symbol} · стоимость сейчас: ${myValue.toLocaleString()} · P&L: <span style="color:${pnl>=0?'#2ecc71':'#e74c3c'}">${pnl>=0?'+':''}${pnl.toLocaleString()}</span></div>` : ''}
 
                     <div style="display:flex; gap:6px; margin-top:10px; margin-bottom:6px;">
@@ -2057,15 +2053,17 @@
                 </div>`;
         },
 
-        buildSparkline(prices, h) {
-            const w = 280;
+        // Настоящие столбики (как на бирже), а не линия — каждый столбик выше/ниже
+        // предыдущей точки красится в зелёный/красный по направлению движения.
+        buildBars(prices, h) {
             const min = Math.min(...prices), max = Math.max(...prices);
             const range = (max - min) || 1;
-            const pts = prices.map((p, i) => `${(i/(prices.length-1||1))*w},${h - ((p-min)/range)*h}`).join(' ');
-            const up = prices[prices.length-1] >= prices[0];
-            return `<svg width="100%" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="display:block; margin:6px 0;">
-                <polyline points="${pts}" fill="none" stroke="${up ? '#2ecc71' : '#e74c3c'}" stroke-width="2" vector-effect="non-scaling-stroke"/>
-            </svg>`;
+            return `<div class="crypto-bars" style="height:${h}px;">` + prices.map((p, i) => {
+                const pct = ((p - min) / range) * 100;
+                const prev = i > 0 ? prices[i-1] : p;
+                const dir = p >= prev ? 'up' : 'down';
+                return `<div class="crypto-bar ${dir}" style="height:${Math.max(2, pct)}%;"></div>`;
+            }).join('') + `</div>`;
         },
         buy(coinId) {
             const inp = document.getElementById('crypto-buy-' + coinId);
