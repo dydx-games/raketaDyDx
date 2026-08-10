@@ -101,6 +101,16 @@ window.Multiplayer = {
         setInterval(() => this.refreshTycoon(), 5000); // доход Империи — тоже раз в 5с
         setInterval(() => this.refreshCrypto(), 3000); // курс крипты — почаще, тик бота каждые 2с
         setInterval(() => this.refreshDrawBank(), 5000);
+        // Раньше баланс сверялся с сервером ровно один раз при запуске и больше
+        // никогда — если этот единственный запрос не проходил (например, сеть
+        // моргнула при сворачивании приложения), рассинхрон с сервером мог
+        // остаться навсегда. Теперь досверяемся регулярно — если что-то разошлось,
+        // само себя поправит в течение нескольких секунд, а не будет висеть сломанным.
+        setInterval(async () => {
+            if (window.App && window.App._pendingSyncCount > 0) return; // ещё летит фоновая синхронизация — не перебиваем
+            const bal = await this.getBalance();
+            if (bal !== null && window.App && bal !== window.App.balance) { window.App.balance = bal; window.App.updBalUI(); }
+        }, 8000);
     },
 
     // ================= ОПРОС СОСТОЯНИЯ =================
@@ -549,5 +559,10 @@ window.addEventListener('load', () => window.Multiplayer.init());
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && window.Multiplayer) {
         if (window.Multiplayer.forceRefreshCrash) window.Multiplayer.forceRefreshCrash();
+        // Баланс тоже сверяем сразу — раньше это не делалось вообще, отсюда и была
+        // жалоба "при сворачивании баланс обнулился до старого значения".
+        window.Multiplayer.getBalance().then(bal => {
+            if (bal !== null && window.App && !(window.App._pendingSyncCount > 0) && bal !== window.App.balance) { window.App.balance = bal; window.App.updBalUI(); }
+        });
     }
 });

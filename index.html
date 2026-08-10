@@ -880,7 +880,7 @@
     window.Levels = {
         xp: 0, lvl: 1,
         // XP, необходимый чтобы перейти НА этот уровень (накопительно)
-        need(lvl) { return Math.floor(500 * Math.pow(lvl, 1.55)); },
+        need(lvl) { return Math.floor(1750 * Math.pow(lvl, 1.55)); }, // было 500 — теперь в 3.5 раза больше опыта на уровень
         init() {
             let s = LS.g('dydx_levels', {xp: 0, lvl: 1});
             this.xp = (typeof s.xp === 'number' && !isNaN(s.xp)) ? s.xp : 0;
@@ -895,7 +895,7 @@
             let leveledUp = false; let totalReward = 0;
             while (this.xp >= this.need(this.lvl)) {
                 this.lvl++; leveledUp = true;
-                totalReward += this.lvl * 500; // награда растёт с каждым уровнем
+                totalReward += this.lvl * 100; // было 500 — награда снижена в 5 раз
             }
             this.save(); this.render();
             if (leveledUp) {
@@ -945,6 +945,22 @@
         chgBal(amount) {
             amount = Math.floor(Number(amount)); if(isNaN(amount)) return;
             this.balance += amount; this.updBalUI(); if(amount > 0) window.Tasks.chk('balance');
+            // Раньше сольные игры (Монетка, Hi-Lo, Мины, Башенка, Апгрейдер) меняли
+            // баланс ТОЛЬКО здесь, в браузере — сервер об этом никогда не узнавал.
+            // Из-за этого любое серверное действие могло откатить баланс обратно к
+            // устаревшему числу, а при пересборке приложения подтягивался тоже
+            // устаревший баланс. Шлём дельту на сервер в фоне — саму игру это не
+            // тормозит (не ждём ответа), но теперь сервер тоже в курсе изменения.
+            //
+            // _pendingSyncCount защищает от гонки: периодическая самопроверка баланса
+            // (см. multiplayer-client.js) не должна откатывать локальный баланс к
+            // устаревшему серверному значению, пока эта самая отправка ещё не долетела.
+            if (window.sb && window.ME && amount !== 0) {
+                this._pendingSyncCount = (this._pendingSyncCount || 0) + 1;
+                window.sb.rpc('apply_balance_delta', { p_telegram_id: window.ME.id, p_delta: amount })
+                    .catch(() => {})
+                    .finally(() => { this._pendingSyncCount = Math.max(0, (this._pendingSyncCount || 1) - 1); });
+            }
         },
         TOPUP_COOLDOWN_MS: 20 * 60 * 1000, // 20 минут
         cdTimer: null,
