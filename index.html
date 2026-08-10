@@ -1044,7 +1044,8 @@
             { id: 'rocketman', t: 'Ракетостроитель', d: 'Сыграй в Ракету 10 раз', r: 1500, a: true }, { id: 'sniper', t: 'Снайпер', d: 'Поймай 10x в Ракете', r: 3000, a: true },
             { id: 'sapper', t: 'Сапер', d: 'Победа в Минах (>=5)', r: 2000, a: true }, { id: 'lucky', t: 'Счастливчик', d: 'Угадай Зеро в Рулетке', r: 4000, a: true },
             { id: 'psychic', t: 'Экстрасенс', d: 'Сделай 5 шагов в Hi-Lo', r: 3000, a: true }, { id: 'fearless', t: 'Бесстрашный', d: 'Пройди Башню (Сложно)', r: 10000, a: true },
-            { id: 'coinflip', t: 'Орёл и Решка', d: 'Стрик из 3 побед', r: 3000, a: true }
+            { id: 'coinflip', t: 'Орёл и Решка', d: 'Стрик из 3 побед', r: 3000, a: true },
+            { id: 'channel_sub', t: '📢 Подписка на канал', d: 'Подпишись на @dydxgamenews', r: 5000, a: true, channel: true }
         ],
         init() {
             let s = LS.g('dydx_tasks', {}); this.st = Object.assign(this.st, s); let d = localStorage.getItem('dydx_tasks_time'); if(d) this.lastD = parseInt(d);
@@ -1067,7 +1068,52 @@
         },
         rnd() {
             const c = document.getElementById('task-list-container'); c.innerHTML = '';
-            this.list.forEach(t => { let d = this.st[t.id]; c.innerHTML += `<div class="task-item"><div class="task-info"><h4>${t.t}</h4><p>${t.d}</p><span class="task-reward">+${t.r}</span></div><button class="btn-claim" ${d?'disabled':''} onclick="${!t.a ? `window.Tasks.claim('${t.id}')` : ''}">${d ? 'Выполнено' : (t.a ? 'В процессе' : 'Забрать')}</button></div>`; });
+            this.list.forEach(t => {
+                let d = this.st[t.id];
+                if (t.channel) {
+                    // Особый случай: у этого задания две кнопки — открыть канал (просто ссылка,
+                    // ничего не проверяет) и "Забрать" (реально спрашивает Telegram, подписаны ли вы,
+                    // а не просто верит нажатию — см. window.Tasks.claimChannel()).
+                    c.innerHTML += `<div class="task-item">
+                        <div class="task-info"><h4>${t.t}</h4><p>${t.d}</p><span class="task-reward">+${t.r}</span></div>
+                        <div style="display:flex; gap:6px;">
+                            <button class="btn-claim" style="flex:0 0 auto; padding:0 12px;" onclick="window.Tasks.openChannel()" title="Открыть канал">🔗</button>
+                            <button class="btn-claim" id="task-btn-channel_sub" ${d ? 'disabled' : ''} onclick="window.Tasks.claimChannel()">${d ? 'Выполнено' : 'Забрать'}</button>
+                        </div>
+                    </div>`;
+                    return;
+                }
+                c.innerHTML += `<div class="task-item"><div class="task-info"><h4>${t.t}</h4><p>${t.d}</p><span class="task-reward">+${t.r}</span></div><button class="btn-claim" ${d?'disabled':''} onclick="${!t.a ? `window.Tasks.claim('${t.id}')` : ''}">${d ? 'Выполнено' : (t.a ? 'В процессе' : 'Забрать')}</button></div>`;
+            });
+        },
+        openChannel() {
+            const url = 'https://t.me/dydxgamenews';
+            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
+                window.Telegram.WebApp.openTelegramLink(url);
+            } else {
+                window.open(url, '_blank');
+            }
+        },
+        async claimChannel() {
+            if (this.st.channel_sub) return;
+            const btn = document.getElementById('task-btn-channel_sub');
+            if (btn) { btn.disabled = true; btn.innerText = 'Проверяем...'; }
+
+            try {
+                const { data, error } = await window.sb.functions.invoke('check-subscription', { body: { telegram_id: window.ME.id } });
+                if (error || !data || !data.success) {
+                    window.App.toast((data && data.message) || 'Не удалось проверить подписку', 'error');
+                    if (btn) { btn.disabled = false; btn.innerText = 'Забрать'; }
+                    return;
+                }
+                this.st.channel_sub = true; LS.s('dydx_tasks', this.st);
+                if (typeof data.new_balance === 'number') { window.App.balance = data.new_balance; window.App.updBalUI(); }
+                window.App.toast(`Выполнено! +5000`, 'success');
+                this.rnd();
+            } catch (e) {
+                window.App.toast('Ошибка проверки — попробуйте ещё раз', 'error');
+                if (btn) { btn.disabled = false; btn.innerText = 'Забрать'; }
+            }
         }
     };
 
