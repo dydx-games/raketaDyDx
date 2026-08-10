@@ -2185,16 +2185,22 @@
             const myValue = Math.floor(hold.qty * c.price);
             const pnl = hold.qty > 0 ? Math.floor((c.price - hold.avg_buy_price) * hold.qty) : 0;
 
+            const balance = (window.App && window.App.balance) || 0;
+            const buyPct = (fraction, label) => {
+                const chipsAmt = Math.floor(balance * fraction);
+                const estQty = c.price > 0 ? (chipsAmt / c.price) : 0;
+                return `<button class="crypto-btn crypto-btn-buy" style="flex:1; opacity:0.85; display:flex; flex-direction:column; gap:2px; padding:6px 4px;" onclick="CryptoUI.buyPortion('${c.id}', ${fraction})">
+                    <span>${label} · ${chipsAmt.toLocaleString()}</span><span style="font-size:9px; opacity:0.85;">≈${estQty.toFixed(4)} монет</span>
+                </button>`;
+            };
             const buyPanel = `
                 <div class="crypto-trade-row">
-                    <input type="number" class="crypto-input" id="crypto-buy-${c.id}" placeholder="Фишек на покупку">
+                    <input type="number" class="crypto-input" id="crypto-buy-${c.id}" placeholder="Фишек на покупку" oninput="CryptoUI.updateBuyPreview('${c.id}', ${c.price})">
                     <button class="crypto-btn crypto-btn-buy" onclick="CryptoUI.buy('${c.id}')">Купить</button>
                 </div>
+                <div id="crypto-buy-preview-${c.id}" style="font-size:10px; color:var(--text-muted); margin-top:-4px; margin-bottom:4px; min-height:14px;"></div>
                 <div class="crypto-trade-row">
-                    <button class="crypto-btn crypto-btn-buy" style="flex:1; opacity:0.85;" onclick="CryptoUI.buyPortion('${c.id}', 0.25)">25%</button>
-                    <button class="crypto-btn crypto-btn-buy" style="flex:1; opacity:0.85;" onclick="CryptoUI.buyPortion('${c.id}', 0.5)">50%</button>
-                    <button class="crypto-btn crypto-btn-buy" style="flex:1; opacity:0.85;" onclick="CryptoUI.buyPortion('${c.id}', 0.75)">75%</button>
-                    <button class="crypto-btn crypto-btn-buy" style="flex:1; opacity:0.85;" onclick="CryptoUI.buyPortion('${c.id}', 1)">MAX</button>
+                    ${buyPct(0.25, '25%')}${buyPct(0.5, '50%')}${buyPct(0.75, '75%')}${buyPct(1, 'MAX')}
                 </div>`;
 
             // На каждой кнопке продажи сразу видно, сколько фишек получите — считаем
@@ -2250,6 +2256,17 @@
             const amount = Math.floor(Number(inp && inp.value));
             if (!amount || amount <= 0) { window.App.toast('Введите сумму', 'error'); return; }
             if (window.Multiplayer) window.Multiplayer.cryptoBuy(coinId, amount);
+        },
+        // Живое превью "≈ сколько монет купите", пока вы вводите сумму — считаем
+        // на лету из уже известной текущей цены, без запроса к серверу.
+        updateBuyPreview(coinId, price) {
+            const inp = document.getElementById('crypto-buy-' + coinId);
+            const el = document.getElementById('crypto-buy-preview-' + coinId);
+            if (!el) return;
+            const amount = Number(inp && inp.value);
+            if (!amount || amount <= 0 || !price) { el.innerText = ''; return; }
+            const qty = amount / price;
+            el.innerText = `≈ ${qty < 0.01 ? qty.toFixed(6) : qty.toFixed(4)} монет по текущей цене`;
         },
         buyPortion(coinId, fraction) {
             const balance = (window.App && window.App.balance) || 0;
@@ -2326,6 +2343,6 @@
 
 <!-- МУЛЬТИПЛЕЕР: общий раунд Ракеты, Рулетки, Арены, промокоды, Дурак, маркетплейс -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="multiplayer-client.js?v=18"></script>
+<script src="multiplayer-client.js?v=16"></script>
 </body>
 </html>
