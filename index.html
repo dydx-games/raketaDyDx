@@ -2372,7 +2372,7 @@
                 const chipsAmt = Math.floor(balance * fraction);
                 const netChips = Math.floor(chipsAmt * 0.98); // 2% комиссии в банк розыгрышей
                 const estQty = c.price > 0 ? (netChips / c.price) : 0;
-                return `<button class="crypto-pct-btn" onclick="CryptoUI.buyPortion('${c.id}', ${fraction})">${label}</button>`;
+                return `<button class="crypto-pct-btn" onclick="CryptoUI.buyPortion('${c.id}', ${fraction}, this)">${label}</button>`;
             };
             const sellPct = (fraction, label) => `<button class="crypto-pct-btn" onclick="CryptoUI.sellPortion('${c.id}', ${fraction})">${label}</button>`;
 
@@ -2603,8 +2603,21 @@
                 <div class="crypto-info-row"><span>Вы получите</span><span style="color:var(--gold); font-weight:800;">≈ ${qty.toFixed(4)} монет</span></div>
                 <div class="crypto-info-row"><span>Комиссия (2%) → в банк розыгрышей</span><span style="color:#e74c3c;">-${fee.toLocaleString()} ФИШКИ</span></div>`;
         },
-        buyPortion(coinId, fraction) {
-            const balance = (window.App && window.App.balance) || 0;
+        async buyPortion(coinId, fraction, btn) {
+            // Раньше здесь бралось window.App.balance напрямую — а это значение может
+            // отставать от реального баланса на сервере (например, сразу после того,
+            // как баланс поменяли напрямую через SQL, или просто из-за задержки опроса).
+            // Итог: "MAX" считал процент от старого маленького числа, и по факту
+            // тратилась и покупалась лишь малая доля от того, что реально было на
+            // счету — деньги при этом никуда не терялись, просто уходило меньше,
+            // чем ожидалось. Теперь перед расчётом сумму сверяем с сервером напрямую.
+            if (btn) btn.disabled = true;
+            let balance = (window.App && window.App.balance) || 0;
+            if (window.Multiplayer) {
+                const fresh = await window.Multiplayer.getBalance();
+                if (typeof fresh === 'number') { balance = fresh; window.App.balance = fresh; window.App.updBalUI(); }
+            }
+            if (btn) btn.disabled = false;
             const amount = Math.floor(balance * fraction);
             if (!amount || amount <= 0) { window.App.toast('Недостаточно фишек', 'error'); return; }
             if (window.Multiplayer) window.Multiplayer.cryptoBuy(coinId, amount);
