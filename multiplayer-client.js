@@ -96,9 +96,11 @@ window.Multiplayer = {
         this.refreshMarketListings();
         this.refreshTycoon();
         this.refreshCrypto();
+        this.refreshDrawBank();
         setInterval(() => this.refreshMarketListings(), 5000); // лента лотов обновляется каждые 5с
         setInterval(() => this.refreshTycoon(), 5000); // доход Империи — тоже раз в 5с
         setInterval(() => this.refreshCrypto(), 3000); // курс крипты — почаще, тик бота каждые 2с
+        setInterval(() => this.refreshDrawBank(), 5000);
     },
 
     // ================= ОПРОС СОСТОЯНИЯ =================
@@ -455,6 +457,11 @@ window.Multiplayer = {
             tier: n.tier, ts: new Date(n.created_at).getTime()
         }));
         window.Gifts.render();
+    },
+    async refreshDrawBank() {
+        const { data, error } = await sb.from('draw_bank').select('balance').eq('id', 1).single();
+        const el = document.getElementById('hub-draw-bank'); if (!el) return;
+        el.innerText = (!error && data) ? data.balance.toLocaleString() + ' фишек' : '—';
     },
     async refreshCrypto() {
         const { data, error } = await sb.rpc('crypto_get_state', { p_telegram_id: ME.id });

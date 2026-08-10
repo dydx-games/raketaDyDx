@@ -131,6 +131,7 @@
         .crypto-action-btn.buy { background: linear-gradient(135deg, #2ecc71, #27ae60); color: #063; }
         .crypto-action-btn.sell { background: linear-gradient(135deg, #e74c3c, #c0392b); color: #fff; }
         .crypto-portfolio-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #1f222b; font-size: 12px; }
+        .crypto-chart-tooltip { position: absolute; background: rgba(20,22,28,0.95); border: 1px solid #2a2e3a; border-radius: 8px; padding: 5px 8px; font-size: 10px; color: #fff; pointer-events: none; white-space: nowrap; z-index: 5; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
         .hub-category { font-size: 12px; font-weight: 800; color: var(--gold); letter-spacing: 0.5px; margin: 18px 10px 8px; text-transform: uppercase; }
         .hub-grid { display: flex; flex-direction: column; gap: 10px; padding: 0 10px; }
         .hub-card { display: flex; align-items: center; gap: 12px; background: var(--bg-panel); border: 1px solid #1f222b; border-radius: 18px; padding: 12px; cursor: pointer; position: relative; overflow: hidden; box-shadow: 0 4px 14px rgba(0,0,0,0.22); transition: transform 0.18s var(--ease), box-shadow 0.18s var(--ease); }
@@ -383,6 +384,15 @@
         <!-- CRASH -->
         <!-- ХАБ: список игр по категориям -->
         <div class="game-view active" id="view-games">
+            <div class="panel" style="margin: 10px 10px 14px; background: linear-gradient(135deg, rgba(215,180,93,0.12), rgba(215,180,93,0.02)); border: 1px solid rgba(215,180,93,0.25);">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">🎁 Банк розыгрышей</div>
+                        <div style="font-size:20px; font-weight:800; color:var(--gold);" id="hub-draw-bank">...</div>
+                    </div>
+                    <div style="font-size:9px; color:var(--text-muted); text-align:right; max-width:140px;">Копится с комиссии 2% в Бирже и Арене — периодически разыгрывается среди игроков</div>
+                </div>
+            </div>
             <div class="hub-category">🔴 Live-игры · общий раунд на всех</div>
             <div class="hub-grid">
                 <div class="hub-card" onclick="App.s('crash', null, 'Ракета')">
@@ -447,6 +457,15 @@
                     <div class="hub-card-emoji">📈</div>
                     <div class="hub-card-info"><div class="hub-card-title">Крипто</div><div class="hub-card-desc">Торгуйте dxxxcoin на своей бирже</div></div>
                 </div>
+            </div>
+
+            <div style="margin: 14px 10px 24px; padding: 12px; background: rgba(255,255,255,0.03); border: 1px solid #1f222b; border-radius: 12px; font-size: 10px; line-height: 1.5; color: var(--text-muted);">
+                ⚠️ Все «фишки» и внутриигровые монеты в приложении — виртуальные, существуют
+                только внутри игры. Их нельзя купить за реальные деньги и нельзя вывести или
+                обменять на деньги, криптовалюту или иное имущество. Все режимы носят
+                исключительно развлекательный характер и не являются азартной игрой в смысле
+                применимого законодательства. Приложение предназначено для лиц старше 18 лет.
+                Полный текст пользовательского соглашения — в разделе «Профиль».
             </div>
         </div>
 
@@ -931,15 +950,25 @@
         cdTimer: null,
         openTopUp() {
             if (window.Multiplayer) {
-                // В мультиплеере свободное самопополнение отключено — баланс общий и честный для всех.
-                // Направляем к промокоду/ежедневному бонусу вместо этого.
+                // В мультиплеере свободное самопополнение отключено — баланс общий и честный
+                // для всех. Направляем в профиль/промокод, а если бот для звёзд уже настроен —
+                // сразу предлагаем открыть его через openTelegramLink (это правильный способ
+                // перейти в другой чат ИЗНУТРИ Mini App, а не window.open).
                 document.querySelectorAll('.game-view').forEach(v => v.classList.remove('active'));
                 document.getElementById('view-profile').classList.add('active');
                 document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
                 let profNav = Array.from(document.querySelectorAll('.nav-item')).find(n => n.innerText.includes('Профиль'));
                 if (profNav) profNav.classList.add('active');
                 document.getElementById('app-subtitle').innerText = 'Профиль';
-                this.toast('В мультиплеере фишки только через промокод или ежедневный бонус', '');
+
+                // ЗАМЕНИТЕ на username вашего бота-магазина, когда он будет запущен (см. bot/bot.js).
+                const STARS_BOT_USERNAME = null; // например: 'dydx_shop_bot'
+                if (STARS_BOT_USERNAME && window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
+                    this.toast('Открываю магазин фишек за звёзды...', '');
+                    window.Telegram.WebApp.openTelegramLink(`https://t.me/${STARS_BOT_USERNAME}?start=shop`);
+                } else {
+                    this.toast('В мультиплеере фишки только через промокод, ежедневный бонус или звёзды', '');
+                }
                 return;
             }
             document.getElementById('topup-modal').classList.add('active'); this.refreshTopUpUI(); if(this.cdTimer) clearInterval(this.cdTimer); this.cdTimer = setInterval(() => this.refreshTopUpUI(), 1000);
@@ -2182,7 +2211,7 @@
                 const changePct = first > 0 ? (((c.price - first) / first) * 100).toFixed(2) : '0.00';
                 const isUp = c.price >= first;
                 const candles = this.computeCandles(h.length ? h : [c.price, c.price], 'All').slice(-24);
-                const chart = this.buildCandleChart(candles, 60);
+                const chart = this.buildCandleChart(candles, 60, `crypto-chart-list-${c.id}`, false);
 
                 return `<div class="crypto-card" style="cursor:pointer;" onclick="CryptoUI.openCoin('${c.id}')">
                     <div class="crypto-card-head">
@@ -2231,7 +2260,7 @@
             const pnl = hold.qty > 0 ? Math.floor((c.price - hold.avg_buy_price) * hold.qty) : 0;
 
             const candles = this.computeCandles(h.length ? h : [c.price, c.price], this.timeframe);
-            const chart = this.buildCandleChart(candles, 140);
+            const chart = this.buildCandleChart(candles, 140, `crypto-chart-detail-${c.id}`, true);
             const lastCandle = candles[candles.length - 1] || { open: c.price, high: c.price, low: c.price, close: c.price };
 
             const tfBtn = (tf) => `<button class="crypto-tf-btn ${this.timeframe === tf ? 'active' : ''}" onclick="CryptoUI.setTimeframe('${tf}')">${tf}</button>`;
@@ -2368,7 +2397,7 @@
 
         // ---------------- СВЕЧИ ----------------
         computeCandles(prices, timeframe) {
-            if (!prices || prices.length < 2) return [{ open: prices[0]||0, high: prices[0]||0, low: prices[0]||0, close: prices[0]||0 }];
+            if (!prices || prices.length < 2) return [{ open: prices[0]||0, high: prices[0]||0, low: prices[0]||0, close: prices[0]||0, time: Date.now() }];
             const tickSec = 2;
             const bucketSec = { '1m': 60, '5m': 300, '15m': 900, '1h': 3600 }[timeframe];
             let ticksPerCandle;
@@ -2385,18 +2414,47 @@
                 if (!chunk.length) continue;
                 candles.push({ open: chunk[0], close: chunk[chunk.length-1], high: Math.max(...chunk), low: Math.min(...chunk) });
             }
-            return candles.slice(-60);
+            const trimmed = candles.slice(-60);
+            // Реальных меток времени с сервера у нас нет (история — просто массив цен),
+            // поэтому оцениваем время каждой свечи от текущего момента назад, исходя из
+            // известного шага тика бота (~2с). Это оценка, не точное время, но для
+            // подсказки при наведении курсором/пальцем — вполне достаточно.
+            const tickMs = tickSec * 1000;
+            const nowMs = (window.Multiplayer ? window.Multiplayer.serverNow() : Date.now());
+            trimmed.forEach((c, idx) => {
+                const ticksFromEnd = (trimmed.length - 1 - idx) * ticksPerCandle;
+                c.time = nowMs - ticksFromEnd * tickMs;
+            });
+            return trimmed;
         },
-        buildCandleChart(candles, height) {
+        // Хранилище геометрии последних отрисованных графиков — нужно, чтобы при
+        // наведении/касании быстро находить нужную свечу по координате X, не
+        // пересчитывая всё заново на каждое движение пальца/мыши.
+        _chartMeta: {},
+
+        buildCandleChart(candles, height, chartId, interactive) {
+            chartId = chartId || 'crypto-chart-main';
             const w = 320;
+            const labelW = 36; // место справа под подписи цены
+            const plotW = w - labelW;
             if (!candles.length) return `<svg width="100%" height="${height}" viewBox="0 0 ${w} ${height}"></svg>`;
+
             const allVals = candles.flatMap(c => [c.high, c.low]);
             const min = Math.min(...allVals), max = Math.max(...allVals);
             const range = (max - min) || 1;
-            const candleW = w / candles.length;
+            const candleW = plotW / candles.length;
             const bodyW = Math.max(2, candleW * 0.6);
             const y = v => height - ((v - min) / range) * height;
-            const grid = [0, 0.25, 0.5, 0.75, 1].map(f => `<line x1="0" y1="${height*f}" x2="${w}" y2="${height*f}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>`).join('');
+
+            if (interactive) this._chartMeta[chartId] = { candles, plotW, height, min, max, range, candleW };
+
+            const grid = [0, 0.25, 0.5, 0.75, 1].map(f => {
+                const yy = height * f; const val = Math.round(max - range * f);
+                const labelY = yy < 8 ? 8 : (yy > height - 4 ? height - 4 : yy + 3);
+                return `<line x1="0" y1="${yy}" x2="${plotW}" y2="${yy}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+                    <text x="${w - 2}" y="${labelY}" font-size="7.5" fill="rgba(255,255,255,0.4)" text-anchor="end">${this.fmtCompact(val)}</text>`;
+            }).join('');
+
             const bars = candles.map((c, i) => {
                 const cx = i * candleW + candleW / 2;
                 const up = c.close >= c.open;
@@ -2406,7 +2464,71 @@
                 return `<line x1="${cx}" y1="${yHigh}" x2="${cx}" y2="${yLow}" stroke="${color}" stroke-width="1"/>
                     <rect x="${cx - bodyW/2}" y="${bodyTop}" width="${bodyW}" height="${bodyH}" fill="${color}"/>`;
             }).join('');
-            return `<svg width="100%" height="${height}" viewBox="0 0 ${w} ${height}" preserveAspectRatio="none" style="display:block; margin:8px 0;">${grid}${bars}</svg>`;
+
+            // Мини-превью в списке монет — некликабельная зона наведения не нужна (график
+            // маленький и лежит внутри карточки, по которой и так открывают монету по тапу).
+            // Крестик и подсказку включаем только для крупного графика на экране монеты.
+            if (!interactive) {
+                return `<svg width="100%" height="${height}" viewBox="0 0 ${w} ${height}" preserveAspectRatio="none" style="display:block; margin:8px 0;">${grid}${bars}</svg>`;
+            }
+
+            return `<div class="crypto-chart-wrap" style="position:relative; touch-action: pan-y;"
+                    onmousemove="CryptoUI.onChartHover(event, '${chartId}')"
+                    onmouseleave="CryptoUI.hideChartTooltip('${chartId}')"
+                    ontouchstart="CryptoUI.onChartHover(event, '${chartId}')"
+                    ontouchmove="CryptoUI.onChartHover(event, '${chartId}')"
+                    ontouchend="CryptoUI.hideChartTooltip('${chartId}')">
+                <svg id="${chartId}" width="100%" height="${height}" viewBox="0 0 ${w} ${height}" preserveAspectRatio="none" style="display:block; margin:8px 0;">
+                    ${grid}${bars}
+                    <line id="${chartId}-cross" x1="0" y1="0" x2="0" y2="${height}" stroke="rgba(255,255,255,0.35)" stroke-width="1" stroke-dasharray="3,3" style="display:none; pointer-events:none;"/>
+                </svg>
+                <div id="${chartId}-tooltip" class="crypto-chart-tooltip" style="display:none;"></div>
+            </div>`;
+        },
+
+        // Наведение курсором (десктоп) или касание пальцем (мобильный) — показываем
+        // цену закрытия и примерное время свечи под пальцем/курсором.
+        onChartHover(evt, chartId) {
+            const meta = this._chartMeta[chartId]; if (!meta) return;
+            const svg = document.getElementById(chartId); if (!svg) return;
+            const wrap = svg.parentElement;
+
+            const point = evt.touches ? evt.touches[0] : evt;
+            if (evt.touches) evt.preventDefault(); // не даём странице скроллиться, пока водим пальцем по графику
+
+            const rect = svg.getBoundingClientRect();
+            const relX = point.clientX - rect.left;
+            const svgX = (relX / rect.width) * 320; // 320 = ширина viewBox
+
+            let idx = Math.floor(svgX / meta.candleW);
+            idx = Math.max(0, Math.min(meta.candles.length - 1, idx));
+            const c = meta.candles[idx];
+            if (!c) return;
+
+            const cross = document.getElementById(chartId + '-cross');
+            if (cross) {
+                const cx = idx * meta.candleW + meta.candleW / 2;
+                cross.setAttribute('x1', cx); cross.setAttribute('x2', cx);
+                cross.style.display = 'block';
+            }
+
+            const tip = document.getElementById(chartId + '-tooltip');
+            if (tip) {
+                const d = new Date(c.time);
+                const timeStr = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                tip.innerHTML = `<div style="font-weight:800;">${Math.round(c.close).toLocaleString()} фишек</div><div style="font-size:9px; opacity:0.7;">≈ ${timeStr}</div>`;
+                tip.style.display = 'block';
+                // Позиционируем подсказку рядом с точкой, но не даём вылезти за края
+                const wrapRect = wrap.getBoundingClientRect();
+                let left = relX + 10;
+                if (left > wrapRect.width - 90) left = relX - 90;
+                tip.style.left = Math.max(0, left) + 'px';
+                tip.style.top = '4px';
+            }
+        },
+        hideChartTooltip(chartId) {
+            const cross = document.getElementById(chartId + '-cross'); if (cross) cross.style.display = 'none';
+            const tip = document.getElementById(chartId + '-tooltip'); if (tip) tip.style.display = 'none';
         },
         fmtCompact(n) {
             n = Number(n) || 0;
