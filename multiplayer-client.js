@@ -475,6 +475,10 @@ window.Multiplayer = {
         const bal = await this.getBalance(); if (bal !== null) { window.App.balance = bal; window.App.updBalUI(); }
         this.refreshCrypto();
     },
+    async cryptoGetMyTrades() {
+        const { data, error } = await sb.rpc('crypto_get_my_trades', { p_telegram_id: ME.id, p_limit: 30 });
+        return (!error && data) ? data : [];
+    },
     async refreshTycoon() {
         const { data, error } = await sb.rpc('tycoon_get_state', { p_telegram_id: ME.id });
         if (error || !data) return;

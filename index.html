@@ -103,6 +103,34 @@
         .crypto-card-price.up { color: #2ecc71; }
         .crypto-card-price.down { color: #e74c3c; }
         .crypto-bars { display: flex; align-items: flex-end; gap: 2px; height: 90px; margin: 8px 0; }
+        .crypto-detail-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+        .crypto-live-badge { background: rgba(46,204,113,0.15); color: #2ecc71; border: 1px solid rgba(46,204,113,0.4); font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 6px; }
+        .crypto-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+        .crypto-stat-box { background: var(--bg-panel-light); border-radius: 10px; padding: 8px 10px; }
+        .crypto-stat-label { font-size: 9px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 3px; }
+        .crypto-stat-val { font-size: 14px; font-weight: 800; }
+        .crypto-tf-row { display: flex; gap: 4px; margin-bottom: 6px; }
+        .crypto-tf-btn { flex: 1; background: transparent; border: none; color: var(--text-muted); font-size: 10px; font-weight: 700; padding: 6px 0; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+        .crypto-tf-btn.active { background: rgba(46,204,113,0.15); color: #2ecc71; }
+        .crypto-ohlc-row { font-size: 10px; color: #e74c3c; font-family: monospace; margin-bottom: 4px; }
+        .crypto-subnav { display: flex; gap: 4px; margin: 10px 0; border-bottom: 1px solid #1f222b; }
+        .crypto-subnav-item { flex: 1; text-align: center; font-size: 12px; font-weight: 700; color: var(--text-muted); padding: 8px 0; cursor: pointer; border-bottom: 2px solid transparent; transition: 0.2s; }
+        .crypto-subnav-item.active { color: var(--text-light); border-bottom-color: var(--gold); }
+        .crypto-mode-toggle { display: flex; gap: 8px; margin-bottom: 10px; }
+        .crypto-mode-btn { flex: 1; text-align: center; padding: 12px; border-radius: 12px; font-weight: 800; font-size: 13px; cursor: pointer; background: var(--bg-panel-light); color: var(--text-muted); border: 1px solid transparent; transition: 0.2s; }
+        .crypto-mode-btn.active.buy { background: rgba(46,204,113,0.12); color: #2ecc71; border-color: rgba(46,204,113,0.4); }
+        .crypto-mode-btn.active.sell { background: rgba(231,76,60,0.12); color: #e74c3c; border-color: rgba(231,76,60,0.4); }
+        .crypto-big-input { width: 100%; background: var(--bg-panel-light); border: 1px solid #2a2e3a; color: #fff; padding: 14px; border-radius: 12px; font-size: 20px; font-weight: 800; outline: none; box-sizing: border-box; margin-bottom: 8px; }
+        .crypto-pct-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-bottom: 10px; }
+        .crypto-pct-btn { background: var(--bg-panel-light); color: var(--text-light); border: none; border-radius: 8px; padding: 8px 2px; font-size: 10px; font-weight: 700; cursor: pointer; transition: 0.15s; }
+        .crypto-pct-btn:active { transform: scale(0.92); }
+        .crypto-info-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); padding: 4px 0; }
+        .crypto-preview-box { background: var(--bg-panel-light); border-radius: 10px; padding: 8px 10px; margin: 8px 0 10px; }
+        .crypto-action-btn { width: 100%; padding: 14px; border: none; border-radius: 12px; font-weight: 800; font-size: 14px; cursor: pointer; transition: transform 0.15s var(--ease); }
+        .crypto-action-btn:active { transform: scale(0.97); }
+        .crypto-action-btn.buy { background: linear-gradient(135deg, #2ecc71, #27ae60); color: #063; }
+        .crypto-action-btn.sell { background: linear-gradient(135deg, #e74c3c, #c0392b); color: #fff; }
+        .crypto-portfolio-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #1f222b; font-size: 12px; }
         .hub-category { font-size: 12px; font-weight: 800; color: var(--gold); letter-spacing: 0.5px; margin: 18px 10px 8px; text-transform: uppercase; }
         .hub-grid { display: flex; flex-direction: column; gap: 10px; padding: 0 10px; }
         .hub-card { display: flex; align-items: center; gap: 12px; background: var(--bg-panel); border: 1px solid #1f222b; border-radius: 18px; padding: 12px; cursor: pointer; position: relative; overflow: hidden; box-shadow: 0 4px 14px rgba(0,0,0,0.22); transition: transform 0.18s var(--ease), box-shadow 0.18s var(--ease); }
@@ -2132,14 +2160,17 @@
     window.CryptoUI = {
         state: null,
         openCoinId: null,   // null = список монет; иначе — открыта карточка конкретной монеты
-        tradeMode: 'buy',   // 'buy' | 'sell' — что показывать внутри открытой карточки
+        tradeMode: 'buy',   // 'buy' | 'sell'
+        subTab: 'trade',    // 'trade' | 'portfolio' | 'activity'
+        timeframe: 'All',   // '1m' | '5m' | '15m' | '1h' | 'All'
+        myTrades: [],
 
         render(data) {
             this.state = data;
             if (this.openCoinId) this.renderDetail(); else this.renderList();
         },
 
-        // ---------------- СПИСОК МОНЕТ (компактные карточки, клик открывает детали) ----------------
+        // ---------------- СПИСОК МОНЕТ ----------------
         renderList() {
             const el = document.getElementById('crypto-coins-list'); if (!el) return;
             const data = this.state; if (!data) return;
@@ -2150,7 +2181,8 @@
                 const first = h.length ? h[0] : c.price;
                 const changePct = first > 0 ? (((c.price - first) / first) * 100).toFixed(2) : '0.00';
                 const isUp = c.price >= first;
-                const bars = this.buildBars(h.length ? h : [c.price, c.price], 70);
+                const candles = this.computeCandles(h.length ? h : [c.price, c.price], 'All').slice(-24);
+                const chart = this.buildCandleChart(candles, 60);
 
                 return `<div class="crypto-card" style="cursor:pointer;" onclick="CryptoUI.openCoin('${c.id}')">
                     <div class="crypto-card-head">
@@ -2158,21 +2190,35 @@
                         <div class="crypto-card-change ${isUp ? 'up' : 'down'}">${isUp ? '▲' : '▼'} ${changePct}%</div>
                     </div>
                     <div class="crypto-card-price ${isUp ? 'up' : 'down'}">${c.price.toLocaleString()} фишек</div>
-                    ${bars}
+                    ${chart}
                 </div>`;
             }).join('');
         },
 
-        openCoin(coinId) { this.openCoinId = coinId; this.tradeMode = 'buy'; this.renderDetail(); },
+        openCoin(coinId) { this.openCoinId = coinId; this.tradeMode = 'buy'; this.subTab = 'trade'; this.timeframe = 'All'; this.renderDetail(); },
         closeCoin() { this.openCoinId = null; this.renderList(); },
         setMode(mode) { this.tradeMode = mode; this.renderDetail(); },
+        setSubTab(tab) { this.subTab = tab; if (tab === 'activity') this.loadActivity(); else this.renderDetail(); },
+        setTimeframe(tf) { this.timeframe = tf; this.renderDetail(); },
+
+        async loadActivity() {
+            if (window.Multiplayer) this.myTrades = await window.Multiplayer.cryptoGetMyTrades();
+            this.renderDetail();
+        },
 
         // ---------------- ДЕТАЛЬНАЯ КАРТОЧКА ОДНОЙ МОНЕТЫ ----------------
         renderDetail() {
             const el = document.getElementById('crypto-coins-list'); if (!el) return;
             const data = this.state; if (!data) return;
             const c = (data.coins || []).find(x => x.id === this.openCoinId);
-            if (!c) { this.closeCoin(); return; } // монета исчезла из каталога — на всякий случай не зависаем на пустом экране
+            if (!c) { this.closeCoin(); return; }
+
+            // Каждый опрос сервера (раз в несколько секунд) полностью перестраивает
+            // разметку — вместе с ней раньше стирались и введённая сумма, и превью.
+            // Запоминаем значение поля ДО перестройки и вернём его на место после.
+            const prevInput = document.getElementById('crypto-buy-' + c.id);
+            const savedAmount = prevInput ? prevInput.value : '';
+            const wasFocused = document.activeElement && document.activeElement.id === ('crypto-buy-' + c.id);
 
             const holdings = data.holdings || {};
             const history = data.history || {};
@@ -2181,92 +2227,213 @@
             const first = h.length ? h[0] : c.price;
             const changePct = first > 0 ? (((c.price - first) / first) * 100).toFixed(2) : '0.00';
             const isUp = c.price >= first;
-            const bars = this.buildBars(h.length ? h : [c.price, c.price], 140);
             const myValue = Math.floor(hold.qty * c.price);
             const pnl = hold.qty > 0 ? Math.floor((c.price - hold.avg_buy_price) * hold.qty) : 0;
 
-            const balance = (window.App && window.App.balance) || 0;
-            const buyPct = (fraction, label) => {
-                const chipsAmt = Math.floor(balance * fraction);
-                const estQty = c.price > 0 ? (chipsAmt / c.price) : 0;
-                return `<button class="crypto-btn crypto-btn-buy" style="flex:1; opacity:0.85; display:flex; flex-direction:column; gap:2px; padding:6px 4px;" onclick="CryptoUI.buyPortion('${c.id}', ${fraction})">
-                    <span>${label} · ${chipsAmt.toLocaleString()}</span><span style="font-size:9px; opacity:0.85;">≈${estQty.toFixed(4)} монет</span>
-                </button>`;
-            };
-            const buyPanel = `
-                <div class="crypto-trade-row">
-                    <input type="number" class="crypto-input" id="crypto-buy-${c.id}" placeholder="Фишек на покупку" oninput="CryptoUI.updateBuyPreview('${c.id}', ${c.price})">
-                    <button class="crypto-btn crypto-btn-buy" onclick="CryptoUI.buy('${c.id}')">Купить</button>
+            const candles = this.computeCandles(h.length ? h : [c.price, c.price], this.timeframe);
+            const chart = this.buildCandleChart(candles, 140);
+            const lastCandle = candles[candles.length - 1] || { open: c.price, high: c.price, low: c.price, close: c.price };
+
+            const tfBtn = (tf) => `<button class="crypto-tf-btn ${this.timeframe === tf ? 'active' : ''}" onclick="CryptoUI.setTimeframe('${tf}')">${tf}</button>`;
+
+            const header = `
+                <div class="crypto-detail-head">
+                    <div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <b style="font-size:18px;">${c.symbol}</b>
+                            <span class="crypto-live-badge">LIVE</span>
+                        </div>
+                        <div style="font-size:11px; color:var(--text-muted);">${c.name}</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div class="crypto-card-price ${isUp ? 'up' : 'down'}" style="font-size:22px;">${c.price.toLocaleString()}</div>
+                        <div style="font-size:10px; color:var(--text-muted);">ФИШКИ</div>
+                        <div class="crypto-card-change ${isUp ? 'up' : 'down'}" style="display:inline-block; margin-top:2px;">${isUp ? '▲' : '▼'} ${changePct}%</div>
+                    </div>
                 </div>
-                <div id="crypto-buy-preview-${c.id}" style="font-size:10px; color:var(--text-muted); margin-top:-4px; margin-bottom:4px; min-height:14px;"></div>
-                <div class="crypto-trade-row">
-                    ${buyPct(0.25, '25%')}${buyPct(0.5, '50%')}${buyPct(0.75, '75%')}${buyPct(1, 'MAX')}
+                <div class="crypto-stat-grid">
+                    <div class="crypto-stat-box"><div class="crypto-stat-label">Капитализация</div><div class="crypto-stat-val">${this.fmtCompact(c.market_cap)}</div></div>
+                    <div class="crypto-stat-box"><div class="crypto-stat-label">Предложение</div><div class="crypto-stat-val">${this.fmtCompact(c.circulating_supply)}</div></div>
+                    <div class="crypto-stat-box"><div class="crypto-stat-label">Дно</div><div class="crypto-stat-val">${(c.min_price || 0).toLocaleString()}</div></div>
+                    <div class="crypto-stat-box"><div class="crypto-stat-label">Холдеры</div><div class="crypto-stat-val">${c.holders || 0}</div></div>
+                </div>
+                <div class="crypto-tf-row">${['1m','5m','15m','1h','All'].map(tfBtn).join('')}</div>
+                <div class="crypto-ohlc-row">
+                    O:${Math.round(lastCandle.open).toLocaleString()} H:${Math.round(lastCandle.high).toLocaleString()}
+                    L:${Math.round(lastCandle.low).toLocaleString()} C:${Math.round(lastCandle.close).toLocaleString()}
+                </div>
+                ${chart}
+                <div class="crypto-subnav">
+                    <div class="crypto-subnav-item ${this.subTab === 'trade' ? 'active' : ''}" onclick="CryptoUI.setSubTab('trade')">Торговля</div>
+                    <div class="crypto-subnav-item ${this.subTab === 'portfolio' ? 'active' : ''}" onclick="CryptoUI.setSubTab('portfolio')">Портфель</div>
+                    <div class="crypto-subnav-item ${this.subTab === 'activity' ? 'active' : ''}" onclick="CryptoUI.setSubTab('activity')">Активность</div>
                 </div>`;
 
-            // На каждой кнопке продажи сразу видно, сколько фишек получите — считаем
-            // из уже загруженных данных (holdings.qty × доля × текущая цена), запрос
-            // к серверу для этого не нужен.
-            const sellPct = (fraction, label) => {
-                const est = Math.floor(hold.qty * fraction * c.price);
-                return `<button class="crypto-btn crypto-btn-sell" style="flex:1; display:flex; flex-direction:column; gap:2px; padding:6px 4px;" onclick="CryptoUI.sellPortion('${c.id}', ${fraction})">
-                    <span>${label}</span><span style="font-size:9px; opacity:0.85;">≈${est.toLocaleString()}</span>
-                </button>`;
-            };
-            const sellPanel = hold.qty > 0 ? `
-                <div class="crypto-trade-row">
-                    ${sellPct(0.25, '25%')}${sellPct(0.5, '50%')}${sellPct(0.75, '75%')}${sellPct(1, 'MAX')}
-                </div>` : `<div style="font-size:11px; color:var(--text-muted); text-align:center; padding:10px 0;">Нечего продавать — сначала купите монету</div>`;
+            let body = '';
+            if (this.subTab === 'trade') body = this.buildTradePanel(c, hold);
+            else if (this.subTab === 'portfolio') body = this.buildPortfolioPanel(data);
+            else body = this.buildActivityPanel();
 
             el.innerHTML = `
                 <button class="crypto-btn" style="background:var(--bg-panel-light); color:var(--text-light); margin-bottom:10px;" onclick="CryptoUI.closeCoin()">← Ко всем монетам</button>
-                <div class="crypto-card">
-                    <div class="crypto-card-head">
-                        <div><b>${c.name}</b> <span style="color:var(--text-muted); font-size:11px;">${c.symbol}</span></div>
-                        <div class="crypto-card-change ${isUp ? 'up' : 'down'}">${isUp ? '▲' : '▼'} ${changePct}%</div>
-                    </div>
-                    <div class="crypto-card-price ${isUp ? 'up' : 'down'}">${c.price.toLocaleString()} фишек</div>
-                    <div style="font-size:10px; color:var(--text-muted); margin-bottom:4px;">
-                        Капитализация: ${(c.market_cap || 0).toLocaleString()} · В обращении: ${(c.circulating_supply || 0).toFixed(2)} из ${(c.total_supply || 0).toLocaleString()}
-                    </div>
-                    ${bars}
-                    ${hold.qty > 0 ? `<div class="crypto-holding-info">У вас: ${hold.qty.toFixed(4)} ${c.symbol} · стоимость сейчас: ${myValue.toLocaleString()} · P&L: <span style="color:${pnl>=0?'#2ecc71':'#e74c3c'}">${pnl>=0?'+':''}${pnl.toLocaleString()}</span></div>` : ''}
+                <div class="crypto-card">${header}${body}</div>`;
 
-                    <div style="display:flex; gap:6px; margin-top:10px; margin-bottom:6px;">
-                        <button class="crypto-btn" style="flex:1; ${this.tradeMode==='buy' ? 'background:var(--gold); color:#000;' : 'background:var(--bg-panel-light); color:var(--text-muted);'}" onclick="CryptoUI.setMode('buy')">Купить</button>
-                        <button class="crypto-btn" style="flex:1; ${this.tradeMode==='sell' ? 'background:var(--gold); color:#000;' : 'background:var(--bg-panel-light); color:var(--text-muted);'}" onclick="CryptoUI.setMode('sell')">Продать</button>
+            // Возвращаем то, что человек успел напечатать, обратно в поле — и фокус,
+            // если он как раз печатал в момент, когда пришёл новый опрос сервера.
+            if (savedAmount) {
+                const newInput = document.getElementById('crypto-buy-' + c.id);
+                if (newInput) {
+                    newInput.value = savedAmount;
+                    this.updateBuyPreview(c.id, c.price);
+                    if (wasFocused) { newInput.focus(); const len = newInput.value.length; try { newInput.setSelectionRange(len, len); } catch(e) {} }
+                }
+            }
+        },
+
+        buildTradePanel(c, hold) {
+            const balance = (window.App && window.App.balance) || 0;
+
+            const buyPct = (fraction, label) => {
+                const chipsAmt = Math.floor(balance * fraction);
+                const netChips = Math.floor(chipsAmt * 0.98); // 2% комиссии в банк розыгрышей
+                const estQty = c.price > 0 ? (netChips / c.price) : 0;
+                return `<button class="crypto-pct-btn" onclick="CryptoUI.buyPortion('${c.id}', ${fraction})">${label}</button>`;
+            };
+            const sellPct = (fraction, label) => `<button class="crypto-pct-btn" onclick="CryptoUI.sellPortion('${c.id}', ${fraction})">${label}</button>`;
+
+            if (this.tradeMode === 'buy') {
+                return `
+                    <div class="crypto-mode-toggle">
+                        <div class="crypto-mode-btn active buy" onclick="CryptoUI.setMode('buy')">↗ Купить</div>
+                        <div class="crypto-mode-btn sell" onclick="CryptoUI.setMode('sell')">↘ Продать</div>
                     </div>
-                    ${this.tradeMode === 'buy' ? buyPanel : sellPanel}
+                    <div style="font-size:11px; color:var(--text-muted); margin: 10px 0 6px;">Фишки на покупку</div>
+                    <input type="number" class="crypto-big-input" id="crypto-buy-${c.id}" placeholder="0" oninput="CryptoUI.updateBuyPreview('${c.id}', ${c.price})">
+                    <div class="crypto-pct-row">${buyPct(0.05,'5%')}${buyPct(0.1,'10%')}${buyPct(0.25,'25%')}${buyPct(0.5,'50%')}${buyPct(0.75,'75%')}${buyPct(1,'MAX')}</div>
+                    <div class="crypto-info-row"><span>Баланс</span><span>${balance.toLocaleString()} ФИШКИ</span></div>
+                    <div class="crypto-info-row"><span>В портфеле</span><span>${hold.qty.toFixed(4)} ${c.symbol}</span></div>
+                    <div id="crypto-buy-preview-${c.id}" class="crypto-preview-box"></div>
+                    <button class="crypto-action-btn buy" onclick="CryptoUI.buy('${c.id}')">↗ Купить</button>`;
+            } else {
+                const myValue = Math.floor(hold.qty * c.price);
+                const est = Math.floor(myValue * 0.98);
+                const fee = myValue - est;
+                return `
+                    <div class="crypto-mode-toggle">
+                        <div class="crypto-mode-btn buy" onclick="CryptoUI.setMode('buy')">↗ Купить</div>
+                        <div class="crypto-mode-btn active sell" onclick="CryptoUI.setMode('sell')">↘ Продать</div>
+                    </div>
+                    ${hold.qty > 0 ? `
+                    <div style="font-size:11px; color:var(--text-muted); margin: 10px 0 6px;">Токены на продажу</div>
+                    <div class="crypto-big-input" style="display:flex; justify-content:space-between; align-items:center; cursor:default;">
+                        <span>${hold.qty.toFixed(4)}</span><span style="color:var(--text-muted); font-size:13px;">${c.symbol}</span>
+                    </div>
+                    <div class="crypto-pct-row">${sellPct(0.05,'5%')}${sellPct(0.1,'10%')}${sellPct(0.25,'25%')}${sellPct(0.5,'50%')}${sellPct(0.75,'75%')}${sellPct(1,'MAX')}</div>
+                    <div class="crypto-info-row"><span>Баланс</span><span>${balance.toLocaleString()} ФИШКИ</span></div>
+                    <div class="crypto-info-row"><span>В портфеле</span><span>${hold.qty.toFixed(4)} ${c.symbol}</span></div>
+                    <div class="crypto-preview-box">
+                        <div class="crypto-info-row"><span>Вы получите</span><span style="color:var(--gold); font-weight:800;">${est.toLocaleString()} ФИШКИ</span></div>
+                        <div class="crypto-info-row"><span>Комиссия (2%) → в банк розыгрышей</span><span style="color:#e74c3c;">-${fee.toLocaleString()} ФИШКИ</span></div>
+                    </div>
+                    <button class="crypto-action-btn sell" onclick="CryptoUI.sellPortion('${c.id}', 1)">↘ Продать всё</button>
+                    ` : `<div style="font-size:11px; color:var(--text-muted); text-align:center; padding:20px 0;">Нечего продавать — сначала купите монету</div>`}`;
+            }
+        },
+
+        buildPortfolioPanel(data) {
+            const holdings = data.holdings || {};
+            const rows = (data.coins || []).filter(c => (holdings[c.id] || {}).qty > 0).map(c => {
+                const hold = holdings[c.id];
+                const value = Math.floor(hold.qty * c.price);
+                const pnl = Math.floor((c.price - hold.avg_buy_price) * hold.qty);
+                return `<div class="crypto-portfolio-row">
+                    <div><b>${c.symbol}</b><div style="font-size:10px; color:var(--text-muted);">${hold.qty.toFixed(4)} монет</div></div>
+                    <div style="text-align:right;"><div>${value.toLocaleString()}</div><div style="font-size:10px; color:${pnl>=0?'#2ecc71':'#e74c3c'};">${pnl>=0?'+':''}${pnl.toLocaleString()}</div></div>
                 </div>`;
+            }).join('');
+            return rows || `<div style="font-size:11px; color:var(--text-muted); text-align:center; padding:20px 0;">Портфель пуст</div>`;
         },
 
-        // Настоящие столбики (как на бирже), а не линия — каждый столбик выше/ниже
-        // предыдущей точки красится в зелёный/красный по направлению движения.
-        buildBars(prices, h) {
-            const min = Math.min(...prices), max = Math.max(...prices);
-            const range = (max - min) || 1;
-            return `<div class="crypto-bars" style="height:${h}px;">` + prices.map((p, i) => {
-                const pct = ((p - min) / range) * 100;
-                const prev = i > 0 ? prices[i-1] : p;
-                const dir = p >= prev ? 'up' : 'down';
-                return `<div class="crypto-bar ${dir}" style="height:${Math.max(2, pct)}%;"></div>`;
-            }).join('') + `</div>`;
+        buildActivityPanel() {
+            if (!this.myTrades || !this.myTrades.length) return `<div style="font-size:11px; color:var(--text-muted); text-align:center; padding:20px 0;">Сделок пока не было</div>`;
+            return this.myTrades.map(t => {
+                const isBuy = t.side === 'buy';
+                const d = new Date(t.created_at);
+                return `<div class="crypto-portfolio-row">
+                    <div><b style="color:${isBuy?'#2ecc71':'#e74c3c'}">${isBuy?'Купил':'Продал'} ${t.symbol}</b><div style="font-size:10px; color:var(--text-muted);">${Number(t.qty).toFixed(4)} монет по ${t.price.toLocaleString()}</div></div>
+                    <div style="text-align:right;"><div>${t.chips.toLocaleString()}</div><div style="font-size:9px; color:var(--text-muted);">${d.toLocaleTimeString()}</div></div>
+                </div>`;
+            }).join('');
         },
+
+        // ---------------- СВЕЧИ ----------------
+        computeCandles(prices, timeframe) {
+            if (!prices || prices.length < 2) return [{ open: prices[0]||0, high: prices[0]||0, low: prices[0]||0, close: prices[0]||0 }];
+            const tickSec = 2;
+            const bucketSec = { '1m': 60, '5m': 300, '15m': 900, '1h': 3600 }[timeframe];
+            let ticksPerCandle;
+            if (!bucketSec) { // 'All'
+                ticksPerCandle = Math.max(1, Math.ceil(prices.length / 40));
+            } else {
+                ticksPerCandle = Math.max(1, Math.round(bucketSec / tickSec));
+                // Не даём получиться меньше ~12 свечек, даже если истории пока мало накопилось
+                ticksPerCandle = Math.min(ticksPerCandle, Math.max(1, Math.ceil(prices.length / 12)));
+            }
+            const candles = [];
+            for (let i = 0; i < prices.length; i += ticksPerCandle) {
+                const chunk = prices.slice(i, i + ticksPerCandle);
+                if (!chunk.length) continue;
+                candles.push({ open: chunk[0], close: chunk[chunk.length-1], high: Math.max(...chunk), low: Math.min(...chunk) });
+            }
+            return candles.slice(-60);
+        },
+        buildCandleChart(candles, height) {
+            const w = 320;
+            if (!candles.length) return `<svg width="100%" height="${height}" viewBox="0 0 ${w} ${height}"></svg>`;
+            const allVals = candles.flatMap(c => [c.high, c.low]);
+            const min = Math.min(...allVals), max = Math.max(...allVals);
+            const range = (max - min) || 1;
+            const candleW = w / candles.length;
+            const bodyW = Math.max(2, candleW * 0.6);
+            const y = v => height - ((v - min) / range) * height;
+            const grid = [0, 0.25, 0.5, 0.75, 1].map(f => `<line x1="0" y1="${height*f}" x2="${w}" y2="${height*f}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>`).join('');
+            const bars = candles.map((c, i) => {
+                const cx = i * candleW + candleW / 2;
+                const up = c.close >= c.open;
+                const color = up ? '#2ecc71' : '#e74c3c';
+                const yHigh = y(c.high), yLow = y(c.low), yOpen = y(c.open), yClose = y(c.close);
+                const bodyTop = Math.min(yOpen, yClose), bodyH = Math.max(1, Math.abs(yClose - yOpen));
+                return `<line x1="${cx}" y1="${yHigh}" x2="${cx}" y2="${yLow}" stroke="${color}" stroke-width="1"/>
+                    <rect x="${cx - bodyW/2}" y="${bodyTop}" width="${bodyW}" height="${bodyH}" fill="${color}"/>`;
+            }).join('');
+            return `<svg width="100%" height="${height}" viewBox="0 0 ${w} ${height}" preserveAspectRatio="none" style="display:block; margin:8px 0;">${grid}${bars}</svg>`;
+        },
+        fmtCompact(n) {
+            n = Number(n) || 0;
+            if (n >= 1e9) return (n/1e9).toFixed(2) + 'B';
+            if (n >= 1e6) return (n/1e6).toFixed(2) + 'M';
+            if (n >= 1e3) return (n/1e3).toFixed(1) + 'K';
+            return n.toFixed(n < 10 ? 2 : 0);
+        },
+
         buy(coinId) {
             const inp = document.getElementById('crypto-buy-' + coinId);
             const amount = Math.floor(Number(inp && inp.value));
             if (!amount || amount <= 0) { window.App.toast('Введите сумму', 'error'); return; }
             if (window.Multiplayer) window.Multiplayer.cryptoBuy(coinId, amount);
         },
-        // Живое превью "≈ сколько монет купите", пока вы вводите сумму — считаем
-        // на лету из уже известной текущей цены, без запроса к серверу.
         updateBuyPreview(coinId, price) {
             const inp = document.getElementById('crypto-buy-' + coinId);
             const el = document.getElementById('crypto-buy-preview-' + coinId);
             if (!el) return;
             const amount = Number(inp && inp.value);
-            if (!amount || amount <= 0 || !price) { el.innerText = ''; return; }
-            const qty = amount / price;
-            el.innerText = `≈ ${qty < 0.01 ? qty.toFixed(6) : qty.toFixed(4)} монет по текущей цене`;
+            if (!amount || amount <= 0 || !price) { el.innerHTML = ''; return; }
+            const fee = Math.ceil(amount * 0.02);
+            const net = amount - fee;
+            const qty = net / price;
+            el.innerHTML = `
+                <div class="crypto-info-row"><span>Вы получите</span><span style="color:var(--gold); font-weight:800;">≈ ${qty.toFixed(4)} монет</span></div>
+                <div class="crypto-info-row"><span>Комиссия (2%) → в банк розыгрышей</span><span style="color:#e74c3c;">-${fee.toLocaleString()} ФИШКИ</span></div>`;
         },
         buyPortion(coinId, fraction) {
             const balance = (window.App && window.App.balance) || 0;
@@ -2343,6 +2510,6 @@
 
 <!-- МУЛЬТИПЛЕЕР: общий раунд Ракеты, Рулетки, Арены, промокоды, Дурак, маркетплейс -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="multiplayer-client.js?v=19"></script>
+<script src="multiplayer-client.js?v=16"></script>
 </body>
 </html>
