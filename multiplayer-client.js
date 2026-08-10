@@ -69,6 +69,7 @@ window.Multiplayer = {
             }
         } catch (e) { /* колонки ещё не созданы — не блокируем игру */ }
 
+        await this.flushPendingBalance();
         const bal = await this.getBalance();
         if (bal !== null) { window.App.balance = bal; window.App.updBalUI(); }
 
@@ -432,6 +433,19 @@ window.Multiplayer = {
         tick(); this.dailyCd = setInterval(tick, 1000);
     },
 
+    // Если предыдущий запуск приложения закрылся/обновился ДО того, как фоновая
+    // отправка баланса (из App.syncDelta) успела долететь до сервера — сумма
+    // осталась висеть в localStorage. Довысылаем её здесь, ДО того, как вообще
+    // начинаем доверять ответу сервера — иначе баланс откатится к устаревшему
+    // числу (та самая жалоба "при обновлении балик возвращается").
+    async flushPendingBalance() {
+        let pending = parseInt(localStorage.getItem('dydx_pending_delta') || '0', 10); if (isNaN(pending)) pending = 0;
+        if (pending === 0) return;
+        try {
+            await sb.rpc('apply_balance_delta', { p_telegram_id: ME.id, p_delta: pending });
+            localStorage.setItem('dydx_pending_delta', 0);
+        } catch (e) { /* снова не долетело — останется в pending, попробуем при следующем запуске */ }
+    },
     async getBalance() {
         const { data } = await sb.from('users').select('balance').eq('telegram_id', ME.id).single();
         return data ? Number(data.balance) : null;

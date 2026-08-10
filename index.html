@@ -945,22 +945,30 @@
         chgBal(amount) {
             amount = Math.floor(Number(amount)); if(isNaN(amount)) return;
             this.balance += amount; this.updBalUI(); if(amount > 0) window.Tasks.chk('balance');
-            // Раньше сольные игры (Монетка, Hi-Lo, Мины, Башенка, Апгрейдер) меняли
-            // баланс ТОЛЬКО здесь, в браузере — сервер об этом никогда не узнавал.
-            // Из-за этого любое серверное действие могло откатить баланс обратно к
-            // устаревшему числу, а при пересборке приложения подтягивался тоже
-            // устаревший баланс. Шлём дельту на сервер в фоне — саму игру это не
-            // тормозит (не ждём ответа), но теперь сервер тоже в курсе изменения.
-            //
-            // _pendingSyncCount защищает от гонки: периодическая самопроверка баланса
-            // (см. multiplayer-client.js) не должна откатывать локальный баланс к
-            // устаревшему серверному значению, пока эта самая отправка ещё не долетела.
-            if (window.sb && window.ME && amount !== 0) {
-                this._pendingSyncCount = (this._pendingSyncCount || 0) + 1;
-                window.sb.rpc('apply_balance_delta', { p_telegram_id: window.ME.id, p_delta: amount })
-                    .catch(() => {})
-                    .finally(() => { this._pendingSyncCount = Math.max(0, (this._pendingSyncCount || 1) - 1); });
-            }
+            if (amount !== 0) this.syncDelta(amount);
+        },
+        // Раньше отправка на сервер была просто "выстрелил и забыл" — если страницу
+        // обновляли ДО того, как запрос долетал, обновление обрывало его, и сервер
+        // так и не узнавал об изменении. При следующем запуске сервер снова считался
+        // источником правды и откатывал баланс назад — та самая жалоба "при
+        // обновлении балик возвращается". Теперь неподтверждённая сумма СНАЧАЛА
+        // синхронно записывается в localStorage (это переживает обновление страницы),
+        // и только потом отправляется на сервер — если отправка не долетела, при
+        // следующем запуске приложения (см. flushPendingBalance в multiplayer-client.js)
+        // эта сумма будет довыслана, прежде чем мы вообще поверим ответу сервера.
+        syncDelta(amount) {
+            let pending = parseInt(localStorage.getItem('dydx_pending_delta') || '0', 10); if (isNaN(pending)) pending = 0;
+            pending += amount;
+            localStorage.setItem('dydx_pending_delta', pending);
+            if (!(window.sb && window.ME)) return;
+            this._pendingSyncCount = (this._pendingSyncCount || 0) + 1;
+            window.sb.rpc('apply_balance_delta', { p_telegram_id: window.ME.id, p_delta: amount })
+                .then(() => {
+                    let p = parseInt(localStorage.getItem('dydx_pending_delta') || '0', 10); if (isNaN(p)) p = 0;
+                    localStorage.setItem('dydx_pending_delta', p - amount);
+                })
+                .catch(() => { /* не долетело — останется в pending, довышлется в следующий раз */ })
+                .finally(() => { this._pendingSyncCount = Math.max(0, (this._pendingSyncCount || 1) - 1); });
         },
         TOPUP_COOLDOWN_MS: 20 * 60 * 1000, // 20 минут
         cdTimer: null,
