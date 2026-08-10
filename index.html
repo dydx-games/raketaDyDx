@@ -880,7 +880,7 @@
     window.Levels = {
         xp: 0, lvl: 1,
         // XP, необходимый чтобы перейти НА этот уровень (накопительно)
-        need(lvl) { return Math.floor(1750 * Math.pow(lvl, 1.55)); }, // было 500 — теперь в 3.5 раза больше опыта на уровень
+        need(lvl) { return Math.floor(5250 * Math.pow(lvl, 1.55)); }, // 1750 -> 5250, ещё в 3 раза больше опыта на уровень
         init() {
             let s = LS.g('dydx_levels', {xp: 0, lvl: 1});
             this.xp = (typeof s.xp === 'number' && !isNaN(s.xp)) ? s.xp : 0;
@@ -895,7 +895,7 @@
             let leveledUp = false; let totalReward = 0;
             while (this.xp >= this.need(this.lvl)) {
                 this.lvl++; leveledUp = true;
-                totalReward += this.lvl * 100; // было 500 — награда снижена в 5 раз
+                totalReward += this.lvl * 20; // 100 -> 20, награда снижена ещё в 5 раз
             }
             this.save(); this.render();
             if (leveledUp) {
@@ -2715,6 +2715,6 @@
 
 <!-- МУЛЬТИПЛЕЕР: общий раунд Ракеты, Рулетки, Арены, промокоды, Дурак, маркетплейс -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="multiplayer-client.js?v=22"></script>
+<script src="multiplayer-client.js?v=16"></script>
 </body>
 </html>
