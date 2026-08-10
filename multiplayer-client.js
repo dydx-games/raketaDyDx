@@ -107,11 +107,7 @@ window.Multiplayer = {
         // моргнула при сворачивании приложения), рассинхрон с сервером мог
         // остаться навсегда. Теперь досверяемся регулярно — если что-то разошлось,
         // само себя поправит в течение нескольких секунд, а не будет висеть сломанным.
-        setInterval(async () => {
-            if (window.App && window.App._pendingSyncCount > 0) return; // ещё летит фоновая синхронизация — не перебиваем
-            const bal = await this.getBalance();
-            if (bal !== null && window.App && bal !== window.App.balance) { window.App.balance = bal; window.App.updBalUI(); }
-        }, 8000);
+        setInterval(() => this.syncBalanceFromServer(), 8000);
     },
 
     // ================= ОПРОС СОСТОЯНИЯ =================
@@ -220,7 +216,7 @@ window.Multiplayer = {
     async placeBet(amount) {
         const { data, error } = await sb.rpc('place_bet', { p_telegram_id: ME.id, p_username: ME.username, p_amount: amount });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка ставки', 'error'); return false; }
-        const bal = await this.getBalance(); if (bal !== null) { window.App.balance = bal; window.App.updBalUI(); }
+        await this.syncBalanceFromServer();
         return true;
     },
     async cashOut() {
@@ -228,7 +224,7 @@ window.Multiplayer = {
         if (!key) return null;
         const { data, error } = await sb.rpc('cash_out', { p_telegram_id: ME.id, p_round_started_at: key });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Не удалось забрать', 'error'); return null; }
-        const bal = await this.getBalance(); if (bal !== null) { window.App.balance = bal; window.App.updBalUI(); }
+        await this.syncBalanceFromServer();
         window.App.toast(`Забрано ${data[0].win_amount}!`, 'success');
         return data[0].win_amount;
     },
@@ -245,7 +241,7 @@ window.Multiplayer = {
             window.ArenaUI.spinTo(Number(state.winner_angle));
         }
         if (state.status === 'finished' && state.winner_telegram_id) {
-            const bal = await this.getBalance(); if (bal !== null) { window.App.balance = bal; window.App.updBalUI(); }
+            await this.syncBalanceFromServer();
             let iWon = state.winner_telegram_id === ME.id;
             let winnerBet = this.arenaBets.find(b => b.telegram_id === state.winner_telegram_id);
             let winnerName = winnerBet ? (winnerBet.username || 'Игрок') : 'Игрок';
@@ -264,7 +260,7 @@ window.Multiplayer = {
         const { data, error } = await sb.rpc('arena_join', { p_telegram_id: ME.id, p_username: ME.username, p_avatar_url: ME.avatar_url, p_amount: amount });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return false; }
         window.App.toast(data[0].message, 'success');
-        const bal = await this.getBalance(); if (bal !== null) { window.App.balance = bal; window.App.updBalUI(); }
+        await this.syncBalanceFromServer();
         return true;
     },
 
@@ -296,7 +292,7 @@ window.Multiplayer = {
     async rouletteBet(color, amount) {
         const { data, error } = await sb.rpc('roulette_bet', { p_telegram_id: ME.id, p_username: ME.username, p_color: color, p_amount: amount });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка ставки', 'error'); return false; }
-        const bal = await this.getBalance(); if (bal !== null) { window.App.balance = bal; window.App.updBalUI(); }
+        await this.syncBalanceFromServer();
         return true;
     },
 
@@ -332,7 +328,7 @@ window.Multiplayer = {
         const { data, error } = await sb.rpc('durak_create_room', { p_host_id: ME.id, p_host_username: ME.username, p_bet: bet });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return; }
         window.App.toast('Комната создана, ждём соперника', 'success');
-        const bal = await this.getBalance(); if (bal !== null) { window.App.balance = bal; window.App.updBalUI(); }
+        await this.syncBalanceFromServer();
         this.myDurakRoomId = data[0].room_id;
         this.subscribeDurakRoom(data[0].room_id);
     },
@@ -340,7 +336,7 @@ window.Multiplayer = {
         const { data, error } = await sb.rpc('durak_join_room', { p_room_id: roomId, p_guest_id: ME.id, p_guest_username: ME.username });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Не удалось войти', 'error'); return; }
         window.App.toast('Игра началась!', 'success');
-        const bal = await this.getBalance(); if (bal !== null) { window.App.balance = bal; window.App.updBalUI(); }
+        await this.syncBalanceFromServer();
         this.myDurakRoomId = roomId;
         this.subscribeDurakRoom(roomId);
     },
@@ -390,12 +386,12 @@ window.Multiplayer = {
     async durakTake(roomId) {
         const { data, error } = await sb.rpc('durak_take', { p_room_id: roomId, p_telegram_id: ME.id });
         if (error || !data || !data[0].success) window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
-        const bal = await this.getBalance(); if (bal !== null) { window.App.balance = bal; window.App.updBalUI(); }
+        await this.syncBalanceFromServer();
     },
     async durakPass(roomId) {
         const { data, error } = await sb.rpc('durak_pass', { p_room_id: roomId, p_telegram_id: ME.id });
         if (error || !data || !data[0].success) window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
-        const bal = await this.getBalance(); if (bal !== null) { window.App.balance = bal; window.App.updBalUI(); }
+        await this.syncBalanceFromServer();
     },
 
     // ================= ПРОМОКОДЫ =================
@@ -446,6 +442,18 @@ window.Multiplayer = {
             localStorage.setItem('dydx_pending_delta', 0);
         } catch (e) { /* снова не долетело — останется в pending, попробуем при следующем запуске */ }
     },
+    // Единая точка для "подтянуть баланс с сервера и показать" — раньше это было
+    // разбросано по ~14 местам файла как отдельные копии одного и того же кода,
+    // и только 2 из них проверяли, не летит ли ещё неподтверждённая фоновая
+    // отправка (см. App.syncDelta) — остальные 12 могли перебить свежий локальный
+    // выигрыш устаревшим серверным числом, пока отправка ещё в пути. Теперь
+    // проверка в одном месте, и её точно не забудут в новом коде.
+    async syncBalanceFromServer() {
+        if (window.App && window.App._pendingSyncCount > 0) return null; // не перебиваем ещё не долетевшую отправку
+        const bal = await this.getBalance();
+        if (bal !== null && window.App) { window.App.balance = bal; window.App.updBalUI(); }
+        return bal;
+    },
     async getBalance() {
         const { data } = await sb.from('users').select('balance').eq('telegram_id', ME.id).single();
         return data ? Number(data.balance) : null;
@@ -461,7 +469,7 @@ window.Multiplayer = {
             window.App.toast((data && data[0] && data[0].message) || 'Ошибка апгрейда', 'error');
             return null;
         }
-        const bal = await this.getBalance(); if (bal !== null) { window.App.balance = bal; window.App.updBalUI(); }
+        await this.syncBalanceFromServer();
         // забираем id только что созданного NFT (последний по времени у этого владельца с такими же трейтами)
         const { data: mine } = await sb.from('user_nfts').select('*').eq('owner_telegram_id', ME.id).order('id', { ascending: false }).limit(1);
         const created = mine && mine[0];
@@ -496,14 +504,14 @@ window.Multiplayer = {
         const { data, error } = await sb.rpc('crypto_buy', { p_telegram_id: ME.id, p_coin_id: coinId, p_chips_amount: chipsAmount });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return; }
         window.App.toast('Куплено!', 'success');
-        const bal = await this.getBalance(); if (bal !== null) { window.App.balance = bal; window.App.updBalUI(); }
+        await this.syncBalanceFromServer();
         this.refreshCrypto();
     },
     async cryptoSell(coinId, qty) {
         const { data, error } = await sb.rpc('crypto_sell', { p_telegram_id: ME.id, p_coin_id: coinId, p_qty: qty });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return; }
         window.App.toast(`Продано за ${data[0].proceeds} фишек`, 'success');
-        const bal = await this.getBalance(); if (bal !== null) { window.App.balance = bal; window.App.updBalUI(); }
+        await this.syncBalanceFromServer();
         this.refreshCrypto();
     },
     async cryptoGetMyTrades() {
@@ -519,7 +527,7 @@ window.Multiplayer = {
         const { data, error } = await sb.rpc('tycoon_buy', { p_telegram_id: ME.id, p_building_id: buildingId });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return; }
         window.App.toast(data[0].message, 'success');
-        const bal = await this.getBalance(); if (bal !== null) { window.App.balance = bal; window.App.updBalUI(); }
+        await this.syncBalanceFromServer();
         this.refreshTycoon();
     },
     async tycoonCollect() {
@@ -560,7 +568,7 @@ window.Multiplayer = {
         const { data, error } = await sb.rpc('buy_nft', { p_telegram_id: ME.id, p_username: ME.username, p_listing_id: listingId });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return; }
         window.App.toast(data[0].message, 'success');
-        const bal = await this.getBalance(); if (bal !== null) { window.App.balance = bal; window.App.updBalUI(); }
+        await this.syncBalanceFromServer();
         this.refreshMyNfts(); this.refreshMarketListings();
     }
 };
@@ -575,8 +583,6 @@ document.addEventListener('visibilitychange', () => {
         if (window.Multiplayer.forceRefreshCrash) window.Multiplayer.forceRefreshCrash();
         // Баланс тоже сверяем сразу — раньше это не делалось вообще, отсюда и была
         // жалоба "при сворачивании баланс обнулился до старого значения".
-        window.Multiplayer.getBalance().then(bal => {
-            if (bal !== null && window.App && !(window.App._pendingSyncCount > 0) && bal !== window.App.balance) { window.App.balance = bal; window.App.updBalUI(); }
-        });
+        window.Multiplayer.syncBalanceFromServer();
     }
 });
