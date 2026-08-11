@@ -132,10 +132,31 @@
         .crypto-action-btn.buy { background: linear-gradient(135deg, #2ecc71, #27ae60); color: #063; }
         .crypto-action-btn.sell { background: linear-gradient(135deg, #e74c3c, #c0392b); color: #fff; }
         .crypto-portfolio-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #1f222b; font-size: 12px; }
+        .stats-game-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #1f222b; }
+        .stats-game-row:last-child { border-bottom: none; }
+        .stats-game-icon { width: 38px; height: 38px; min-width: 38px; border-radius: 10px; background: var(--bg-panel-light); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+        .stats-game-info { flex: 1; min-width: 0; }
+        .stats-game-name { font-weight: 700; font-size: 13px; }
+        .stats-game-bar-wrap { height: 3px; background: rgba(255,255,255,0.08); border-radius: 2px; margin: 6px 0; overflow: hidden; }
+        .stats-game-bar { height: 100%; border-radius: 2px; }
+        .stats-game-sub { font-size: 10px; color: var(--text-muted); }
+        .stats-game-pnl { font-weight: 800; font-size: 13px; white-space: nowrap; }
+        .ops-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid #1f222b; font-size: 12px; }
+        .ops-row:last-child { border-bottom: none; }
+        .ops-row-label { font-weight: 700; }
+        .ops-row-time { font-size: 10px; color: var(--text-muted); }
+        #daily-bonus-fab { position: fixed; bottom: calc(var(--nav-h) + 14px); right: 14px; background: rgba(46,204,113,0.22); border: 1px solid rgba(46,204,113,0.5); backdrop-filter: blur(6px); color: #2ecc71; font-size: 12px; font-weight: 800; padding: 10px 16px; border-radius: 999px; cursor: pointer; z-index: 60; box-shadow: 0 4px 14px rgba(0,0,0,0.3); transition: transform 0.15s var(--ease); }
+        #daily-bonus-fab:active { transform: scale(0.92); }
+        #daily-bonus-fab.urgent { animation: fabPulse 1s infinite; }
+        @keyframes fabPulse { 0%,100% { box-shadow: 0 0 8px rgba(46,204,113,0.4); } 50% { box-shadow: 0 0 22px rgba(46,204,113,0.9); } }
+        .task-notify-container { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); z-index: 99998; width: 92%; max-width: 320px; pointer-events: none; display: flex; flex-direction: column; gap: 8px; }
+        .task-notify { display: flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #d7b45d, #f39c12); color: #1a1400; padding: 12px 14px; border-radius: 14px; font-weight: 800; font-size: 13px; box-shadow: 0 8px 24px rgba(215,180,93,0.45); animation: taskSlideIn 0.4s cubic-bezier(0.25,0.8,0.25,1) forwards, taskFadeOut 0.35s forwards 3.2s; }
+        @keyframes taskSlideIn { from { opacity: 0; transform: translateY(-16px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        @keyframes taskFadeOut { to { opacity: 0; transform: translateY(-10px) scale(0.97); } }
         .crypto-chart-tooltip { position: absolute; background: rgba(20,22,28,0.95); border: 1px solid #2a2e3a; border-radius: 8px; padding: 5px 8px; font-size: 10px; color: #fff; pointer-events: none; white-space: nowrap; z-index: 5; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
-        .hub-category { font-size: 12px; font-weight: 800; color: var(--gold); letter-spacing: 0.5px; margin: 18px 10px 8px; text-transform: uppercase; }
-        .hub-grid { display: flex; flex-direction: column; gap: 10px; padding: 0 10px; }
-        .hub-card { display: flex; align-items: center; gap: 12px; background: var(--bg-panel); border: 1px solid #1f222b; border-radius: 18px; padding: 12px; cursor: pointer; position: relative; overflow: hidden; box-shadow: 0 4px 14px rgba(0,0,0,0.22); transition: transform 0.18s var(--ease), box-shadow 0.18s var(--ease); }
+        .hub-category { font-size: 13px; font-weight: 800; letter-spacing: 0.5px; margin: 26px 12px 12px; text-transform: uppercase; }
+        .hub-grid { display: flex; flex-direction: column; gap: 12px; padding: 0 12px; }
+        .hub-card { display: flex; align-items: center; gap: 14px; background: var(--bg-panel); border: 1px solid #1f222b; border-radius: 18px; padding: 14px; cursor: pointer; position: relative; overflow: hidden; box-shadow: 0 4px 14px rgba(0,0,0,0.22); transition: transform 0.18s var(--ease), box-shadow 0.18s var(--ease); }
         .hub-card:active { transform: scale(0.98); }
         .hub-card-emoji { width: 56px; height: 56px; min-width: 56px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 30px; background: radial-gradient(circle at 30% 30%, rgba(215,180,93,0.25), rgba(20,22,28,0.5)); }
         .hub-card-info { flex: 1; min-width: 0; }
@@ -363,6 +384,8 @@
 
 <div id="app">
     <div class="toast-container" id="toast-container"></div>
+    <div class="task-notify-container" id="task-notify-container"></div>
+    <div id="daily-bonus-fab" onclick="if(window.Multiplayer) Multiplayer.claimDaily(); else App.toast('Мультиплеер не подключён', 'error')">🎁 +300</div>
 
     <header>
         <div class="header-title"><h1>dy/dx</h1><span id="app-subtitle">Игры</span></div>
@@ -394,7 +417,7 @@
                     <div style="font-size:9px; color:var(--text-muted); text-align:right; max-width:140px;">Копится с комиссии 2% в Бирже и Арене — периодически разыгрывается среди игроков</div>
                 </div>
             </div>
-            <div class="hub-category">🔴 Live-игры · общий раунд на всех</div>
+            <div class="hub-category" style="color:#e74c3c;">🔴 Live-игры · общий раунд на всех</div>
             <div class="hub-grid">
                 <div class="hub-card" onclick="App.s('crash', null, 'Ракета')">
                     <div class="hub-live-badge"><span class="hub-live-dot"></span>LIVE</div>
@@ -408,7 +431,7 @@
                 </div>
             </div>
 
-            <div class="hub-category">🤝 С другими игроками</div>
+            <div class="hub-category" style="color:#5dade2;">🤝 С другими игроками</div>
             <div class="hub-grid">
                 <div class="hub-card" onclick="App.s('arena', null, 'Арена')">
                     <div class="hub-card-emoji">🎯</div>
@@ -420,7 +443,7 @@
                 </div>
             </div>
 
-            <div class="hub-category">⚡ Быстрые игры</div>
+            <div class="hub-category" style="color:#f1c40f;">⚡ Быстрые игры</div>
             <div class="hub-grid">
                 <div class="hub-card" onclick="App.s('hilo', null, 'Hi-Lo')">
                     <div class="hub-card-emoji">🔼</div>
@@ -448,7 +471,7 @@
                 </div>
             </div>
 
-            <div class="hub-category">🏛️ Бизнес</div>
+            <div class="hub-category" style="color:var(--gold);">🏛️ Бизнес</div>
             <div class="hub-grid" style="margin-bottom: 20px;">
                 <div class="hub-card" onclick="App.s('tycoon', null, 'Империя')">
                     <div class="hub-card-emoji">🏛️</div>
@@ -747,13 +770,22 @@
                 </div>
             </div>
 
+            <div class="panel" style="margin: 10px 10px 0;">
+                <div style="display:flex; gap:6px; margin-bottom:10px;">
+                    <button class="btn-small active" id="profile-tab-stats" onclick="ProfileStats.showTab('stats')">Статистика по играм</button>
+                    <button class="btn-small" id="profile-tab-ops" onclick="ProfileStats.showTab('ops')">Операции</button>
+                </div>
+                <div id="profile-stats-list"></div>
+                <div id="profile-ops-list" style="display:none;"></div>
+            </div>
+
             <div class="case-panel" id="mp-panel">
                 <div class="panel-title">Промокод</div>
                 <div class="bet-row">
                     <div class="input-wrap"><input type="text" id="promo-input" placeholder="Введите код" style="text-transform:uppercase;"></div>
                     <button class="btn-small" style="flex:0 0 auto; padding:0 14px; background:var(--gold); color:#000;" onclick="if(window.Multiplayer) Multiplayer.redeemPromo(document.getElementById('promo-input').value); else App.toast('Мультиплеер не подключён', 'error')">Активировать</button>
                 </div>
-                <button class="main-btn btn-gold" id="daily-bonus-btn" onclick="if(window.Multiplayer) Multiplayer.claimDaily(); else App.toast('Мультиплеер не подключён', 'error')" style="margin-top:4px;">🎁 Забрать ежедневный бонус (2000)</button>
+                <button class="main-btn btn-gold" id="daily-bonus-btn" onclick="if(window.Multiplayer) Multiplayer.claimDaily(); else App.toast('Мультиплеер не подключён', 'error')" style="margin-top:4px;">🎁 Забрать бонус (300, до 10 раз в день)</button>
                 <div style="font-size:10px; color:var(--text-muted); margin-top:8px; text-align:center;">Промокоды рассылает организатор тусовки в чат</div>
             </div>
 
@@ -953,37 +985,46 @@
             filter.frequency.setValueAtTime(1200, ctx.currentTime);
             filter.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + dur);
             const gain = ctx.createGain();
-            gain.gain.setValueAtTime(0.1, ctx.currentTime); // тихо, как просили
+            gain.gain.setValueAtTime(0.22, ctx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
             noise.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
             noise.start(); noise.stop(ctx.currentTime + dur);
         },
-        // Два коротких весёлых тона — на получение денег.
+        // Резкий короткий "тюк" (щелчок с быстрым падением высоты) + пара весёлых
+        // тонов следом — на получение денег. Громче и характернее прежнего.
         coin() {
             const ctx = this.getCtx(); if (!ctx) return;
+            const t0 = ctx.currentTime;
+            const click = ctx.createOscillator(); click.type = 'square'; click.frequency.setValueAtTime(1400, t0); click.frequency.exponentialRampToValueAtTime(300, t0 + 0.05);
+            const clickGain = ctx.createGain(); clickGain.gain.setValueAtTime(0.22, t0); clickGain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.05);
+            click.connect(clickGain); clickGain.connect(ctx.destination); click.start(t0); click.stop(t0 + 0.05);
             [880, 1318].forEach((freq, i) => {
-                const t0 = ctx.currentTime + i*0.08;
-                const osc = ctx.createOscillator(); osc.type = 'sine'; osc.frequency.value = freq;
-                const gain = ctx.createGain();
-                gain.gain.setValueAtTime(0.001, t0);
-                gain.gain.linearRampToValueAtTime(0.14, t0 + 0.02);
-                gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.25);
-                osc.connect(gain); gain.connect(ctx.destination);
-                osc.start(t0); osc.stop(t0 + 0.25);
-            });
-        },
-        // Восходящий короткий перезвон — на выполнение задания.
-        task() {
-            const ctx = this.getCtx(); if (!ctx) return;
-            [523, 659, 784].forEach((freq, i) => {
-                const t0 = ctx.currentTime + i*0.09;
+                const t1 = t0 + 0.05 + i*0.08;
                 const osc = ctx.createOscillator(); osc.type = 'triangle'; osc.frequency.value = freq;
                 const gain = ctx.createGain();
-                gain.gain.setValueAtTime(0.001, t0);
-                gain.gain.linearRampToValueAtTime(0.12, t0 + 0.02);
-                gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.2);
+                gain.gain.setValueAtTime(0.001, t1);
+                gain.gain.linearRampToValueAtTime(0.28, t1 + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.001, t1 + 0.25);
                 osc.connect(gain); gain.connect(ctx.destination);
-                osc.start(t0); osc.stop(t0 + 0.2);
+                osc.start(t1); osc.stop(t1 + 0.25);
+            });
+        },
+        // Резкая атака + восходящий перезвон — на выполнение задания.
+        task() {
+            const ctx = this.getCtx(); if (!ctx) return;
+            const t0 = ctx.currentTime;
+            const click = ctx.createOscillator(); click.type = 'square'; click.frequency.setValueAtTime(1000, t0); click.frequency.exponentialRampToValueAtTime(400, t0 + 0.04);
+            const clickGain = ctx.createGain(); clickGain.gain.setValueAtTime(0.2, t0); clickGain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.04);
+            click.connect(clickGain); clickGain.connect(ctx.destination); click.start(t0); click.stop(t0 + 0.04);
+            [523, 659, 784].forEach((freq, i) => {
+                const t1 = t0 + 0.04 + i*0.09;
+                const osc = ctx.createOscillator(); osc.type = 'triangle'; osc.frequency.value = freq;
+                const gain = ctx.createGain();
+                gain.gain.setValueAtTime(0.001, t1);
+                gain.gain.linearRampToValueAtTime(0.26, t1 + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.001, t1 + 0.2);
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.start(t1); osc.stop(t1 + 0.2);
             });
         }
     };
@@ -1000,14 +1041,35 @@
         updBalUI() {
             if(isNaN(this.balance)) this.balance = 0; document.getElementById('header-balance').innerText = this.balance.toLocaleString();
             localStorage.setItem('dydx_balance', this.balance); if(window.Crash) window.Crash.updBtns();
+            // Баланс закончился — подсвечиваем бонус пульсацией, чтобы человек не
+            // застревал без единой фишки, а сразу видел, куда за ними идти.
+            const fab = document.getElementById('daily-bonus-fab');
+            if (fab) fab.classList.toggle('urgent', this.balance <= 0);
         },
-        chgBal(amount) {
+        chgBal(amount, label) {
             amount = Math.floor(Number(amount)); if(isNaN(amount)) return;
             // Не даём балансу уйти в минус на экране — сервер и так это делает
             // (apply_balance_delta), но клиент может на долю секунды показать минус
             // при очень быстрых повторных кликах, пока сервер ещё не ответил.
             this.balance = Math.max(0, this.balance + amount); this.updBalUI(); if(amount > 0) window.Tasks.chk('balance');
-            if (amount !== 0) this.syncDelta(amount);
+            if (amount !== 0) { this.syncDelta(amount); this.logOperation(amount, label || 'Игра'); }
+        },
+        // Единая точка учёта — раз почти все сольные игры и так проходят через
+        // chgBal(), заводим здесь и список операций, и статистику по играм разом,
+        // вместо того чтобы вручную дописывать логирование в каждую из 8 игр отдельно.
+        // ⚠ Крипто/Империя/Арена сюда НЕ попадают — они списывают баланс напрямую
+        // через сервер, в обход chgBal(), так что в этой статистике их не будет.
+        logOperation(amount, label) {
+            let ops = LS.g('dydx_ops', []);
+            ops.unshift({ amount, label, ts: Date.now() });
+            if (ops.length > 150) ops = ops.slice(0, 150);
+            LS.s('dydx_ops', ops);
+
+            let stats = LS.g('dydx_game_stats', {});
+            if (!stats[label]) stats[label] = { games: 0, wagered: 0, net: 0 };
+            stats[label].net += amount;
+            if (amount < 0) { stats[label].wagered += -amount; stats[label].games += 1; }
+            LS.s('dydx_game_stats', stats);
         },
         // Раньше отправка на сервер была просто "выстрелил и забыл" — если страницу
         // обновляли ДО того, как запрос долетал, обновление обрывало его, и сервер
@@ -1109,19 +1171,88 @@
             if(id === 'tycoon' && window.Multiplayer) window.Multiplayer.refreshTycoon();
             if(id === 'crypto' && window.Multiplayer) window.Multiplayer.refreshCrypto();
             if(id === 'roulette' && window.Roulette) setTimeout(() => window.Roulette.resync(), 50);
+            const fab = document.getElementById('daily-bonus-fab'); if (fab) fab.style.visibility = (id === 'crypto') ? 'hidden' : 'visible';
+            if(id === 'profile' && window.ProfileStats) window.ProfileStats.render();
         },
         toast(msg, type='') {
             const c = document.getElementById('toast-container'); if(c.children.length > 2) c.firstElementChild.remove();
             const t = document.createElement('div'); t.className = `toast ${type}`; t.innerText = msg; c.appendChild(t); setTimeout(() => { if(t.parentNode) t.parentNode.removeChild(t); }, 3000);
         },
+        // Отдельный, более заметный баннер именно для выполненных заданий — не
+        // теряется среди обычных игровых тостов (тех же "Победа! +N" каждую минуту).
+        taskNotify(text) {
+            const c = document.getElementById('task-notify-container'); if (!c) return;
+            const el = document.createElement('div'); el.className = 'task-notify';
+            el.innerHTML = `<span style="font-size:22px;">🏆</span><span>${text}</span>`;
+            c.appendChild(el);
+            setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 3700);
+        },
         mCb(n, k) { if(k<0 || k>n) return 0; if(k===0 || k===n) return 1; let res=1; for(let i=1; i<=k; i++) res = res * (n-i+1)/i; return res; },
-        win(amount) { this.chgBal(amount); this.toast(`Победа! +${amount}`, 'success'); if(window.Sound) window.Sound.coin(); window.Tasks.chk('win', amount); window.Levels.addWin(amount); window.Gifts.tryDrop(); }
+        win(amount, label) { this.chgBal(amount, label); this.toast(`Победа! +${amount}`, 'success'); if(window.Sound) window.Sound.coin(); window.Tasks.chk('win', amount); window.Levels.addWin(amount); window.Gifts.tryDrop(); }
+    };
+
+    // Статистика собирается централизованно в App.logOperation() (вызывается из
+    // chgBal/win) — здесь только чтение и отрисовка накопленных данных.
+    window.ProfileStats = {
+        tab: 'stats',
+        icons: { 'Ракета':'🚀', 'Рулетка':'🎡', 'Hi-Lo':'🔼', 'Монетка':'🪙', 'Апгрейдер':'⚙️', 'Башня':'🗼', 'Мины':'💣', 'Стаканчики':'🥤', 'Игра':'🎮' },
+        showTab(t) {
+            this.tab = t;
+            document.getElementById('profile-tab-stats').classList.toggle('active', t === 'stats');
+            document.getElementById('profile-tab-ops').classList.toggle('active', t === 'ops');
+            document.getElementById('profile-stats-list').style.display = t === 'stats' ? '' : 'none';
+            document.getElementById('profile-ops-list').style.display = t === 'ops' ? '' : 'none';
+            this.render();
+        },
+        render() {
+            if (this.tab === 'stats') this.renderStats(); else this.renderOps();
+        },
+        renderStats() {
+            const el = document.getElementById('profile-stats-list'); if (!el) return;
+            const stats = LS.g('dydx_game_stats', {});
+            const games = Object.keys(stats).filter(k => stats[k].games > 0);
+            if (!games.length) { el.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:12px; padding:16px 0;">Пока нет сыгранных партий</div>`; return; }
+
+            const maxAbs = Math.max(1, ...games.map(g => Math.abs(stats[g].net)));
+            // Сортируем по объёму поставленного — крупнейшие игры сверху, как на референсе.
+            games.sort((a, b) => stats[b].wagered - stats[a].wagered);
+
+            el.innerHTML = games.map(g => {
+                const s = stats[g];
+                const pct = Math.max(2, Math.round((Math.abs(s.net) / maxAbs) * 100));
+                const isProfit = s.net >= 0;
+                const barColor = isProfit ? '#2ecc71' : 'var(--gold)';
+                return `<div class="stats-game-row">
+                    <div class="stats-game-icon">${this.icons[g] || '🎮'}</div>
+                    <div class="stats-game-info">
+                        <div class="stats-game-name">${g}</div>
+                        <div class="stats-game-bar-wrap"><div class="stats-game-bar" style="width:${pct}%; background:${barColor};"></div></div>
+                        <div class="stats-game-sub">${s.games} игр · ${s.wagered.toLocaleString()} поставлено</div>
+                    </div>
+                    <div class="stats-game-pnl" style="color:${isProfit ? '#2ecc71' : '#e74c3c'}">${isProfit ? '+' : ''}${s.net.toLocaleString()}</div>
+                </div>`;
+            }).join('');
+        },
+        renderOps() {
+            const el = document.getElementById('profile-ops-list'); if (!el) return;
+            const ops = LS.g('dydx_ops', []);
+            if (!ops.length) { el.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:12px; padding:16px 0;">Операций пока нет</div>`; return; }
+            el.innerHTML = ops.slice(0, 50).map(o => {
+                const isPlus = o.amount >= 0;
+                const d = new Date(o.ts);
+                return `<div class="ops-row">
+                    <div><div class="ops-row-label">${this.icons[o.label] || '🎮'} ${o.label}</div><div class="ops-row-time">${d.toLocaleString('ru-RU', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}</div></div>
+                    <div style="color:${isPlus ? '#2ecc71' : '#e74c3c'}; font-weight:800;">${isPlus ? '+' : ''}${o.amount.toLocaleString()}</div>
+                </div>`;
+            }).join('');
+        }
     };
 
     window.Tasks = {
         st: { welcome:false, daily:false, rich:false, knyaz:false, ludo:false, rocketman:false, sniper:false, sapper:false, lucky:false, psychic:false, fearless:false, coinflip:false, marathon:false, unlucky:false, diamond:false, risk:false, madminer:false },
         lastD: 0,
         list: [
+            { id: 'channel_sub', t: '📢 Подписка на канал', d: 'Подпишись на @dydxgamenews', r: 5000, a: true, channel: true },
             { id: 'welcome', t: 'Приветственный бонус', d: 'За первый вход', r: 1000, a: false }, { id: 'daily', t: 'Ежедневная награда', d: 'Заходи каждый день', r: 500, a: false },
             { id: 'marathon', t: 'Марафонец', d: 'Сделай 100 ставок', r: 5000, a: true }, { id: 'unlucky', t: 'Невезучий', d: 'Слови краш на 1.00x', r: 1000, a: true },
             { id: 'diamond', t: 'Алмазный магнат', d: 'Открой 15 алмазов за раунд', r: 15000, a: true }, { id: 'risk', t: 'Абсолютный риск', d: 'Выиграй 50x в Апгрейдере', r: 50000, a: true },
@@ -1130,8 +1261,7 @@
             { id: 'rocketman', t: 'Ракетостроитель', d: 'Сыграй в Ракету 10 раз', r: 1500, a: true }, { id: 'sniper', t: 'Снайпер', d: 'Поймай 10x в Ракете', r: 3000, a: true },
             { id: 'sapper', t: 'Сапер', d: 'Победа в Минах (>=5)', r: 2000, a: true }, { id: 'lucky', t: 'Счастливчик', d: 'Угадай Зеро в Рулетке', r: 4000, a: true },
             { id: 'psychic', t: 'Экстрасенс', d: 'Сделай 5 шагов в Hi-Lo', r: 3000, a: true }, { id: 'fearless', t: 'Бесстрашный', d: 'Пройди Башню (Сложно)', r: 10000, a: true },
-            { id: 'coinflip', t: 'Орёл и Решка', d: 'Стрик из 3 побед', r: 3000, a: true },
-            { id: 'channel_sub', t: '📢 Подписка на канал', d: 'Подпишись на @dydxgamenews', r: 5000, a: true, channel: true }
+            { id: 'coinflip', t: 'Орёл и Решка', d: 'Стрик из 3 побед', r: 3000, a: true }
         ],
         init() {
             let s = LS.g('dydx_tasks', {}); this.st = Object.assign(this.st, s); let d = localStorage.getItem('dydx_tasks_time'); if(d) this.lastD = parseInt(d);
@@ -1140,7 +1270,7 @@
         claim(id) {
             if(this.st[id]) return; let task = this.list.find(t => t.id === id); this.st[id] = true;
             if(id === 'daily') { this.lastD = Date.now(); localStorage.setItem('dydx_tasks_time', this.lastD); }
-            window.App.chgBal(task.r); LS.s('dydx_tasks', this.st); window.App.toast(`Выполнено! +${task.r}`, 'success'); if(window.Sound) window.Sound.task(); this.rnd();
+            window.App.chgBal(task.r); LS.s('dydx_tasks', this.st); window.App.toast(`Выполнено! +${task.r}`, 'success'); window.App.taskNotify(`Задание выполнено: ${task.t}`); if(window.Sound) window.Sound.task(); this.rnd();
         },
         chk(t, v = 0) {
             if(t==='win'&&v>=10000&&!this.st.rich) this.claim('rich'); if(t==='balance'&&window.App.balance>=100000&&!this.st.knyaz) this.claim('knyaz');
@@ -1194,7 +1324,7 @@
                 }
                 this.st.channel_sub = true; LS.s('dydx_tasks', this.st);
                 if (typeof data.new_balance === 'number') { window.App.balance = data.new_balance; window.App.updBalUI(); }
-                window.App.toast(`Выполнено! +5000`, 'success'); if(window.Sound) window.Sound.task();
+                window.App.toast(`Выполнено! +5000`, 'success'); window.App.taskNotify('Задание выполнено: Подписка на канал'); if(window.Sound) window.Sound.task();
                 this.rnd();
             } catch (e) {
                 window.App.toast('Ошибка проверки — попробуйте ещё раз', 'error');
@@ -1504,13 +1634,13 @@
                     let val = Math.floor(Number(document.getElementById(`crash-bet-1`).value));
                     if(!val || isNaN(val) || val <= 0) return window.App.toast('Неверная ставка', 'error');
                     if(val > window.App.balance) return window.App.toast('Недостаточно фишек', 'error');
-                    this.bet.v = val; this.bet.pl = true; this.bet.o = false; window.App.chgBal(-val);
+                    this.bet.v = val; this.bet.pl = true; this.bet.o = false; window.App.chgBal(-val, 'Ракета');
                     window.App.toast('Ставка принята', 'success'); window.Stats.addBet();
                 } else { this.bet.pl = false; window.App.chgBal(this.bet.v); window.App.toast('Ставка отменена'); }
             } else if (this.state === 1) {
                 if(this.bet.pl && !this.bet.o && !this.locked) {
                     this.locked = true; this.bet.o = true; let win = Math.floor(this.bet.v * this.mult);
-                    window.App.win(win); window.Tasks.chk('sniper', this.mult); this.locked = false;
+                    window.App.win(win, 'Ракета'); window.Tasks.chk('sniper', this.mult); this.locked = false;
                 }
             } this.updBtns();
         },
@@ -1711,7 +1841,7 @@
             let bet = Math.floor(Number(document.getElementById('r-bet').value));
             if(!bet || isNaN(bet) || bet<=0) return window.App.toast('Неверная ставка','error'); if(bet>window.App.balance) return window.App.toast('Недостаточно фишек','error');
 
-            this.pl=true; this.lk=true; window.App.chgBal(-bet); window.Stats.addBet(); this.rTr();
+            this.pl=true; this.lk=true; window.App.chgBal(-bet, 'Рулетка'); window.Stats.addBet(); this.rTr();
             document.getElementById('r-btn-red').disabled = true; document.getElementById('r-btn-green').disabled = true; document.getElementById('r-btn-black').disabled = true;
 
             let ti = 110 + Math.floor(Math.random()*37);
@@ -1722,7 +1852,7 @@
 
             this.timer = setTimeout(() => {
                 try {
-                    if(bc===wc){ let win = Math.floor(bet*(wc==='green'?36:2)); window.App.win(win); if(wc==='green') window.Tasks.chk('lucky'); }else{ window.App.toast('Мимо','error'); }
+                    if(bc===wc){ let win = Math.floor(bet*(wc==='green'?36:2)); window.App.win(win, 'Рулетка'); if(wc==='green') window.Tasks.chk('lucky'); }else{ window.App.toast('Мимо','error'); }
                     this.h.unshift(wc); if(this.h.length > 20) this.h.pop(); LS.s('dydx_roulette_h', this.h); this.rndH();
                     document.getElementById('r-btn-red').disabled = false; document.getElementById('r-btn-green').disabled = false; document.getElementById('r-btn-black').disabled = false;
                 } catch(e) {}
@@ -1837,11 +1967,11 @@
                 if(this.lk) return; if(this.rTmr) clearTimeout(this.rTmr);
                 this.b = Math.floor(Number(document.getElementById('hilo-bet').value));
                 if(!this.b || isNaN(this.b) || this.b<=0) return window.App.toast('Неверная ставка','error'); if(this.b>window.App.balance) return window.App.toast('Недостаточно фишек', 'error');
-                window.App.chgBal(-this.b); window.Stats.addBet(); this.pl = true; this.m = 1; this.s = 0;
+                window.App.chgBal(-this.b, 'Hi-Lo'); window.Stats.addBet(); this.pl = true; this.m = 1; this.s = 0;
                 document.getElementById('hilo-start-controls').style.display = 'none'; document.getElementById('hilo-game-controls').style.display = 'block';
                 document.getElementById('hilo-btn').className = 'main-btn btn-gold'; document.getElementById('hilo-btn').innerText = `ЗАБРАТЬ ${this.b}`;
                 this.nT(this.fC); this.fC = this.dC();
-            } else { if(this.lk) return; this.lk = true; let win = Math.floor(this.b * this.m); window.App.win(win); this.rUI(); }
+            } else { if(this.lk) return; this.lk = true; let win = Math.floor(this.b * this.m); window.App.win(win, 'Hi-Lo'); this.rUI(); }
         },
         nT(val) {
             this.cV = val; let s = this.gS(); let cEl = document.getElementById('hilo-card-view');
@@ -1861,7 +1991,7 @@
                 cEl.classList.remove('flip');
                 if(won) {
                     this.m *= (type === 'high' ? this.nmH : this.nmL);
-                    if (this.m >= MAX_MUL) { this.m = MAX_MUL; window.App.win(Math.floor(this.b * this.m)); window.App.toast('Максимальный множитель!', 'success'); this.rUI(); }
+                    if (this.m >= MAX_MUL) { this.m = MAX_MUL; window.App.win(Math.floor(this.b * this.m), 'Hi-Lo'); window.App.toast('Максимальный множитель!', 'success'); this.rUI(); }
                     else { this.s++; window.Tasks.chk('psychic', this.s); this.nT(nV); this.lk = false; }
                 } else {
                     let s = this.gS(); cEl.className = `hilo-card-ui ${(s==='♥'||s==='♦')?'red':'black'}`; cEl.innerHTML = `<div class="hilo-tl">${this.cA[nV]}<br>${s}</div>❌<div class="hilo-br">${this.cA[nV]}<br>${s}</div>`;
@@ -1888,7 +2018,7 @@
             if(!this.pl) {
                 if(this.lk) return; this.b = Math.floor(Number(document.getElementById('coin-bet').value));
                 if(!this.b || isNaN(this.b) || this.b<=0) return window.App.toast('Неверная ставка','error'); if(this.b>window.App.balance) return window.App.toast('Недостаточно фишек', 'error');
-                window.App.chgBal(-this.b); window.Stats.addBet(); this.pl = true; this.m = 1; this.s = 0;
+                window.App.chgBal(-this.b, 'Монетка'); window.Stats.addBet(); this.pl = true; this.m = 1; this.s = 0;
                 document.getElementById('coin-start-controls').style.display = 'none'; document.getElementById('coin-game-controls').style.display = 'block';
                 // Кнопка "Забрать" появляется только ПОСЛЕ первого удачного броска (см. guess()) —
                 // до этого множитель ещё 1x, забирать нечего (это были бы просто свои же деньги
@@ -1901,7 +2031,7 @@
                 // осталась кликабельной, без хотя бы одного успешного броска выигрыша не начисляем.
                 if(this.lk) return;
                 if(this.s === 0) { this.lk = true; window.App.chgBal(this.b); this.rUI(); return; }
-                this.lk = true; let win = Math.floor(this.b * this.m); window.App.win(win); this.rUI();
+                this.lk = true; let win = Math.floor(this.b * this.m); window.App.win(win, 'Монетка'); this.rUI();
             }
         },
         guess(choice) {
@@ -1914,7 +2044,7 @@
                     document.getElementById('coin-streak').innerText = this.s; document.getElementById('coin-win').innerText = Math.floor(this.b * this.m);
                     document.getElementById('coin-btn').className = 'main-btn btn-gold'; document.getElementById('coin-btn').innerText = `ЗАБРАТЬ ${Math.floor(this.b * this.m)}`;
                     window.Tasks.chk('coinflip', this.s);
-                    if(this.m===MAX_MUL){window.App.win(Math.floor(this.b * this.m));this.rUI();} else this.lk = false;
+                    if(this.m===MAX_MUL){window.App.win(Math.floor(this.b * this.m), 'Монетка');this.rUI();} else this.lk = false;
                 } else { window.App.toast('Мимо!', 'error'); setTimeout(() => this.rUI(), 2000); }
             }, 1000);
         }
@@ -1932,12 +2062,12 @@
             if(this.pl || this.lk) return; let bet = Math.floor(Number(document.getElementById('upg-bet').value));
             if(!bet || isNaN(bet) || bet<=0) return window.App.toast('Неверная ставка', 'error'); if(bet>window.App.balance) return window.App.toast('Недостаточно фишек', 'error');
 
-            this.pl=true; this.lk=true; window.App.chgBal(-bet); window.Stats.addBet(); document.getElementById('upg-btn').className='main-btn btn-disabled'; document.getElementById('upg-btn').innerText='КРУТИМ...';
+            this.pl=true; this.lk=true; window.App.chgBal(-bet, 'Апгрейдер'); window.Stats.addBet(); document.getElementById('upg-btn').className='main-btn btn-disabled'; document.getElementById('upg-btn').innerText='КРУТИМ...';
             let win = Math.random()*100 < this.ch;
             let td = win ? Math.random()*(this.ch*3.6) : (this.ch*3.6)+Math.random()*(360-this.ch*3.6); let fr = (5*360)+(360-td); let w = document.getElementById('upg-wheel'); w.style.transition='none'; w.style.transform='rotate(0deg)'; void w.offsetWidth; w.style.transition='transform 3s cubic-bezier(0.2,0.8,0.2,1)'; w.style.transform=`rotate(${fr}deg)`;
 
             this.tmr = setTimeout(()=>{
-                if(win){let winAmt = Math.floor(bet*this.t); window.App.win(winAmt); if(this.t===50)window.Tasks.chk('risk');}else{window.App.toast('Сгорело','error');}
+                if(win){let winAmt = Math.floor(bet*this.t); window.App.win(winAmt, 'Апгрейдер'); if(this.t===50)window.Tasks.chk('risk');}else{window.App.toast('Сгорело','error');}
                 this.pl=false; this.lk=false; document.getElementById('upg-btn').className='main-btn btn-green'; document.getElementById('upg-btn').innerHTML=`⚙️ АПГРЕЙД (<span id="upg-chance">${this.ch.toFixed(0)}%</span>)`;
             },3100);
         }
@@ -1958,11 +2088,11 @@
                 this.b = Math.floor(Number(document.getElementById('tower-bet').value));
                 if(!this.b || isNaN(this.b) || this.b<=0) return window.App.toast('Неверная ставка', 'error'); if(this.b>window.App.balance) return window.App.toast('Недостаточно фишек', 'error');
 
-                window.App.chgBal(-this.b); window.Stats.addBet(); this.pl=true; this.r=0; this.m=1; this.g=[];
+                window.App.chgBal(-this.b, 'Башня'); window.Stats.addBet(); this.pl=true; this.r=0; this.m=1; this.g=[];
                 for(let i=0; i<8; i++){ let ra=[0,0,0], mt=this.d; while(mt>0){ let x=Math.floor(Math.random()*3); if(ra[x]===0){ra[x]=1;mt--;} } this.g.push(ra); }
                 this.dG(); document.getElementById('twr-row-0').classList.add('active'); btn.className='main-btn btn-gold'; btn.innerText=`ЗАБРАТЬ ${this.b}`; document.getElementById('tower-mult').innerText='1.00x';
             } else {
-                if(this.lk) return; this.lk = true; window.App.win(Math.floor(this.b*this.m)); this.eG();
+                if(this.lk) return; this.lk = true; window.App.win(Math.floor(this.b*this.m), 'Башня'); this.eG();
             }
         },
         cC(r, cIdx, el) {
@@ -1979,7 +2109,7 @@
                 this.m *= 0.98/((3-this.d)/3); if(this.m > MAX_MUL) this.m = MAX_MUL;
                 this.r++;
                 if(this.r>7 || this.m === MAX_MUL){
-                    this.lk = true; window.App.win(Math.floor(this.b*this.m)); if(this.d===2) window.Tasks.chk('fearless'); if(this.m === MAX_MUL) window.App.toast('Максимальный множитель!', 'success'); this.eG();
+                    this.lk = true; window.App.win(Math.floor(this.b*this.m), 'Башня'); if(this.d===2) window.Tasks.chk('fearless'); if(this.m === MAX_MUL) window.App.toast('Максимальный множитель!', 'success'); this.eG();
                 }else{
                     let nR = document.getElementById(`twr-row-${this.r}`); nR.classList.add('active'); document.getElementById('tower-mult').innerText=this.m.toFixed(2)+'x'; document.getElementById('tower-btn').innerText=`ЗАБРАТЬ ${Math.floor(this.b*this.m)}`;
                 }
@@ -2003,11 +2133,11 @@
                 if(!this.b || isNaN(this.b) || this.b<=0) return window.App.toast('Неверная ставка', 'error'); if(this.b>window.App.balance) return window.App.toast('Недостаточно фишек', 'error');
                 if(isNaN(this.c) || this.c<1 || this.c>24) { this.c=3; document.getElementById('mines-count').value=3; }
 
-                window.App.chgBal(-this.b); window.Stats.addBet(); this.pl=true; this.o=0; this.m=1; this.g=Array(25).fill(0); let mt=this.c;
+                window.App.chgBal(-this.b, 'Мины'); window.Stats.addBet(); this.pl=true; this.o=0; this.m=1; this.g=Array(25).fill(0); let mt=this.c;
                 while(mt>0){ let x=Math.floor(Math.random()*25); if(this.g[x]===0){this.g[x]=1; mt--;} }
                 this.dG(); document.getElementById('mines-btn').className='main-btn btn-gold'; document.getElementById('mines-btn').innerText=`ЗАБРАТЬ ${this.b}`; document.getElementById('mines-count').disabled=true;
             } else {
-                if(this.lk) return; this.lk = true; window.App.win(Math.floor(this.b*this.m)); window.Tasks.chk('sapper', this.c); this.eG();
+                if(this.lk) return; this.lk = true; window.App.win(Math.floor(this.b*this.m), 'Мины'); window.Tasks.chk('sapper', this.c); this.eG();
             }
         },
         cC(i, el) {
@@ -2025,7 +2155,7 @@
                 document.getElementById('mines-mult').innerText=this.m.toFixed(2)+'x'; document.getElementById('mines-btn').innerText=`ЗАБРАТЬ ${Math.floor(this.b*this.m)}`;
 
                 if(this.o===25-this.c || capped){
-                    this.lk = true; window.App.win(Math.floor(this.b*this.m)); window.Tasks.chk('sapper', this.c); if(this.o>=15) window.Tasks.chk('diamond', this.o); if(this.c===24) window.Tasks.chk('madminer'); if(capped) window.App.toast('Максимальный выигрыш!', 'success'); this.eG();
+                    this.lk = true; window.App.win(Math.floor(this.b*this.m), 'Мины'); window.Tasks.chk('sapper', this.c); if(this.o>=15) window.Tasks.chk('diamond', this.o); if(this.c===24) window.Tasks.chk('madminer'); if(capped) window.App.toast('Максимальный выигрыш!', 'success'); this.eG();
                 }
             }
         },
@@ -2081,7 +2211,7 @@
             this.b = Math.floor(Number(document.getElementById('shells-bet').value));
             if(!this.b || isNaN(this.b) || this.b<=0) return window.App.toast('Неверная ставка','error');
             if(this.b>window.App.balance) return window.App.toast('Недостаточно фишек', 'error');
-            window.App.chgBal(-this.b); window.Stats.addBet(); this.pl = true; this.lk = true;
+            window.App.chgBal(-this.b, 'Стаканчики'); window.Stats.addBet(); this.pl = true; this.lk = true;
             document.getElementById('shells-win').innerText = Math.floor(this.b*this.mult);
             document.getElementById('shells-btn').className = 'main-btn btn-disabled'; document.getElementById('shells-btn').innerText = 'Перемешиваем...';
 
@@ -2121,7 +2251,7 @@
             setTimeout(() => {
                 if (won) {
                     let win = Math.floor(this.b * this.mult);
-                    window.App.win(win);
+                    window.App.win(win, 'Стаканчики');
                 } else {
                     window.App.toast('Мимо! Шарик был под другим стаканом', 'error');
                 }

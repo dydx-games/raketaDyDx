@@ -411,22 +411,30 @@ window.Multiplayer = {
         const r = data[0];
         window.App.toast(r.message, r.success ? 'success' : 'error');
         if (r.success) { window.App.balance = Number(r.new_balance); window.App.updBalUI(); }
-        this.refreshDailyStatus(r.next_claim_at);
+        this.refreshDailyStatus();
     },
-    async refreshDailyStatus(knownNext) {
-        let nextAt = knownNext;
-        if (!nextAt) {
-            const { data } = await sb.from('daily_claims').select('last_claimed_at').eq('telegram_id', ME.id).maybeSingle();
-            if (data && data.last_claimed_at) nextAt = new Date(new Date(data.last_claimed_at).getTime() + 4*60*60*1000).toISOString();
+    // Раньше эта функция всё ещё считала по СТАРОЙ схеме "раз в 4 часа", хотя сама
+    // логика начисления (claim_daily_bonus) давно работает по-новому — "300 фишек,
+    // до 10 раз в день". Из-за этого кнопка блокировалась на 4 часа после первого
+    // же клика, хотя на самом деле оставалось ещё 9 попыток — выглядело как "не
+    // работает". Переписано под актуальную схему, без фейкового таймера.
+    async refreshDailyStatus() {
+        const { data } = await sb.from('daily_claims').select('claims_count, day_key').eq('telegram_id', ME.id).maybeSingle();
+        let claimsLeft = 10;
+        if (data && data.day_key) {
+            const todayStr = new Date().toISOString().slice(0, 10);
+            if (String(data.day_key).slice(0, 10) === todayStr) claimsLeft = Math.max(0, 10 - (data.claims_count || 0));
         }
-        const btn = document.getElementById('daily-bonus-btn'); if (!btn) return;
-        if (this.dailyCd) clearInterval(this.dailyCd);
-        const tick = () => {
-            const rem = nextAt ? new Date(nextAt).getTime() - Date.now() : 0;
-            if (rem <= 0) { btn.disabled = false; btn.innerText = '🎁 Забрать ежедневный бонус (2000)'; clearInterval(this.dailyCd); }
-            else { btn.disabled = true; let m = Math.floor(rem/60000), s = Math.floor((rem%60000)/1000); btn.innerText = `⏳ Бонус через ${m}:${s.toString().padStart(2,'0')}`; }
-        };
-        tick(); this.dailyCd = setInterval(tick, 1000);
+        const btn = document.getElementById('daily-bonus-btn');
+        const fab = document.getElementById('daily-bonus-fab');
+        if (btn) {
+            btn.disabled = claimsLeft <= 0;
+            btn.innerText = claimsLeft > 0 ? `🎁 Забрать бонус (300) — ${claimsLeft}/10 сегодня` : '✅ На сегодня всё забрано';
+        }
+        if (fab) {
+            fab.style.display = claimsLeft > 0 ? '' : 'none';
+            fab.innerText = `🎁 +300 · ${claimsLeft}`;
+        }
     },
 
     // Если предыдущий запуск приложения закрылся/обновился ДО того, как фоновая
