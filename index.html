@@ -145,6 +145,15 @@
         .ops-row:last-child { border-bottom: none; }
         .ops-row-label { font-weight: 700; }
         .ops-row-time { font-size: 10px; color: var(--text-muted); }
+        .dice-display { padding: 30px 20px 10px; }
+        .dice-cube { width: 64px; height: 64px; margin: 0 auto 24px; background: linear-gradient(135deg, var(--gold), #f39c12); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 900; color: #000; box-shadow: 0 6px 20px rgba(215,180,93,0.35); transition: transform 0.3s var(--ease); }
+        .dice-cube.rolling { animation: diceSpin 0.5s linear infinite; }
+        @keyframes diceSpin { from { transform: rotate(0deg) scale(1.1); } to { transform: rotate(360deg) scale(1.1); } }
+        .dice-track { position: relative; height: 10px; background: linear-gradient(90deg, #e74c3c 0%, #e74c3c 50%, #2ecc71 50%, #2ecc71 100%); border-radius: 6px; overflow: visible; }
+        .dice-track-fill { position: absolute; top: 0; bottom: 0; background: rgba(255,255,255,0.15); border-radius: 6px; pointer-events: none; }
+        .dice-track-marker { position: absolute; top: -4px; width: 3px; height: 18px; background: #fff; border-radius: 2px; box-shadow: 0 0 6px rgba(0,0,0,0.5); transition: left 0.2s; }
+        .dice-track-result { position: absolute; top: -34px; width: 28px; height: 28px; margin-left: -14px; background: #fff; color: #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 900; opacity: 0; transition: left 0.4s var(--ease), opacity 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
+        .dice-labels { display: flex; justify-content: space-between; margin-top: 8px; font-size: 10px; color: var(--text-muted); }
         #daily-bonus-fab { position: fixed; bottom: calc(var(--nav-h) + 14px); right: 14px; background: rgba(46,204,113,0.22); border: 1px solid rgba(46,204,113,0.5); backdrop-filter: blur(6px); color: #2ecc71; font-size: 12px; font-weight: 800; padding: 10px 16px; border-radius: 999px; cursor: pointer; z-index: 60; box-shadow: 0 4px 14px rgba(0,0,0,0.3); transition: transform 0.15s var(--ease); }
         #daily-bonus-fab:active { transform: scale(0.92); }
         #daily-bonus-fab.urgent { animation: fabPulse 1s infinite; }
@@ -424,10 +433,10 @@
                     <div class="hub-card-emoji">🚀</div>
                     <div class="hub-card-info"><div class="hub-card-title">Ракета</div><div class="hub-card-desc">Один полёт на всех — заберите до взрыва</div></div>
                 </div>
-                <div class="hub-card" onclick="App.s('roulette', null, 'Рулетка')">
-                    <div class="hub-live-badge"><span class="hub-live-dot"></span>LIVE</div>
+                <div class="hub-card" style="opacity:0.5; cursor:not-allowed;" onclick="App.toast('Рулетка временно закрыта — чиним найденный баг', 'error')">
+                    <div class="hub-live-badge" style="background:rgba(231,76,60,0.2); color:#e74c3c; border-color:rgba(231,76,60,0.5);">ЗАКРЫТО</div>
                     <div class="hub-card-emoji">🎡</div>
-                    <div class="hub-card-info"><div class="hub-card-title">Рулетка</div><div class="hub-card-desc">Красное, чёрное или зеро ×36</div></div>
+                    <div class="hub-card-info"><div class="hub-card-title">Рулетка</div><div class="hub-card-desc">Временно недоступна — устраняем баг</div></div>
                 </div>
             </div>
 
@@ -468,6 +477,10 @@
                 <div class="hub-card" onclick="App.s('shells', null, 'Стаканчики')">
                     <div class="hub-card-emoji">🥤</div>
                     <div class="hub-card-info"><div class="hub-card-title">Стаканчики</div><div class="hub-card-desc">Угадайте, под каким стаканом шарик</div></div>
+                </div>
+                <div class="hub-card" onclick="App.s('dice', null, 'Кости')">
+                    <div class="hub-card-emoji">🎲</div>
+                    <div class="hub-card-info"><div class="hub-card-title">Кости</div><div class="hub-card-desc">Больше или меньше — сами выбираете риск</div></div>
                 </div>
             </div>
 
@@ -680,6 +693,39 @@
             </div>
         </div>
 
+        <!-- DICE -->
+        <div class="game-view" id="view-dice">
+            <div class="dice-display">
+                <div class="dice-cube" id="dice-cube">50</div>
+                <div class="dice-track">
+                    <div class="dice-track-fill" id="dice-track-fill"></div>
+                    <div class="dice-track-marker" id="dice-track-marker"></div>
+                    <div class="dice-track-result" id="dice-track-result"></div>
+                </div>
+                <div class="dice-labels"><span>1</span><span>50</span><span>100</span></div>
+            </div>
+            <div class="panel" style="margin-bottom: 20px;">
+                <div class="tower-info">
+                    <span>Шанс: <span id="dice-chance" style="color:var(--gold)">50.00%</span></span>
+                    <span>Множитель: <span id="dice-mult" style="color:var(--green)">1.94x</span></span>
+                </div>
+                <input type="range" id="dice-target" min="2" max="98" value="50" style="width:100%; margin:12px 0;" oninput="Dice.setTarget(this.value)">
+                <div class="bet-row" style="margin-bottom: 8px;">
+                    <div class="input-wrap" style="flex:2;"><input type="number" id="dice-bet" value="100"></div>
+                    <button class="btn-small" onclick="Dice.mod('half')">1/2</button><button class="btn-small" onclick="Dice.mod('double')">2x</button><button class="btn-small" onclick="Dice.mod('max')">MAX</button>
+                </div>
+                <div class="bet-row" style="margin-bottom: 10px;">
+                    <button class="btn-small active" id="dice-mode-under" onclick="Dice.setMode('under')">⬇ Меньше</button>
+                    <button class="btn-small" id="dice-mode-over" onclick="Dice.setMode('over')">⬆ Больше</button>
+                </div>
+                <div class="quick-amounts">
+                    <button class="btn-small" onclick="Dice.set(50)">50</button><button class="btn-small" onclick="Dice.set(100)">100</button>
+                    <button class="btn-small" onclick="Dice.set(500)">500</button><button class="btn-small" onclick="Dice.set(1000)">1K</button>
+                </div>
+                <button class="main-btn btn-green" id="dice-btn" onclick="Dice.play()">🎲 БРОСИТЬ</button>
+            </div>
+        </div>
+
         <!-- ARENA -->
         <div class="game-view" id="view-arena">
             <div class="arena-wrap">
@@ -763,9 +809,9 @@
         <!-- PROFILE -->
         <div class="game-view" id="view-profile">
             <div class="profile-header">
-                <div class="profile-avatar">👤</div>
+                <div class="profile-avatar" id="profile-avatar">👤</div>
                 <div>
-                    <div class="profile-name">Игрок</div>
+                    <div class="profile-name" id="profile-name-text">Игрок <span id="profile-pinned-gift"></span></div>
                     <div class="profile-sub" id="profile-sub">Уровень 1 · 0 подарков</div>
                 </div>
             </div>
@@ -1035,7 +1081,7 @@
             let bStr = localStorage.getItem('dydx_balance'); this.balance = bStr ? Math.floor(parseFloat(bStr)) : 1000;
             if(isNaN(this.balance) || this.balance < 0) this.balance = 1000;
 
-            window.Stats.init(); window.Levels.init(); window.Gifts.init(); window.Tasks.init(); window.Roulette.init(); window.Upgrader.init(); window.Tower.init(); window.Mines.init(); window.Shells.init(); window.Crash.init(); window.HiLo.init(); window.Coin.init();
+            window.Stats.init(); window.Levels.init(); window.Gifts.init(); window.Tasks.init(); window.Roulette.init(); window.Upgrader.init(); window.Tower.init(); window.Mines.init(); window.Shells.init(); window.Dice.init(); window.Crash.init(); window.HiLo.init(); window.Coin.init();
             this.updBalUI();
         },
         updBalUI() {
@@ -1157,8 +1203,9 @@
         },
         clearCache() { localStorage.clear(); location.reload(); },
         s(id, el, title) {
+            if (id === 'roulette') return this.toast('Рулетка временно закрыта — чиним найденный баг', 'error');
             if(window.Crash && window.Crash.state === 1 && window.Crash.bet.pl && !window.Crash.bet.o) return this.toast('Нельзя выйти во время полета!', 'error');
-            if(window.Tower.pl || window.Mines.pl || window.Shells.pl || window.Upgrader.pl || window.Roulette.pl || window.HiLo.pl || window.Coin.pl || window.Gifts.pl || window.Gifts.upgrading) return this.toast('Завершите игру!', 'error');
+            if(window.Tower.pl || window.Mines.pl || window.Shells.pl || window.Dice.pl || window.Upgrader.pl || window.Roulette.pl || window.HiLo.pl || window.Coin.pl || window.Gifts.pl || window.Gifts.upgrading) return this.toast('Завершите игру!', 'error');
 
             document.querySelectorAll('.game-view').forEach(v => v.classList.remove('active')); document.getElementById(`view-${id}`).classList.add('active');
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -1587,8 +1634,8 @@
                     this.nftCollection.forEach(n => {
                         let g = this.POOL.find(p => p.id === n.giftId); if (!g) return;
                         let color = `var(--r-${n.tier})`;
-                        let sellBtn = this.mpMode ? `<button class="market-card-btn" onclick="MarketUI.promptSell('${n.uid}', '${g.name.replace(/'/g,"")}', '${g.emoji}')">Продать</button>` : '';
-                        gal.innerHTML += `<div class="nft-item" style="--card-color:${color}">
+                        let sellBtn = this.mpMode ? `<button class="market-card-btn" onclick="event.stopPropagation(); MarketUI.promptSell('${n.uid}', '${g.name.replace(/'/g,"")}', '${g.emoji}')">Продать</button>` : '';
+                        gal.innerHTML += `<div class="nft-item" style="--card-color:${color}; cursor:pointer;" onclick="Gifts.showPinMenu('${n.uid}', '${g.name.replace(/'/g,"")}', '${g.emoji}')">
                             <div class="nft-bg" style="background:${n.backdropGrad}"></div>
                             <div class="nft-item-emoji" style="filter:${n.modelFilter||'none'}; text-shadow:${n.modelGlow||'none'}">${g.emoji}${n.patternSym ? ' ' + n.patternSym : ''}</div>
                             <div class="nft-item-info">
@@ -1602,6 +1649,55 @@
             }
             let sub = document.getElementById('profile-sub');
             if (sub) sub.innerText = `Уровень ${window.Levels ? window.Levels.lvl : 1} · ${this.totalOwned()} подарков · ${this.nftCollection.length} улучшенных`;
+            // Настоящие имя и аватар из Telegram — раньше здесь всегда была заглушка "👤".
+            let nameEl = document.getElementById('profile-name-text');
+            let avEl = document.getElementById('profile-avatar');
+            if (window.ME) {
+                if (avEl && window.ME.avatar_url) {
+                    avEl.innerHTML = `<img src="${window.ME.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.parentElement.innerText='👤'">`;
+                }
+                if (nameEl) {
+                    let pin = document.getElementById('profile-pinned-gift');
+                    let pinHtml = pin ? pin.outerHTML : '<span id="profile-pinned-gift"></span>';
+                    nameEl.innerHTML = `${window.ME.username || 'Игрок'} ${pinHtml}`;
+                    this.renderPinnedGift();
+                }
+            }
+        },
+        // Закрепление подарка рядом с ником — только ОДИН одновременно.
+        showPinMenu(uid, name, emoji) {
+            const existing = document.getElementById('pin-menu-modal'); if (existing) existing.remove();
+            const modal = document.createElement('div');
+            modal.id = 'pin-menu-modal'; modal.className = 'modal-overlay active';
+            modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+            const pinned = LS.g('dydx_pinned_gift', null);
+            const isPinnedNow = pinned && pinned.uid === uid;
+            modal.innerHTML = `<div class="modal-content">
+                <h3 style="margin-top:0;">${emoji} ${name}</h3>
+                ${isPinnedNow
+                    ? `<button class="modal-btn" style="background:var(--bg-panel-light); color:var(--text-light);" onclick="Gifts.unpinGift(); document.getElementById('pin-menu-modal').remove();">📌 Открепить</button>`
+                    : `<button class="modal-btn" style="background:var(--gold); color:#000;" onclick="Gifts.pinGift('${uid}', '${emoji}'); document.getElementById('pin-menu-modal').remove();">📌 Закрепить у ника</button>`}
+                ${this.mpMode ? `<button class="modal-btn" style="background:#e74c3c; color:#fff;" onclick="MarketUI.promptSell('${uid}', '${name}', '${emoji}'); document.getElementById('pin-menu-modal').remove();">Продать</button>` : ''}
+                <button class="modal-btn" style="background:transparent; color:var(--text-muted);" onclick="document.getElementById('pin-menu-modal').remove();">Отмена</button>
+            </div>`;
+            document.body.appendChild(modal);
+        },
+        pinGift(uid, emoji) {
+            LS.s('dydx_pinned_gift', { uid, emoji });
+            this.renderPinnedGift();
+            window.App.toast('Подарок закреплён у ника', 'success');
+        },
+        unpinGift() {
+            localStorage.removeItem('dydx_pinned_gift');
+            this.renderPinnedGift();
+            window.App.toast('Подарок откреплён', '');
+        },
+        renderPinnedGift() {
+            const el = document.getElementById('profile-pinned-gift'); if (!el) return;
+            const pinned = LS.g('dydx_pinned_gift', null);
+            el.innerText = pinned ? pinned.emoji : '';
+            el.style.cursor = pinned ? 'pointer' : 'default';
+            el.onclick = pinned ? () => this.unpinGift() : null;
         }
     };
     window.Crash = {
@@ -1711,7 +1807,12 @@
             this.state = 2; document.getElementById('crash-card').classList.remove('flying'); document.getElementById('crash-card').classList.add('crashed');
             document.getElementById('crash-mult').innerText = this.mult.toFixed(2)+'x'; document.getElementById('crash-status').innerText = 'КРАШ!';
 
-            let r = document.getElementById('crash-rocket'); r.innerText = '💥'; r.className = 'explode-anim'; if (window.Sound) window.Sound.explosion();
+            let r = document.getElementById('crash-rocket'); r.innerText = '💥'; r.className = 'explode-anim';
+            // Звук взрыва — только если человек СЕЙЧАС реально смотрит на экран Ракеты.
+            // Раунд общий на всех и крашится в фоне постоянно — без этой проверки звук
+            // играл бы даже когда человек сидит на совсем другой вкладке.
+            const crashView = document.getElementById('view-crash');
+            if (window.Sound && crashView && crashView.classList.contains('active')) window.Sound.explosion();
             if(this.mult === 1.00 && this.bet.pl && !this.bet.o) window.Tasks.chk('unlucky');
 
             this.history.unshift(this.mult); if(this.history.length > 15) this.history.pop();
@@ -1807,7 +1908,12 @@
             this.mult = Number(targetMultiplier); this.state = 2;
             document.getElementById('crash-card').classList.remove('flying'); document.getElementById('crash-card').classList.add('crashed');
             document.getElementById('crash-mult').innerText = this.mult.toFixed(2)+'x'; document.getElementById('crash-status').innerText = 'КРАШ!';
-            let r = document.getElementById('crash-rocket'); r.innerText = '💥'; r.className = 'explode-anim'; if (window.Sound) window.Sound.explosion();
+            let r = document.getElementById('crash-rocket'); r.innerText = '💥'; r.className = 'explode-anim';
+            // Звук взрыва — только если человек СЕЙЧАС реально смотрит на экран Ракеты.
+            // Раунд общий на всех и крашится в фоне постоянно — без этой проверки звук
+            // играл бы даже когда человек сидит на совсем другой вкладке.
+            const crashView = document.getElementById('view-crash');
+            if (window.Sound && crashView && crashView.classList.contains('active')) window.Sound.explosion();
             if (this.mult === 1 && this.bet.pl && !this.bet.o) window.Tasks.chk('unlucky');
             this.history.unshift(this.mult); if (this.history.length > 15) this.history.pop();
             LS.s('dydx_crash_h', this.history); this.rndH(); this.updBtns();
@@ -2180,7 +2286,14 @@
             board.innerHTML = '';
             for (let i=0; i<this.cups; i++) {
                 let el = document.createElement('div'); el.className = 'shell-cup'; el.id = 'shell-'+i; el.innerHTML = this.cupSvg;
-                el.onclick = () => this.pick(i);
+                // ⚠ ГЛАВНЫЙ ФИКС: раньше здесь было "() => this.pick(i)" — обработчик
+                // запоминал номер СОЗДАНИЯ стакана НАВСЕГДА. Когда стаканы физически
+                // менялись местами в DOM (перемешивание), номер оставался старым —
+                // клик по визуально левому стакану мог вызвать pick(2), если этот
+                // элемент изначально создавался третьим, и функция проверяла
+                // СОВСЕМ ДРУГОЙ стакан. Отсюда и "выигрыш без клика на нужный".
+                // Теперь передаём сам DOM-элемент — с ним такой путаницы быть не может.
+                el.onclick = () => this.pick(el);
                 board.appendChild(el);
             }
         },
@@ -2189,15 +2302,23 @@
         // координаты, мгновенно (без анимации) откатываем визуально назад через
         // transform, затем одним кадром включаем transition и обнуляем transform —
         // получается плавный "полёт" элемента в новое место.
+        //
+        // Сама перестановка идёт через временный placeholder-узел — это гарантирует
+        // ЧИСТЫЙ обмен местами именно двух нужных элементов, не задевая остальные
+        // (прежняя версия через nextSibling иногда сдвигала лишний стакан между ними).
         swapCupsAnimated(idxA, idxB) {
             const board = document.getElementById('shells-board');
             const children = Array.from(board.children);
             const elA = children[idxA], elB = children[idxB];
             if (!elA || !elB || elA === elB) return;
             const rectA = elA.getBoundingClientRect(); const rectB = elB.getBoundingClientRect();
-            const afterA = idxA < idxB ? elB.nextSibling : elB;
-            const afterB = idxA < idxB ? elA : elA.nextSibling;
-            board.insertBefore(elA, afterA); board.insertBefore(elB, afterB);
+
+            const placeholder = document.createComment('');
+            board.insertBefore(placeholder, elA);
+            board.insertBefore(elA, elB);
+            board.insertBefore(elB, placeholder);
+            placeholder.remove();
+
             const newRectA = elA.getBoundingClientRect(); const newRectB = elB.getBoundingClientRect();
             const dxA = rectA.left - newRectA.left; const dxB = rectB.left - newRectB.left;
             elA.style.transition = 'none'; elA.style.transform = `translateX(${dxA}px)`;
@@ -2239,14 +2360,14 @@
             };
             setTimeout(doStep, 300);
         },
-        pick(i) {
+        pick(el) {
             if (!this.pl || this.lk) return;
             this.lk = true;
+            const won = el.hasAttribute('data-ball');
             const cupEls = Array.from(document.querySelectorAll('.shell-cup'));
-            const won = !!(cupEls[i] && cupEls[i].hasAttribute('data-ball'));
-            cupEls.forEach(el => {
-                el.classList.add('revealed');
-                if (el.hasAttribute('data-ball')) { el.innerHTML = '🔴'; el.classList.add('winner'); }
+            cupEls.forEach(e => {
+                e.classList.add('revealed');
+                if (e.hasAttribute('data-ball')) { e.innerHTML = '🔴'; e.classList.add('winner'); }
             });
             setTimeout(() => {
                 if (won) {
@@ -2263,7 +2384,67 @@
         }
     };
 
-    // ---- АРЕНА: UI-обёртка, вся логика раунда — на сервере (multiplayer-client.js) ----
+    window.Dice = {
+        target: 50, mode: 'under', b: 0, pl: false,
+        init() { this.updateDisplay(); },
+        setTarget(v) {
+            if (this.pl) return;
+            this.target = Math.max(2, Math.min(98, Math.round(Number(v))));
+            this.updateDisplay();
+        },
+        setMode(m) {
+            if (this.pl) return;
+            this.mode = m;
+            document.getElementById('dice-mode-under').classList.toggle('active', m === 'under');
+            document.getElementById('dice-mode-over').classList.toggle('active', m === 'over');
+            this.updateDisplay();
+        },
+        currentChanceAndMult() {
+            const chance = this.mode === 'under' ? this.target : (100 - this.target);
+            const mult = Math.min(MAX_MUL, Math.max(1.01, (0.97 * 100) / chance)); // 3% преимущество казино, как в остальных играх
+            return { chance, mult };
+        },
+        updateDisplay() {
+            const { chance, mult } = this.currentChanceAndMult();
+            document.getElementById('dice-chance').innerText = chance.toFixed(2) + '%';
+            document.getElementById('dice-mult').innerText = mult.toFixed(2) + 'x';
+            document.getElementById('dice-target').value = this.target;
+            const marker = document.getElementById('dice-track-marker'); if (marker) marker.style.left = this.target + '%';
+            const fill = document.getElementById('dice-track-fill');
+            if (fill) {
+                if (this.mode === 'under') { fill.style.left = '0%'; fill.style.width = this.target + '%'; }
+                else { fill.style.left = this.target + '%'; fill.style.width = (100 - this.target) + '%'; }
+            }
+        },
+        mod(act) { if(this.pl) return; let v = Math.floor(Number(document.getElementById('dice-bet').value)) || 0; if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById('dice-bet').value = Math.max(0, Math.min(v, window.App.balance)); },
+        set(v) { if(!this.pl) document.getElementById('dice-bet').value = v; },
+        play() {
+            if (this.pl) return;
+            this.b = Math.floor(Number(document.getElementById('dice-bet').value));
+            if(!this.b || isNaN(this.b) || this.b<=0) return window.App.toast('Неверная ставка', 'error');
+            if(this.b > window.App.balance) return window.App.toast('Недостаточно фишек', 'error');
+            window.App.chgBal(-this.b, 'Кости'); window.Stats.addBet(); this.pl = true;
+            document.getElementById('dice-btn').className = 'main-btn btn-disabled'; document.getElementById('dice-btn').innerText = 'Бросаем...';
+            const cube = document.getElementById('dice-cube'); cube.classList.add('rolling');
+            const resultEl = document.getElementById('dice-track-result'); resultEl.style.opacity = '0';
+
+            setTimeout(() => {
+                const roll = Math.random() * 100; // 0.00 - 99.99, честный ролл до самого показа результата
+                const { mult } = this.currentChanceAndMult();
+                const won = this.mode === 'under' ? (roll < this.target) : (roll > this.target);
+
+                cube.classList.remove('rolling'); cube.innerText = Math.floor(roll);
+                resultEl.style.left = roll + '%'; resultEl.style.opacity = '1'; resultEl.innerText = Math.floor(roll);
+                resultEl.style.background = won ? '#2ecc71' : '#e74c3c'; resultEl.style.color = '#fff';
+
+                if (won) { window.App.win(Math.floor(this.b * mult), 'Кости'); }
+                else { window.App.toast('Мимо!', 'error'); }
+
+                this.pl = false;
+                document.getElementById('dice-btn').className = 'main-btn btn-green'; document.getElementById('dice-btn').innerText = '🎲 БРОСИТЬ';
+            }, 900);
+        }
+    };
     window.ArenaUI = {
         currentState: null, currentBets: [],
         mod(act) { let v = Math.floor(Number(document.getElementById('arena-bet').value)) || 0; if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById('arena-bet').value = Math.max(0, Math.min(v, window.App.balance)); },
@@ -2946,6 +3127,6 @@
 
 <!-- МУЛЬТИПЛЕЕР: общий раунд Ракеты, Рулетки, Арены, промокоды, Дурак, маркетплейс -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="multiplayer-client.js?v=30"></script>
+<script src="multiplayer-client.js?v=16"></script>
 </body>
 </html>
