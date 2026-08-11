@@ -1026,22 +1026,20 @@
             if (this.ctx.state === 'suspended') this.ctx.resume().catch(()=>{});
             return this.ctx;
         },
-        // Короткий и тихий взрыв — шум с быстрым затуханием громкости и фильтра.
+        // Полностью переделано: раньше здесь был шум (даже тихий, он звучит резко
+        // и "статично" при постоянном повторении каждые 10-20 секунд). Теперь —
+        // мягкий низкий тон с падением высоты, без единого шумового компонента.
         explosion() {
             const ctx = this.getCtx(); if (!ctx) return;
-            const dur = 0.15;
-            const buffer = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
-            const data = buffer.getChannelData(0);
-            for (let i = 0; i < data.length; i++) data[i] = (Math.random()*2-1) * (1 - i/data.length);
-            const noise = ctx.createBufferSource(); noise.buffer = buffer;
-            const filter = ctx.createBiquadFilter(); filter.type = 'lowpass';
-            filter.frequency.setValueAtTime(1200, ctx.currentTime);
-            filter.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + dur);
+            const t0 = ctx.currentTime;
+            const osc = ctx.createOscillator(); osc.type = 'sine';
+            osc.frequency.setValueAtTime(180, t0);
+            osc.frequency.exponentialRampToValueAtTime(45, t0 + 0.22);
             const gain = ctx.createGain();
-            gain.gain.setValueAtTime(0.22, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
-            noise.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
-            noise.start(); noise.stop(ctx.currentTime + dur);
+            gain.gain.setValueAtTime(0.18, t0);
+            gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.22);
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.start(t0); osc.stop(t0 + 0.22);
         },
         // Полностью новый звук — яркий высокий "дзынь" колокольчиком (2000-3000 Гц),
         // вместо прежнего низкого щелчка с арпеджио. На получение денег.
