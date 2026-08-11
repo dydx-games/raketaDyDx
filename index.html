@@ -18,7 +18,8 @@
         .header-title { user-select: none; }
         .header-title h1 { font-size: 16px; font-weight: 800; }
         .header-title span { font-size: 10px; color: var(--gold); text-transform: uppercase; letter-spacing: 1px; }
-        .balance-pill { display: flex; align-items: center; gap: 6px; background: rgba(215, 180, 93, 0.1); border: 1px solid rgba(215, 180, 93, 0.3); padding: 4px 10px; border-radius: 16px; cursor: pointer; transition: 0.2s; }
+        .balance-pill { display: flex; align-items: center; gap: 6px; background: linear-gradient(135deg, rgba(215,180,93,0.16), rgba(215,180,93,0.06)); border: 1px solid rgba(215, 180, 93, 0.35); padding: 4px 10px; border-radius: 16px; cursor: pointer; transition: transform 0.15s var(--ease), box-shadow 0.25s; box-shadow: 0 2px 10px rgba(215,180,93,0.08); }
+        .balance-pill:active { transform: scale(0.95); }
         .balance-pill:active { background: rgba(215, 180, 93, 0.2); }
         .balance-pill span { color: var(--gold); font-weight: 800; font-size: 14px; }
         .add-btn { background: var(--gold); color: #000; width: 16px; height: 16px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: 900; font-size: 12px; line-height: 1; }
@@ -231,7 +232,7 @@
 
         .view-container { flex: 1; overflow-y: auto; overflow-x: hidden; position: relative; scrollbar-width: none; padding-bottom: 20px;}
         .view-container::-webkit-scrollbar { display: none; }
-        .game-view { display: none; flex-direction: column; animation: fadeIn 0.3s; }
+        .game-view { display: none; flex-direction: column; animation: fadeIn 0.35s cubic-bezier(0.25, 0.8, 0.25, 1); }
         .game-view.active { display: flex; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -352,7 +353,7 @@
         .modal-btn { padding: 10px; border: none; border-radius: 6px; font-weight: 800; font-size: 13px; cursor: pointer; margin-bottom: 6px; width: 100%;}
 
         .toast-container { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 99999; display: flex; flex-direction: column; gap: 6px; pointer-events: none; width: 90%; max-width: 300px; }
-        .toast { background-color: rgba(30,33,43,0.95); color: #fff; padding: 10px 12px; border-radius: 8px; font-weight: 600; text-align: center; border: 1px solid var(--gold); font-size: 12px; animation: slideDown 0.3s forwards, fadeOut 0.3s forwards 2.5s; }
+        .toast { background: linear-gradient(135deg, rgba(30,33,43,0.97), rgba(20,22,28,0.97)); color: #fff; padding: 10px 12px; border-radius: 12px; font-weight: 600; text-align: center; border: 1px solid var(--gold); font-size: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.35); animation: slideDown 0.35s cubic-bezier(0.25, 0.8, 0.25, 1) forwards, fadeOut 0.3s forwards 2.5s; }
         .toast.error { border-color: var(--red); } .toast.success { border-color: var(--green); }
         @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
@@ -929,6 +930,64 @@
         }
     };
 
+    // Звуки синтезируются прямо в коде через Web Audio API — без внешних файлов
+    // (не тащим чужую графику/аудио, не зависим от мёртвых ссылок или веса файлов).
+    window.Sound = {
+        ctx: null,
+        getCtx() {
+            // Браузеры блокируют звук до первого действия пользователя — контекст
+            // создаём лениво и "будим", если он оказался приостановлен.
+            if (!this.ctx) { try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) { return null; } }
+            if (this.ctx.state === 'suspended') this.ctx.resume().catch(()=>{});
+            return this.ctx;
+        },
+        // Короткий и тихий взрыв — шум с быстрым затуханием громкости и фильтра.
+        explosion() {
+            const ctx = this.getCtx(); if (!ctx) return;
+            const dur = 0.15;
+            const buffer = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < data.length; i++) data[i] = (Math.random()*2-1) * (1 - i/data.length);
+            const noise = ctx.createBufferSource(); noise.buffer = buffer;
+            const filter = ctx.createBiquadFilter(); filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(1200, ctx.currentTime);
+            filter.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + dur);
+            const gain = ctx.createGain();
+            gain.gain.setValueAtTime(0.1, ctx.currentTime); // тихо, как просили
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+            noise.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+            noise.start(); noise.stop(ctx.currentTime + dur);
+        },
+        // Два коротких весёлых тона — на получение денег.
+        coin() {
+            const ctx = this.getCtx(); if (!ctx) return;
+            [880, 1318].forEach((freq, i) => {
+                const t0 = ctx.currentTime + i*0.08;
+                const osc = ctx.createOscillator(); osc.type = 'sine'; osc.frequency.value = freq;
+                const gain = ctx.createGain();
+                gain.gain.setValueAtTime(0.001, t0);
+                gain.gain.linearRampToValueAtTime(0.14, t0 + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.25);
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.start(t0); osc.stop(t0 + 0.25);
+            });
+        },
+        // Восходящий короткий перезвон — на выполнение задания.
+        task() {
+            const ctx = this.getCtx(); if (!ctx) return;
+            [523, 659, 784].forEach((freq, i) => {
+                const t0 = ctx.currentTime + i*0.09;
+                const osc = ctx.createOscillator(); osc.type = 'triangle'; osc.frequency.value = freq;
+                const gain = ctx.createGain();
+                gain.gain.setValueAtTime(0.001, t0);
+                gain.gain.linearRampToValueAtTime(0.12, t0 + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.2);
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.start(t0); osc.stop(t0 + 0.2);
+            });
+        }
+    };
+
     window.App = {
         balance: 1000,
         init() {
@@ -944,7 +1003,10 @@
         },
         chgBal(amount) {
             amount = Math.floor(Number(amount)); if(isNaN(amount)) return;
-            this.balance += amount; this.updBalUI(); if(amount > 0) window.Tasks.chk('balance');
+            // Не даём балансу уйти в минус на экране — сервер и так это делает
+            // (apply_balance_delta), но клиент может на долю секунды показать минус
+            // при очень быстрых повторных кликах, пока сервер ещё не ответил.
+            this.balance = Math.max(0, this.balance + amount); this.updBalUI(); if(amount > 0) window.Tasks.chk('balance');
             if (amount !== 0) this.syncDelta(amount);
         },
         // Раньше отправка на сервер была просто "выстрелил и забыл" — если страницу
@@ -1053,7 +1115,7 @@
             const t = document.createElement('div'); t.className = `toast ${type}`; t.innerText = msg; c.appendChild(t); setTimeout(() => { if(t.parentNode) t.parentNode.removeChild(t); }, 3000);
         },
         mCb(n, k) { if(k<0 || k>n) return 0; if(k===0 || k===n) return 1; let res=1; for(let i=1; i<=k; i++) res = res * (n-i+1)/i; return res; },
-        win(amount) { this.chgBal(amount); this.toast(`Победа! +${amount}`, 'success'); window.Tasks.chk('win', amount); window.Levels.addWin(amount); window.Gifts.tryDrop(); }
+        win(amount) { this.chgBal(amount); this.toast(`Победа! +${amount}`, 'success'); if(window.Sound) window.Sound.coin(); window.Tasks.chk('win', amount); window.Levels.addWin(amount); window.Gifts.tryDrop(); }
     };
 
     window.Tasks = {
@@ -1078,7 +1140,7 @@
         claim(id) {
             if(this.st[id]) return; let task = this.list.find(t => t.id === id); this.st[id] = true;
             if(id === 'daily') { this.lastD = Date.now(); localStorage.setItem('dydx_tasks_time', this.lastD); }
-            window.App.chgBal(task.r); LS.s('dydx_tasks', this.st); window.App.toast(`Выполнено! +${task.r}`, 'success'); this.rnd();
+            window.App.chgBal(task.r); LS.s('dydx_tasks', this.st); window.App.toast(`Выполнено! +${task.r}`, 'success'); if(window.Sound) window.Sound.task(); this.rnd();
         },
         chk(t, v = 0) {
             if(t==='win'&&v>=10000&&!this.st.rich) this.claim('rich'); if(t==='balance'&&window.App.balance>=100000&&!this.st.knyaz) this.claim('knyaz');
@@ -1132,7 +1194,7 @@
                 }
                 this.st.channel_sub = true; LS.s('dydx_tasks', this.st);
                 if (typeof data.new_balance === 'number') { window.App.balance = data.new_balance; window.App.updBalUI(); }
-                window.App.toast(`Выполнено! +5000`, 'success');
+                window.App.toast(`Выполнено! +5000`, 'success'); if(window.Sound) window.Sound.task();
                 this.rnd();
             } catch (e) {
                 window.App.toast('Ошибка проверки — попробуйте ещё раз', 'error');
@@ -1519,7 +1581,7 @@
             this.state = 2; document.getElementById('crash-card').classList.remove('flying'); document.getElementById('crash-card').classList.add('crashed');
             document.getElementById('crash-mult').innerText = this.mult.toFixed(2)+'x'; document.getElementById('crash-status').innerText = 'КРАШ!';
 
-            let r = document.getElementById('crash-rocket'); r.innerText = '💥'; r.className = 'explode-anim';
+            let r = document.getElementById('crash-rocket'); r.innerText = '💥'; r.className = 'explode-anim'; if (window.Sound) window.Sound.explosion();
             if(this.mult === 1.00 && this.bet.pl && !this.bet.o) window.Tasks.chk('unlucky');
 
             this.history.unshift(this.mult); if(this.history.length > 15) this.history.pop();
@@ -1615,7 +1677,7 @@
             this.mult = Number(targetMultiplier); this.state = 2;
             document.getElementById('crash-card').classList.remove('flying'); document.getElementById('crash-card').classList.add('crashed');
             document.getElementById('crash-mult').innerText = this.mult.toFixed(2)+'x'; document.getElementById('crash-status').innerText = 'КРАШ!';
-            let r = document.getElementById('crash-rocket'); r.innerText = '💥'; r.className = 'explode-anim';
+            let r = document.getElementById('crash-rocket'); r.innerText = '💥'; r.className = 'explode-anim'; if (window.Sound) window.Sound.explosion();
             if (this.mult === 1 && this.bet.pl && !this.bet.o) window.Tasks.chk('unlucky');
             this.history.unshift(this.mult); if (this.history.length > 15) this.history.pop();
             LS.s('dydx_crash_h', this.history); this.rndH(); this.updBtns();
@@ -1971,7 +2033,8 @@
     };
 
     window.Shells = {
-        pl: false, lk: false, b: 0, cups: 3, mult: 2.91, winIdx: 0,
+        pl: false, lk: false, b: 0, cups: 3, mult: 2.91,
+        cupSvg: `<svg viewBox="0 0 60 60" width="52" height="52"><path d="M10 14 L50 14 L44 52 L16 52 Z" fill="#c0392b" stroke="#7f1d1d" stroke-width="2"/><ellipse cx="30" cy="14" rx="20" ry="5" fill="#e74c3c" stroke="#7f1d1d" stroke-width="2"/></svg>`,
         init() { this.renderBoard(); },
         mod(act) { if(this.pl) return; let v = Math.floor(Number(document.getElementById('shells-bet').value)) || 0; if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById('shells-bet').value = Math.max(0, Math.min(v, window.App.balance)); },
         set(v) { if(!this.pl) document.getElementById('shells-bet').value=v; },
@@ -1986,10 +2049,32 @@
             const board = document.getElementById('shells-board'); if (!board) return;
             board.innerHTML = '';
             for (let i=0; i<this.cups; i++) {
-                let el = document.createElement('div'); el.className = 'shell-cup'; el.id = 'shell-'+i; el.innerText = '🥤';
+                let el = document.createElement('div'); el.className = 'shell-cup'; el.id = 'shell-'+i; el.innerHTML = this.cupSvg;
                 el.onclick = () => this.pick(i);
                 board.appendChild(el);
             }
+        },
+        // Настоящая перестановка мест (не просто тряска на месте) — берём FLIP-приём:
+        // запоминаем координаты ДО перестановки в DOM, переставляем, считаем новые
+        // координаты, мгновенно (без анимации) откатываем визуально назад через
+        // transform, затем одним кадром включаем transition и обнуляем transform —
+        // получается плавный "полёт" элемента в новое место.
+        swapCupsAnimated(idxA, idxB) {
+            const board = document.getElementById('shells-board');
+            const children = Array.from(board.children);
+            const elA = children[idxA], elB = children[idxB];
+            if (!elA || !elB || elA === elB) return;
+            const rectA = elA.getBoundingClientRect(); const rectB = elB.getBoundingClientRect();
+            const afterA = idxA < idxB ? elB.nextSibling : elB;
+            const afterB = idxA < idxB ? elA : elA.nextSibling;
+            board.insertBefore(elA, afterA); board.insertBefore(elB, afterB);
+            const newRectA = elA.getBoundingClientRect(); const newRectB = elB.getBoundingClientRect();
+            const dxA = rectA.left - newRectA.left; const dxB = rectB.left - newRectB.left;
+            elA.style.transition = 'none'; elA.style.transform = `translateX(${dxA}px)`;
+            elB.style.transition = 'none'; elB.style.transform = `translateX(${dxB}px)`;
+            void elA.offsetWidth; // форсируем перерасчёт стилей — иначе браузер схлопнёт оба шага в один кадр
+            elA.style.transition = 'transform 0.25s ease-in-out'; elA.style.transform = '';
+            elB.style.transition = 'transform 0.25s ease-in-out'; elB.style.transform = '';
         },
         action() {
             if (this.pl) return;
@@ -1999,26 +2084,42 @@
             window.App.chgBal(-this.b); window.Stats.addBet(); this.pl = true; this.lk = true;
             document.getElementById('shells-win').innerText = Math.floor(this.b*this.mult);
             document.getElementById('shells-btn').className = 'main-btn btn-disabled'; document.getElementById('shells-btn').innerText = 'Перемешиваем...';
-            this.winIdx = Math.floor(Math.random()*this.cups);
-            // Шарик никогда физически не двигается по экрану — только имитация тряски
-            // всех стаканов разом, поэтому честно случайный выбор невозможно отследить взглядом.
+
+            // Помечаем один случайный DOM-элемент как "с шариком" — метка следует
+            // за конкретным узлом, даже когда узлы физически меняются местами.
+            const cupEls = Array.from(document.querySelectorAll('.shell-cup'));
+            cupEls.forEach(el => el.removeAttribute('data-ball'));
+            cupEls[Math.floor(Math.random()*this.cups)].setAttribute('data-ball', '1');
+
             document.querySelectorAll('.shell-cup').forEach(el => el.classList.add('shuffling'));
-            setTimeout(() => {
-                document.querySelectorAll('.shell-cup').forEach(el => el.classList.remove('shuffling'));
-                this.lk = false;
-                document.getElementById('shells-btn').innerText = 'Выберите стакан';
-            }, 1400);
+
+            let step = 0; const totalSteps = 6 + Math.floor(Math.random()*4); // 6-9 перестановок подряд
+            const doStep = () => {
+                const board = document.getElementById('shells-board'); const n = board.children.length;
+                let a = Math.floor(Math.random()*n), b = Math.floor(Math.random()*n);
+                while (b === a) b = Math.floor(Math.random()*n);
+                this.swapCupsAnimated(a, b);
+                step++;
+                if (step < totalSteps) setTimeout(doStep, 260);
+                else setTimeout(() => {
+                    document.querySelectorAll('.shell-cup').forEach(el => el.classList.remove('shuffling'));
+                    this.lk = false;
+                    document.getElementById('shells-btn').innerText = 'Выберите стакан';
+                }, 300);
+            };
+            setTimeout(doStep, 300);
         },
         pick(i) {
             if (!this.pl || this.lk) return;
             this.lk = true;
-            const cupEls = document.querySelectorAll('.shell-cup');
-            cupEls.forEach((el, idx) => {
+            const cupEls = Array.from(document.querySelectorAll('.shell-cup'));
+            const won = !!(cupEls[i] && cupEls[i].hasAttribute('data-ball'));
+            cupEls.forEach(el => {
                 el.classList.add('revealed');
-                if (idx === this.winIdx) { el.innerText = '🔴'; el.classList.add('winner'); }
+                if (el.hasAttribute('data-ball')) { el.innerHTML = '🔴'; el.classList.add('winner'); }
             });
             setTimeout(() => {
-                if (i === this.winIdx) {
+                if (won) {
                     let win = Math.floor(this.b * this.mult);
                     window.App.win(win);
                 } else {
