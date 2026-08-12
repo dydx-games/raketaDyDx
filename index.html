@@ -154,8 +154,22 @@
         .dice-track-marker { position: absolute; top: -4px; width: 3px; height: 18px; background: #fff; border-radius: 2px; box-shadow: 0 0 6px rgba(0,0,0,0.5); transition: left 0.2s; }
         .dice-track-result { position: absolute; top: -34px; width: 28px; height: 28px; margin-left: -14px; background: #fff; color: #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 900; opacity: 0; transition: left 0.4s var(--ease), opacity 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
         .dice-labels { display: flex; justify-content: space-between; margin-top: 8px; font-size: 10px; color: var(--text-muted); }
-        .profile-header { transition: background 0.3s; border-radius: 16px; padding: 14px; margin: 0 10px; }
-        .bg-swatch { width: 44px; height: 44px; min-width: 44px; border-radius: 12px; cursor: pointer; position: relative; border: 2px solid transparent; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 900; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.7); transition: transform 0.15s var(--ease), border-color 0.2s; }
+        .plinko-board { position: relative; width: 100%; aspect-ratio: 1.3 / 1; background: radial-gradient(circle at 50% 0%, rgba(255,255,255,0.05), transparent 70%); border-radius: 12px; overflow: hidden; margin-bottom: 6px; }
+        .plinko-peg { position: absolute; width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted); box-shadow: 0 0 4px rgba(255,255,255,0.3); transform: translate(-50%, -50%); }
+        .plinko-ball { position: absolute; width: 14px; height: 14px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff, var(--gold) 60%, #7a5c1e); box-shadow: 0 0 10px rgba(215,180,93,0.8); transform: translate(-50%, -50%); z-index: 5; }
+        .plinko-buckets { display: grid; grid-template-columns: repeat(9, 1fr); gap: 3px; }
+        .plinko-bucket { text-align: center; font-size: 9px; font-weight: 900; padding: 6px 0; border-radius: 6px; color: #fff; transition: transform 0.2s var(--ease), box-shadow 0.2s; }
+        .plinko-bucket.t-hi { background: linear-gradient(180deg, #e74c3c, #8e1c1c); }
+        .plinko-bucket.t-mid { background: linear-gradient(180deg, #d7b45d, #7a5c1e); }
+        .plinko-bucket.t-even { background: linear-gradient(180deg, #3a5fc4, #1e3070); }
+        .plinko-bucket.t-low { background: linear-gradient(180deg, #4a4f5c, #2a2e3a); }
+        .plinko-bucket.landed { transform: scale(1.18); box-shadow: 0 0 14px rgba(255,255,255,0.6); }
+        .profile-header { transition: background 0.3s; border-radius: 16px; padding: 14px; margin: 0 10px; background-size: 46px 46px, 250% 250%; }
+        .profile-header.bg-anim { animation: bgHueShift 8s ease-in-out infinite; background-size: 46px 46px, 300% 300%; }
+        .profile-header.bg-glow { box-shadow: 0 0 24px rgba(215,180,93,0.35), inset 0 0 30px rgba(255,255,255,0.06); }
+        @keyframes bgHueShift { 0%,100% { background-position: 0 0, 0% 50%; } 50% { background-position: 0 0, 100% 50%; } }
+        .bg-swatch { width: 44px; height: 44px; min-width: 44px; border-radius: 12px; cursor: pointer; position: relative; border: 2px solid transparent; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 900; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.7); transition: transform 0.15s var(--ease), border-color 0.2s; background-size: 250% 250%; }
+        .bg-swatch.bg-anim { animation: bgHueShift 4s ease-in-out infinite; }
         .bg-swatch:active { transform: scale(0.9); }
         .bg-swatch.selected { border-color: var(--gold); box-shadow: 0 0 10px rgba(215,180,93,0.5); }
         .bg-swatch-price { font-size: 8px; background: rgba(0,0,0,0.55); padding: 2px 5px; border-radius: 5px; }
@@ -170,7 +184,10 @@
         .crypto-chart-tooltip { position: absolute; background: rgba(20,22,28,0.95); border: 1px solid #2a2e3a; border-radius: 8px; padding: 5px 8px; font-size: 10px; color: #fff; pointer-events: none; white-space: nowrap; z-index: 5; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
         .hub-category { font-size: 13px; font-weight: 800; letter-spacing: 0.5px; margin: 26px 12px 12px; text-transform: uppercase; }
         .hub-grid { display: flex; flex-direction: column; gap: 12px; padding: 0 12px; }
-        .hub-card { display: flex; align-items: center; gap: 14px; background: var(--bg-panel); border: 1px solid #1f222b; border-radius: 18px; padding: 14px; cursor: pointer; position: relative; overflow: hidden; box-shadow: 0 4px 14px rgba(0,0,0,0.22); transition: transform 0.18s var(--ease), box-shadow 0.18s var(--ease); }
+        .hub-card { display: flex; align-items: center; gap: 14px; background: linear-gradient(155deg, var(--bg-panel) 0%, var(--bg-panel-light) 140%); border: 1px solid #1f222b; border-radius: 18px; padding: 14px; cursor: pointer; position: relative; overflow: hidden; box-shadow: 0 4px 14px rgba(0,0,0,0.22); transition: transform 0.18s var(--ease), box-shadow 0.18s var(--ease), border-color 0.18s; }
+        .hub-card:active { transform: scale(0.97); border-color: rgba(215,180,93,0.4); box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+        .hub-card-emoji { transition: transform 0.18s var(--ease); }
+        .hub-card:active .hub-card-emoji { transform: scale(1.15) rotate(-4deg); }
         .hub-card::before { content: ''; position: absolute; top: -30px; right: -30px; width: 90px; height: 90px; background: radial-gradient(circle, rgba(215,180,93,0.18), transparent 70%); pointer-events: none; }
         .hub-card:active { transform: scale(0.98); }
         .hub-card-emoji { width: 56px; height: 56px; min-width: 56px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 30px; background: radial-gradient(circle at 30% 30%, rgba(215,180,93,0.25), rgba(20,22,28,0.5)); }
@@ -288,13 +305,14 @@
         .btn-small:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(50%); }
         .btn-small.active { background-color: var(--gold); color: #000; }
 
-        .main-btn { width: 100%; padding: 12px; border-radius: var(--border-radius-sm); border: none; font-size: 14px; font-weight: 800; text-transform: uppercase; cursor: pointer; transition: transform 0.15s var(--ease), background-color 0.25s, box-shadow 0.25s; }
+        .main-btn { width: 100%; padding: 12px; border-radius: var(--border-radius-sm); border: none; font-size: 14px; font-weight: 800; text-transform: uppercase; cursor: pointer; transition: transform 0.15s var(--ease), background-color 0.25s, box-shadow 0.25s, filter 0.15s; position: relative; overflow: hidden; letter-spacing: 0.3px; }
         .main-btn:active { transform: scale(0.97); }
-        .main-btn:active:not(:disabled) { transform: scale(0.98); }
-        .btn-green { background: linear-gradient(135deg, var(--green) 0%, #27ae60 100%); color: #fff; }
-        .btn-red { background: linear-gradient(135deg, var(--red) 0%, #c0392b 100%); color: #fff; }
-        .btn-gold { background: linear-gradient(135deg, var(--gold) 0%, #f39c12 100%); color: #000; box-shadow: 0 0 15px rgba(215,180,93,0.3); }
-        .btn-disabled { background: var(--bg-panel-light); color: var(--text-muted); pointer-events: none; }
+        .main-btn:active:not(:disabled) { transform: scale(0.98); filter: brightness(0.94); }
+        .main-btn:not(.btn-disabled):hover { filter: brightness(1.08); }
+        .btn-green { background: linear-gradient(135deg, var(--green) 0%, #27ae60 100%); color: #fff; box-shadow: 0 4px 14px rgba(46,204,113,0.25); }
+        .btn-red { background: linear-gradient(135deg, var(--red) 0%, #c0392b 100%); color: #fff; box-shadow: 0 4px 14px rgba(231,76,60,0.25); }
+        .btn-gold { background: linear-gradient(135deg, var(--gold) 0%, #f39c12 100%); color: #000; box-shadow: 0 4px 15px rgba(215,180,93,0.35); }
+        .btn-disabled { background: var(--bg-panel-light); color: var(--text-muted); pointer-events: none; box-shadow: none; }
 
         .history-strip { display: flex; gap: 6px; padding: 10px 10px 0; overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
         .history-strip::-webkit-scrollbar { display: none; }
@@ -487,6 +505,10 @@
                 <div class="hub-card" onclick="App.s('dice', null, 'Кости')">
                     <div class="hub-card-emoji">🎲</div>
                     <div class="hub-card-info"><div class="hub-card-title">Кости</div><div class="hub-card-desc">Больше или меньше — сами выбираете риск</div></div>
+                </div>
+                <div class="hub-card" onclick="App.s('plinko', null, 'Плинко')">
+                    <div class="hub-card-emoji">🟣</div>
+                    <div class="hub-card-info"><div class="hub-card-title">Плинко</div><div class="hub-card-desc">Уроните шар и ловите множители до 100x</div></div>
                 </div>
             </div>
 
@@ -729,6 +751,30 @@
                     <button class="btn-small" onclick="Dice.set(500)">500</button><button class="btn-small" onclick="Dice.set(1000)">1K</button>
                 </div>
                 <button class="main-btn btn-green" id="dice-btn" onclick="Dice.play()">🎲 БРОСИТЬ</button>
+            </div>
+        </div>
+
+        <!-- PLINKO -->
+        <div class="game-view" id="view-plinko">
+            <div class="panel" style="margin-bottom:12px;">
+                <div class="plinko-board" id="plinko-board"></div>
+                <div class="plinko-buckets" id="plinko-buckets"></div>
+            </div>
+            <div class="panel" style="margin-bottom: 20px;">
+                <div class="bet-row" style="margin-bottom: 8px;">
+                    <div class="input-wrap" style="flex:2;"><input type="number" id="plinko-bet" value="100"></div>
+                    <button class="btn-small" onclick="Plinko.mod('half')">1/2</button><button class="btn-small" onclick="Plinko.mod('double')">2x</button><button class="btn-small" onclick="Plinko.mod('max')">MAX</button>
+                </div>
+                <div class="bet-row" style="margin-bottom: 10px;">
+                    <button class="btn-small active" id="plinko-risk-low" onclick="Plinko.setRisk('low')">Низкий риск</button>
+                    <button class="btn-small" id="plinko-risk-mid" onclick="Plinko.setRisk('mid')">Средний</button>
+                    <button class="btn-small" id="plinko-risk-high" onclick="Plinko.setRisk('high')">Высокий</button>
+                </div>
+                <div class="quick-amounts">
+                    <button class="btn-small" onclick="Plinko.set(50)">50</button><button class="btn-small" onclick="Plinko.set(100)">100</button>
+                    <button class="btn-small" onclick="Plinko.set(500)">500</button><button class="btn-small" onclick="Plinko.set(1000)">1K</button>
+                </div>
+                <button class="main-btn btn-gold" id="plinko-btn" onclick="Plinko.play()">🟣 БРОСИТЬ ШАР</button>
             </div>
         </div>
 
@@ -975,14 +1021,19 @@
         },
         save() { LS.s('dydx_levels', {xp: this.xp, lvl: this.lvl}); },
         // Вызывается при любой победе — addWin добавляет опыт и проверяет ап уровня
+        LEVEL_UP_REWARD: 15000, // фикс: раньше награда суммировалась за КАЖДЫЙ пройденный
+        // уровень (lvl*20), из-за чего один огромный выигрыш (напр. ставка в кости на
+        // низком коэффициенте) мог перепрыгнуть сразу много уровней и дать ~100к+ за раз.
+        // Теперь награда фиксированная и выдаётся ОДИН раз за вызов addWin(),
+        // сколько бы уровней ни было пройдено за этот прирост опыта.
         addWin(amount) {
             amount = Math.floor(Number(amount)); if(!amount || amount <= 0) return;
             this.xp += amount;
-            let leveledUp = false; let totalReward = 0;
+            let leveledUp = false;
             while (this.xp >= this.need(this.lvl)) {
                 this.lvl++; leveledUp = true;
-                totalReward += this.lvl * 20; // 100 -> 20, награда снижена ещё в 5 раз
             }
+            let totalReward = leveledUp ? this.LEVEL_UP_REWARD : 0;
             this.save(); this.render();
             if (leveledUp) {
                 // Важно: используем chgBal, а НЕ App.win() — win() сам вызывает
@@ -1079,7 +1130,7 @@
             let bStr = localStorage.getItem('dydx_balance'); this.balance = bStr ? Math.floor(parseFloat(bStr)) : 1000;
             if(isNaN(this.balance) || this.balance < 0) this.balance = 1000;
 
-            window.Stats.init(); window.Levels.init(); window.Gifts.init(); window.Tasks.init(); window.Roulette.init(); window.Upgrader.init(); window.Tower.init(); window.Mines.init(); window.Shells.init(); window.Dice.init(); window.Crash.init(); window.HiLo.init(); window.Coin.init(); window.ProfileBg.init();
+            window.Stats.init(); window.Levels.init(); window.Gifts.init(); window.Tasks.init(); window.Roulette.init(); window.Upgrader.init(); window.Tower.init(); window.Mines.init(); window.Shells.init(); window.Dice.init(); window.Plinko.init(); window.Crash.init(); window.HiLo.init(); window.Coin.init(); window.ProfileBg.init();
             this.updBalUI();
         },
         updBalUI() {
@@ -1203,7 +1254,7 @@
         s(id, el, title) {
             if (id === 'roulette') return this.toast('Рулетка временно закрыта — чиним найденный баг', 'error');
             if(window.Crash && window.Crash.state === 1 && window.Crash.bet.pl && !window.Crash.bet.o) return this.toast('Нельзя выйти во время полета!', 'error');
-            if(window.Tower.pl || window.Mines.pl || window.Shells.pl || window.Dice.pl || window.Upgrader.pl || window.Roulette.pl || window.HiLo.pl || window.Coin.pl || window.Gifts.pl || window.Gifts.upgrading) return this.toast('Завершите игру!', 'error');
+            if(window.Tower.pl || window.Mines.pl || window.Shells.pl || window.Dice.pl || window.Plinko.pl || window.Upgrader.pl || window.Roulette.pl || window.HiLo.pl || window.Coin.pl || window.Gifts.pl || window.Gifts.upgrading) return this.toast('Завершите игру!', 'error');
 
             document.querySelectorAll('.game-view').forEach(v => v.classList.remove('active')); document.getElementById(`view-${id}`).classList.add('active');
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -1248,14 +1299,40 @@
             { id: 'emerald', name: 'Изумруд', price: 8000, css: 'linear-gradient(135deg, #2ecc71, #0e4324)' },
             { id: 'royal', name: 'Королевский', price: 15000, css: 'linear-gradient(135deg, #8e6ae0, #1a1a3d)' },
             { id: 'cosmos', name: 'Космос', price: 20000, css: 'radial-gradient(circle at 30% 30%, #2c3e91, #08081a)' },
+            // ↓ новые платные фоны — премиум-тир
+            { id: 'inferno', name: 'Инферно', price: 30000, css: 'linear-gradient(135deg, #ff4b2b, #2b0a00)', anim: true },
+            { id: 'abyss', name: 'Бездна', price: 35000, css: 'radial-gradient(circle at 70% 20%, #0d3b4a, #000814)', anim: true },
+            { id: 'aurora', name: 'Аврора', price: 45000, css: 'linear-gradient(135deg, #00c9ff, #7b2ff7, #00c9ff)', anim: true },
+            { id: 'phoenix', name: 'Феникс', price: 60000, css: 'linear-gradient(135deg, #ffd200, #f7971e, #a80000)', anim: true },
+            { id: 'diamond_elite', name: 'Бриллиант', price: 90000, css: 'linear-gradient(135deg, #e0eafc, #cfdef3, #8ec5fc)', anim: true, glow: true },
+            { id: 'void_prime', name: 'Void Prime', price: 150000, css: 'linear-gradient(135deg, #0f0c29, #302b63, #24243e)', anim: true, glow: true },
         ],
         init() { this.apply(); },
         owned() { return LS.g('dydx_bg_owned', ['default']); },
         selected() { return LS.g('dydx_bg_selected', 'default'); },
+        // Узор закреплённого подарка (см. Gifts.pinGift) — накладывается поверх фона профиля.
+        patternOverlayUri(sym) {
+            const s = String(sym).replace(/[<>&"']/g, '');
+            const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='46' height='46'><text x='23' y='30' font-size='20' text-anchor='middle' fill='white' fill-opacity='0.16'>${s}</text></svg>`;
+            return `url("data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}")`;
+        },
         apply() {
             const item = this.catalog.find(b => b.id === this.selected()) || this.catalog[0];
             const header = document.querySelector('.profile-header');
-            if (header) header.style.background = item.css;
+            if (!header) return;
+            header.style.background = item.css;
+            header.classList.toggle('bg-anim', !!item.anim);
+            header.classList.toggle('bg-glow', !!item.glow);
+            const pinned = LS.g('dydx_pinned_gift', null);
+            if (pinned && pinned.patternSym) {
+                header.style.backgroundImage = `${this.patternOverlayUri(pinned.patternSym)}`;
+                header.style.backgroundRepeat = 'repeat';
+                header.style.backgroundSize = '46px 46px, cover';
+            } else {
+                header.style.backgroundImage = '';
+                header.style.backgroundRepeat = '';
+                header.style.backgroundSize = '';
+            }
         },
         render() {
             const el = document.getElementById('profile-bg-shop'); if (!el) return;
@@ -1263,7 +1340,7 @@
             el.innerHTML = this.catalog.map(b => {
                 const isOwned = owned.includes(b.id);
                 const isSel = sel === b.id;
-                return `<div class="bg-swatch ${isSel ? 'selected' : ''}" style="background:${b.css};" onclick="ProfileBg.pick('${b.id}')" title="${b.name}">
+                return `<div class="bg-swatch ${isSel ? 'selected' : ''} ${b.anim ? 'bg-anim' : ''}" style="background:${b.css};" onclick="ProfileBg.pick('${b.id}')" title="${b.name}">
                     ${!isOwned ? `<span class="bg-swatch-price">${b.price >= 1000 ? Math.round(b.price/1000)+'K' : b.price}</span>` : (isSel ? '✓' : '')}
                 </div>`;
             }).join('');
@@ -1677,7 +1754,7 @@
                         let g = this.POOL.find(p => p.id === n.giftId); if (!g) return;
                         let color = `var(--r-${n.tier})`;
                         let sellBtn = this.mpMode ? `<button class="market-card-btn" onclick="event.stopPropagation(); MarketUI.promptSell('${n.uid}', '${g.name.replace(/'/g,"")}', '${g.emoji}')">Продать</button>` : '';
-                        gal.innerHTML += `<div class="nft-item" style="--card-color:${color}; cursor:pointer;" onclick="Gifts.showPinMenu('${n.uid}', '${g.name.replace(/'/g,"")}', '${g.emoji}')">
+                        gal.innerHTML += `<div class="nft-item" style="--card-color:${color}; cursor:pointer;" onclick="Gifts.showPinMenu('${n.uid}', '${g.name.replace(/'/g,"")}', '${g.emoji}', '${(n.patternSym||'').replace(/'/g,"")}')">
                             <div class="nft-bg" style="background:${n.backdropGrad}"></div>
                             <div class="nft-item-emoji" style="filter:${n.modelFilter||'none'}; text-shadow:${n.modelGlow||'none'}">${g.emoji}${n.patternSym ? ' ' + n.patternSym : ''}</div>
                             <div class="nft-item-info">
@@ -1707,31 +1784,35 @@
             }
         },
         // Закрепление подарка рядом с ником — только ОДИН одновременно.
-        showPinMenu(uid, name, emoji) {
+        showPinMenu(uid, name, emoji, patternSym) {
             const existing = document.getElementById('pin-menu-modal'); if (existing) existing.remove();
             const modal = document.createElement('div');
             modal.id = 'pin-menu-modal'; modal.className = 'modal-overlay active';
             modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
             const pinned = LS.g('dydx_pinned_gift', null);
             const isPinnedNow = pinned && pinned.uid === uid;
+            const patternNote = patternSym ? `<p style="color:var(--text-muted); font-size:11px; margin:4px 0 12px;">Узор «${patternSym}» этого подарка ляжет поверх твоего фона профиля, пока подарок закреплён.</p>` : '';
             modal.innerHTML = `<div class="modal-content">
                 <h3 style="margin-top:0;">${emoji} ${name}</h3>
+                ${patternNote}
                 ${isPinnedNow
                     ? `<button class="modal-btn" style="background:var(--bg-panel-light); color:var(--text-light);" onclick="Gifts.unpinGift(); document.getElementById('pin-menu-modal').remove();">📌 Открепить</button>`
-                    : `<button class="modal-btn" style="background:var(--gold); color:#000;" onclick="Gifts.pinGift('${uid}', '${emoji}'); document.getElementById('pin-menu-modal').remove();">📌 Закрепить у ника</button>`}
+                    : `<button class="modal-btn" style="background:var(--gold); color:#000;" onclick="Gifts.pinGift('${uid}', '${emoji}', '${(patternSym||'').replace(/'/g,"")}'); document.getElementById('pin-menu-modal').remove();">📌 Закрепить у ника</button>`}
                 ${this.mpMode ? `<button class="modal-btn" style="background:#e74c3c; color:#fff;" onclick="MarketUI.promptSell('${uid}', '${name}', '${emoji}'); document.getElementById('pin-menu-modal').remove();">Продать</button>` : ''}
                 <button class="modal-btn" style="background:transparent; color:var(--text-muted);" onclick="document.getElementById('pin-menu-modal').remove();">Отмена</button>
             </div>`;
             document.body.appendChild(modal);
         },
-        pinGift(uid, emoji) {
-            LS.s('dydx_pinned_gift', { uid, emoji });
+        pinGift(uid, emoji, patternSym) {
+            LS.s('dydx_pinned_gift', { uid, emoji, patternSym: patternSym || '' });
             this.renderPinnedGift();
-            window.App.toast('Подарок закреплён у ника', 'success');
+            if (window.ProfileBg) window.ProfileBg.apply();
+            window.App.toast(patternSym ? `Подарок закреплён — узор «${patternSym}» добавлен на фон профиля` : 'Подарок закреплён у ника', 'success');
         },
         unpinGift() {
             localStorage.removeItem('dydx_pinned_gift');
             this.renderPinnedGift();
+            if (window.ProfileBg) window.ProfileBg.apply();
             window.App.toast('Подарок откреплён', '');
         },
         renderPinnedGift() {
@@ -2487,16 +2568,126 @@
             }, 900);
         }
     };
+
+    // ================= ПЛИНКО =================
+    // Классика: шар падает через 8 рядов колышков, на каждом ряду уходит влево/вправо
+    // с шансом 50/50 — итоговое распределение по 9 лункам биномиальное (как в реальном
+    // Plinko), поэтому крайние лунки с большим множителем выпадают редко, а центр — часто.
+    window.Plinko = {
+        ROWS: 8,
+        TABLES: {
+            low:  [5.5, 2, 1.1, 1, 0.5, 1, 1.1, 2, 5.5],
+            mid:  [13, 3, 1.3, 0.7, 0.4, 0.7, 1.3, 3, 13],
+            high: [29, 4, 1.5, 0.3, 0.2, 0.3, 1.5, 4, 29]
+        },
+        risk: 'low', pl: false,
+        init() { this.renderBoard(); this.renderBuckets(); },
+        setRisk(r) {
+            if (this.pl) return;
+            this.risk = r;
+            ['low','mid','high'].forEach(k => document.getElementById('plinko-risk-' + k).classList.toggle('active', k === r));
+            this.renderBuckets();
+        },
+        mod(act) { if (this.pl) return; let v = Math.floor(Number(document.getElementById('plinko-bet').value)) || 0; if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById('plinko-bet').value = Math.max(0, Math.min(v, window.App.balance)); },
+        set(v) { if (!this.pl) document.getElementById('plinko-bet').value = v; },
+        renderBoard() {
+            const board = document.getElementById('plinko-board'); if (!board) return;
+            board.innerHTML = '';
+            for (let r = 0; r < this.ROWS; r++) {
+                const pegCount = r + 2;
+                for (let p = 0; p < pegCount; p++) {
+                    const peg = document.createElement('div'); peg.className = 'plinko-peg';
+                    const rowWidthPct = 100 * (pegCount - 1) / (this.ROWS + 1);
+                    const startPct = 50 - rowWidthPct / 2;
+                    const leftPct = pegCount === 1 ? 50 : startPct + (rowWidthPct * p / (pegCount - 1));
+                    peg.style.left = leftPct + '%';
+                    peg.style.top = (r / this.ROWS) * 100 + '%';
+                    board.appendChild(peg);
+                }
+            }
+            const ball = document.createElement('div'); ball.className = 'plinko-ball'; ball.id = 'plinko-ball';
+            ball.style.left = '50%'; ball.style.top = '0%'; ball.style.opacity = '0';
+            board.appendChild(ball);
+        },
+        renderBuckets() {
+            const el = document.getElementById('plinko-buckets'); if (!el) return;
+            const table = this.TABLES[this.risk];
+            el.innerHTML = table.map((m, i) => {
+                let tier = m >= 5 ? 'hi' : (m >= 1.5 ? 'mid' : (m >= 1 ? 'even' : 'low'));
+                return `<div class="plinko-bucket t-${tier}" id="plinko-bucket-${i}">${m}x</div>`;
+            }).join('');
+        },
+        play() {
+            if (this.pl) return;
+            const bet = Math.floor(Number(document.getElementById('plinko-bet').value));
+            if (!bet || isNaN(bet) || bet <= 0) return window.App.toast('Неверная ставка', 'error');
+            if (bet > window.App.balance) return window.App.toast('Недостаточно фишек', 'error');
+            this.pl = true;
+            window.App.chgBal(-bet, 'Плинко'); window.Stats.addBet();
+            const btn = document.getElementById('plinko-btn'); btn.className = 'main-btn btn-disabled'; btn.innerText = 'Падает...';
+            document.querySelectorAll('.plinko-bucket').forEach(b => b.classList.remove('landed'));
+
+            // Честный ролл: 8 независимых бросков 50/50, k = число "вправо" — это и есть индекс лунки.
+            let flips = []; let k = 0;
+            for (let i = 0; i < this.ROWS; i++) { const right = Math.random() < 0.5 ? 1 : 0; flips.push(right); k += right; }
+
+            const ball = document.getElementById('plinko-ball');
+            ball.style.transition = 'none'; ball.style.left = '50%'; ball.style.top = '0%'; ball.style.opacity = '1';
+            void ball.offsetWidth;
+            ball.style.transition = 'left 0.22s ease-in, top 0.22s linear';
+
+            let partial = 0;
+            const stepMs = 220;
+            for (let r = 1; r <= this.ROWS; r++) {
+                setTimeout(() => {
+                    partial += flips[r - 1];
+                    const bucketWidthPct = 100 / (this.TABLES[this.risk].length);
+                    const displacementPct = (partial * 2 - r) * (bucketWidthPct / 2);
+                    ball.style.left = (50 + displacementPct) + '%';
+                    ball.style.top = ((r / this.ROWS) * 92) + '%';
+                }, stepMs * r);
+            }
+
+            setTimeout(() => {
+                const table = this.TABLES[this.risk];
+                const mult = table[k];
+                const win = Math.floor(bet * mult);
+                const bucketEl = document.getElementById('plinko-bucket-' + k);
+                if (bucketEl) bucketEl.classList.add('landed');
+                ball.style.opacity = '0';
+                if (win > 0) window.App.win(win, 'Плинко');
+                if (mult < 1) window.App.toast(`Мимо крупного — x${mult}`, 'error');
+                this.pl = false;
+                btn.className = 'main-btn btn-gold'; btn.innerText = '🟣 БРОСИТЬ ШАР';
+            }, stepMs * this.ROWS + 350);
+        }
+    };
+
     window.ArenaUI = {
-        currentState: null, currentBets: [],
-        mod(act) { let v = Math.floor(Number(document.getElementById('arena-bet').value)) || 0; if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById('arena-bet').value = Math.max(0, Math.min(v, window.App.balance)); },
-        set(v) { document.getElementById('arena-bet').value = v; },
+        currentState: null, currentBets: [], joining: false,
+        mod(act) { if (this.joining) return; let v = Math.floor(Number(document.getElementById('arena-bet').value)) || 0; if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById('arena-bet').value = Math.max(0, Math.min(v, window.App.balance)); },
+        set(v) { if (!this.joining) document.getElementById('arena-bet').value = v; },
         async join() {
+            // Защита от мультитапа: пока предыдущий запрос ставки не завершился —
+            // повторные клики полностью игнорируются, кнопка блокируется мгновенно
+            // (ДО await), а не после ответа сервера.
+            if (this.joining) return;
             if (!window.Multiplayer) return window.App.toast('Арена работает только в мультиплеере — см. инструкцию', 'error');
             let val = Math.floor(Number(document.getElementById('arena-bet').value));
             if (!val || isNaN(val) || val <= 0) return window.App.toast('Неверная ставка', 'error');
             if (val > window.App.balance) return window.App.toast('Недостаточно фишек', 'error');
-            await window.Multiplayer.arenaJoin(val);
+            this.joining = true;
+            const btn = document.getElementById('arena-btn');
+            const prevText = btn ? btn.innerText : '';
+            if (btn) { btn.disabled = true; btn.className = 'main-btn btn-disabled'; btn.innerText = 'Ставим...'; }
+            try {
+                await window.Multiplayer.arenaJoin(val);
+            } finally {
+                this.joining = false;
+                // render() ниже перерисует кнопку по актуальному состоянию раунда;
+                // на случай если апдейт ещё не пришёл — возвращаем как было.
+                if (btn && btn.disabled) { btn.disabled = false; btn.className = 'main-btn btn-gold'; btn.innerText = prevText || '🎯 ЗАНЯТЬ МЕСТО'; }
+            }
         },
         // Вызывается из multiplayer-client.js при апдейте состояния арены
         render(state, bets) {
@@ -3175,6 +3366,6 @@
 
 <!-- МУЛЬТИПЛЕЕР: общий раунд Ракеты, Рулетки, Арены, промокоды, Дурак, маркетплейс -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="multiplayer-client.js?v=40"></script>
+<script src="multiplayer-client.js?v=16"></script>
 </body>
 </html>

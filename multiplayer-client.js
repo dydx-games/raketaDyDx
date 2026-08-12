@@ -256,12 +256,22 @@ window.Multiplayer = {
         this.arenaBets = data || [];
         if (window.ArenaUI) window.ArenaUI.render(this.arenaState, this.arenaBets);
     },
+    _arenaJoinInFlight: false,
     async arenaJoin(amount) {
-        const { data, error } = await sb.rpc('arena_join', { p_telegram_id: ME.id, p_username: ME.username, p_avatar_url: ME.avatar_url, p_amount: amount });
-        if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return false; }
-        window.App.toast(data[0].message, 'success');
-        await this.syncBalanceFromServer();
-        return true;
+        // Доп. защита на уровне клиента модуля: даже если ArenaUI.join() будет
+        // вызван откуда-то ещё в обход своего замка, второй параллельный вызов
+        // arenaJoin() всё равно не уйдёт на сервер, пока первый не завершился.
+        if (this._arenaJoinInFlight) return false;
+        this._arenaJoinInFlight = true;
+        try {
+            const { data, error } = await sb.rpc('arena_join', { p_telegram_id: ME.id, p_username: ME.username, p_avatar_url: ME.avatar_url, p_amount: amount });
+            if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return false; }
+            window.App.toast(data[0].message, 'success');
+            await this.syncBalanceFromServer();
+            return true;
+        } finally {
+            this._arenaJoinInFlight = false;
+        }
     },
 
     // ================= МУЛЬТИПЛЕЕРНАЯ РУЛЕТКА =================
