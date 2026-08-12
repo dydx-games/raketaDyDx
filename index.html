@@ -1320,19 +1320,22 @@
             const item = this.catalog.find(b => b.id === this.selected()) || this.catalog[0];
             const header = document.querySelector('.profile-header');
             if (!header) return;
-            header.style.background = item.css;
             header.classList.toggle('bg-anim', !!item.anim);
             header.classList.toggle('bg-glow', !!item.glow);
             const pinned = LS.g('dydx_pinned_gift', null);
-            if (pinned && pinned.patternSym) {
-                header.style.backgroundImage = `${this.patternOverlayUri(pinned.patternSym)}`;
-                header.style.backgroundRepeat = 'repeat';
-                header.style.backgroundSize = '46px 46px, cover';
-            } else {
-                header.style.backgroundImage = '';
-                header.style.backgroundRepeat = '';
-                header.style.backgroundSize = '';
-            }
+            const patternLayer = (pinned && pinned.patternSym) ? this.patternOverlayUri(pinned.patternSym) : null;
+            // item.css бывает либо градиентом (linear-gradient/radial-gradient — валиден
+            // как background-image), либо css-переменной с обычным цветом (var(--bg-panel) —
+            // НЕ валиден как background-image). Оборачиваем цвет в linear-gradient(color,color),
+            // чтобы всегда работать через background-image как со списком слоёв — раньше узор
+            // просто ПЕРЕЗАПИСЫВАЛ backgroundImage и стирал сам купленный фон под собой.
+            const isGradient = /^(linear-gradient|radial-gradient|conic-gradient)\(/.test(item.css);
+            const baseLayer = isGradient ? item.css : `linear-gradient(${item.css}, ${item.css})`;
+            header.style.backgroundColor = '';
+            header.style.backgroundImage = patternLayer ? `${patternLayer}, ${baseLayer}` : baseLayer;
+            header.style.backgroundRepeat = patternLayer ? 'repeat' : '';
+            const baseSize = item.anim ? (patternLayer ? '300% 300%' : '250% 250%') : 'cover';
+            header.style.backgroundSize = patternLayer ? `46px 46px, ${baseSize}` : baseSize;
         },
         render() {
             const el = document.getElementById('profile-bg-shop'); if (!el) return;
@@ -3366,6 +3369,6 @@
 
 <!-- МУЛЬТИПЛЕЕР: общий раунд Ракеты, Рулетки, Арены, промокоды, Дурак, маркетплейс -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="multiplayer-client.js?v=45"></script>
+<script src="multiplayer-client.js?v=16"></script>
 </body>
 </html>
