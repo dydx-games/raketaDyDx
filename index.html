@@ -1126,7 +1126,33 @@
 
     window.App = {
         balance: 1000,
-        init() {
+        // Проверяет у сервера "версию сброса" (app_config.local_reset_version).
+        // Если она не совпадает с той, что запомнена локально — это значит,
+        // что где-то на сервере кто-то нажал "сбросить всё для всех", и этот
+        // клиент ещё не сбрасывался. Чистим весь локальный прогресс (уровень,
+        // подарки, фоны профиля и т.п. — то, что не хранится в Supabase) и
+        // запоминаем новую версию, чтобы не чистить второй раз.
+        async checkGlobalReset() {
+            try {
+                if (!window.sb) return;
+                const { data, error } = await window.sb.rpc('get_app_config', { p_key: 'local_reset_version' });
+                if (error || data == null) return;
+                const serverVersion = String(data);
+                const localVersion = localStorage.getItem('dydx_local_reset_version');
+                if (localVersion !== serverVersion) {
+                    Object.keys(localStorage).forEach(k => {
+                        // dydx_fallback_id — это ID гостевой сессии (когда игра открыта не
+                        // как настоящий Telegram-аккаунт), его НЕЛЬЗЯ стирать — иначе игрок
+                        // потеряет привязку к своему серверному аккаунту и станет новым гостем.
+                        if (k.startsWith('dydx_') && k !== 'dydx_fallback_id') localStorage.removeItem(k);
+                    });
+                    localStorage.setItem('dydx_local_reset_version', serverVersion);
+                }
+            } catch (e) { /* офлайн/ошибка сети — просто продолжаем без сброса */ }
+        },
+        async init() {
+            await this.checkGlobalReset();
+
             let bStr = localStorage.getItem('dydx_balance'); this.balance = bStr ? Math.floor(parseFloat(bStr)) : 1000;
             if(isNaN(this.balance) || this.balance < 0) this.balance = 1000;
 
@@ -2937,6 +2963,7 @@
                         <div class="crypto-card-change ${isUp ? 'up' : 'down'}">${isUp ? '▲' : '▼'} ${changePct}%</div>
                     </div>
                     <div class="crypto-card-price ${isUp ? 'up' : 'down'}">${c.price.toLocaleString()} фишек</div>
+                    <div style="font-size:9px; color:var(--text-muted); margin-top:2px;">Осталось купить: ${this.fmtCompact(Math.max(0, c.total_supply - c.circulating_supply))} / ${this.fmtCompact(c.total_supply)}</div>
                     ${chart}
                 </div>`;
             }).join('');
@@ -3000,9 +3027,11 @@
                 </div>
                 <div class="crypto-stat-grid">
                     <div class="crypto-stat-box"><div class="crypto-stat-label">Капитализация</div><div class="crypto-stat-val">${this.fmtCompact(c.market_cap)}</div></div>
-                    <div class="crypto-stat-box"><div class="crypto-stat-label">Предложение</div><div class="crypto-stat-val">${this.fmtCompact(c.circulating_supply)}</div></div>
+                    <div class="crypto-stat-box"><div class="crypto-stat-label">В обороте</div><div class="crypto-stat-val">${this.fmtCompact(c.circulating_supply)}</div></div>
+                    <div class="crypto-stat-box"><div class="crypto-stat-label">Осталось купить</div><div class="crypto-stat-val">${this.fmtCompact(Math.max(0, c.total_supply - c.circulating_supply))}</div></div>
                     <div class="crypto-stat-box"><div class="crypto-stat-label">Дно</div><div class="crypto-stat-val">${(c.min_price || 0).toLocaleString()}</div></div>
                     <div class="crypto-stat-box"><div class="crypto-stat-label">Холдеры</div><div class="crypto-stat-val">${c.holders || 0}</div></div>
+                    <div class="crypto-stat-box"><div class="crypto-stat-label">Всего эмиссия</div><div class="crypto-stat-val">${this.fmtCompact(c.total_supply)}</div></div>
                 </div>
                 <div class="crypto-tf-row">${['1m','5m','15m','1h','All'].map(tfBtn).join('')}</div>
                 <div class="crypto-ohlc-row">
@@ -3369,6 +3398,6 @@
 
 <!-- МУЛЬТИПЛЕЕР: общий раунд Ракеты, Рулетки, Арены, промокоды, Дурак, маркетплейс -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="multiplayer-client.js?v=50"></script>
+<script src="multiplayer-client.js?v=16"></script>
 </body>
 </html>
