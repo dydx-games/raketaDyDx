@@ -518,6 +518,19 @@ window.Multiplayer = {
         if (error || !data) return;
         if (window.CryptoUI) window.CryptoUI.render(data);
     },
+    async refreshMarketShop() {
+        const { data, error } = await sb.rpc('get_market_state', { p_telegram_id: ME.id });
+        if (error || !data) return;
+        if (window.Showcase) window.Showcase.setState(data);
+    },
+    async buyMarketGift(catalogId) {
+        const { data, error } = await sb.rpc('buy_market_gift', { p_telegram_id: ME.id, p_catalog_id: catalogId });
+        if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return false; }
+        window.App.toast(data[0].message, 'success');
+        await this.syncBalanceFromServer();
+        this.refreshMarketShop();
+        return true;
+    },
     async cryptoBuy(coinId, chipsAmount) {
         const { data, error } = await sb.rpc('crypto_buy', { p_telegram_id: ME.id, p_coin_id: coinId, p_chips_amount: chipsAmount });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return; }

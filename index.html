@@ -164,6 +164,35 @@
         .plinko-bucket.t-even { background: linear-gradient(180deg, #3a5fc4, #1e3070); }
         .plinko-bucket.t-low { background: linear-gradient(180deg, #4a4f5c, #2a2e3a); }
         .plinko-bucket.landed { transform: scale(1.18); box-shadow: 0 0 14px rgba(255,255,255,0.6); }
+
+        /* ================= ВИТРИНА (МАГАЗИН ГИФТОВ) ================= */
+        .star-icon { width: 14px; height: 14px; vertical-align: -2px; display: inline-block; }
+        .star-icon.lg { width: 20px; height: 20px; vertical-align: -4px; }
+        .shop-toolbar { display: flex; gap: 8px; margin-bottom: 10px; }
+        .shop-search { flex: 1; background: var(--bg-panel-light); border: 1px solid #23262f; color: var(--text-light); border-radius: var(--border-radius-sm); padding: 9px 12px; font-size: 13px; min-width: 0; }
+        .shop-search::placeholder { color: var(--text-muted); }
+        .shop-sort { background: var(--bg-panel-light); border: 1px solid #23262f; color: var(--text-light); border-radius: var(--border-radius-sm); padding: 9px 10px; font-size: 12px; }
+        .shop-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .shop-card { background: linear-gradient(155deg, var(--bg-panel-light) 0%, var(--bg-panel) 130%); border: 1px solid #23262f; border-radius: 16px; padding: 10px; position: relative; overflow: hidden; cursor: pointer; transition: transform 0.15s var(--ease), border-color 0.15s; }
+        .shop-card:active { transform: scale(0.96); }
+        .shop-card.owned { border-color: rgba(215,180,93,0.5); }
+        .shop-card-badge { position: absolute; top: 8px; right: 8px; background: rgba(215,180,93,0.15); color: var(--gold); font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 8px; z-index: 2; }
+        .shop-card-anim { width: 100%; height: 88px; display: flex; align-items: center; justify-content: center; }
+        .shop-card-anim.placeholder { background: radial-gradient(circle, rgba(255,255,255,0.04), transparent 70%); border-radius: 12px; }
+        .shop-card-name { font-size: 11.5px; font-weight: 700; margin-top: 4px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .shop-card-price { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 12px; font-weight: 800; color: var(--gold); margin-top: 4px; }
+        .shop-card-tier-basic .shop-card-price { color: var(--text-light); }
+        .shop-empty { text-align: center; color: var(--text-muted); font-size: 12px; padding: 30px 10px; }
+
+        .shop-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: flex-end; justify-content: center; z-index: 3000; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+        .shop-modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .shop-modal { width: 100%; max-width: 440px; background: var(--bg-panel); border-radius: 22px 22px 0 0; padding: 20px; transform: translateY(30px); transition: transform 0.25s var(--ease); }
+        .shop-modal-overlay.active .shop-modal { transform: translateY(0); }
+        .shop-modal-anim { width: 100%; height: 190px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; }
+        .shop-modal-name { font-size: 18px; font-weight: 800; text-align: center; }
+        .shop-modal-sub { font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 2px; }
+        .shop-modal-price { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 22px; font-weight: 900; color: var(--gold); margin: 14px 0; }
+        .shop-modal-close { position: absolute; top: 14px; right: 16px; color: var(--text-muted); font-size: 20px; cursor: pointer; background: none; border: none; }
         .profile-header { transition: background 0.3s; border-radius: 16px; padding: 14px; margin: 0 10px; background-size: 46px 46px, 250% 250%; }
         .profile-header.bg-anim { animation: bgHueShift 8s ease-in-out infinite; background-size: 46px 46px, 300% 300%; }
         .profile-header.bg-glow { box-shadow: 0 0 24px rgba(215,180,93,0.35), inset 0 0 30px rgba(255,255,255,0.06); }
@@ -418,7 +447,7 @@
 <div id="app">
     <div class="toast-container" id="toast-container"></div>
     <div class="task-notify-container" id="task-notify-container"></div>
-    <div id="daily-bonus-fab" onclick="if(window.Multiplayer) Multiplayer.claimDaily(); else App.toast('Мультиплеер не подключён', 'error')">🎁 +300</div>
+    <div id="daily-bonus-fab" onclick="if(window.Multiplayer) Multiplayer.claimDaily(); else App.toast('Мультиплеер не подключён', 'error')">🎁 +50</div>
 
     <header>
         <div class="header-title"><h1>dy/dx</h1><span id="app-subtitle">Игры</span></div>
@@ -427,7 +456,7 @@
                 <div class="level-badge" id="level-badge">1</div>
                 <div class="level-bar-wrap"><div class="level-bar-fill" id="level-bar-fill"></div></div>
             </div>
-            <div class="balance-pill" onclick="App.openTopUp()"><span id="header-balance">0</span><div class="add-btn">+</div></div>
+            <div class="balance-pill" onclick="App.openTopUp()"><img src="assets/star-icon-32.png" class="star-icon" alt="⭐" style="margin-right:2px;"><span id="header-balance">0</span><div class="add-btn">+</div></div>
         </div>
     </header>
 
@@ -552,8 +581,8 @@
                     <button class="btn-small" onclick="Crash.mod('half')">1/2</button><button class="btn-small" onclick="Crash.mod('double')">2x</button><button class="btn-small" onclick="Crash.mod('max')">MAX</button>
                 </div>
                 <div class="quick-amounts">
-                    <button class="btn-small" onclick="Crash.set(50)">50</button><button class="btn-small" onclick="Crash.set(100)">100</button>
-                    <button class="btn-small" onclick="Crash.set(500)">500</button><button class="btn-small" onclick="Crash.set(1000)">1K</button>
+                    <button class="btn-small" onclick="Crash.set(1)">1</button><button class="btn-small" onclick="Crash.set(3)">3</button>
+                    <button class="btn-small" onclick="Crash.set(13)">13</button><button class="btn-small" onclick="Crash.set(25)">25</button>
                 </div>
                 <button class="main-btn btn-green" id="crash-btn-1" onclick="Crash.action()">🚀 СТАВКА</button>
             </div>
@@ -576,8 +605,8 @@
                     <button class="btn-small" onclick="Roulette.mod('half')">1/2</button><button class="btn-small" onclick="Roulette.mod('double')">2x</button><button class="btn-small" onclick="Roulette.mod('max')">MAX</button>
                 </div>
                 <div class="quick-amounts">
-                    <button class="btn-small" onclick="Roulette.set(50)">50</button><button class="btn-small" onclick="Roulette.set(100)">100</button>
-                    <button class="btn-small" onclick="Roulette.set(500)">500</button><button class="btn-small" onclick="Roulette.set(1000)">1K</button>
+                    <button class="btn-small" onclick="Roulette.set(1)">1</button><button class="btn-small" onclick="Roulette.set(3)">3</button>
+                    <button class="btn-small" onclick="Roulette.set(13)">13</button><button class="btn-small" onclick="Roulette.set(25)">25</button>
                 </div>
                 <div class="roulette-btns">
                     <button class="r-btn r-btn-red" id="r-btn-red" onclick="Roulette.play('red')">КРАСНОЕ<br><span style="font-size:10px;opacity:0.8">2x</span></button>
@@ -605,8 +634,8 @@
                         <button class="btn-small" onclick="HiLo.mod('half')">1/2</button><button class="btn-small" onclick="HiLo.mod('double')">2x</button><button class="btn-small" onclick="HiLo.mod('max')">MAX</button>
                     </div>
                     <div class="quick-amounts">
-                        <button class="btn-small" onclick="HiLo.set(50)">50</button><button class="btn-small" onclick="HiLo.set(100)">100</button>
-                        <button class="btn-small" onclick="HiLo.set(500)">500</button><button class="btn-small" onclick="HiLo.set(1000)">1K</button>
+                        <button class="btn-small" onclick="HiLo.set(1)">1</button><button class="btn-small" onclick="HiLo.set(3)">3</button>
+                        <button class="btn-small" onclick="HiLo.set(13)">13</button><button class="btn-small" onclick="HiLo.set(25)">25</button>
                     </div>
                 </div>
                 <button class="main-btn btn-green" id="hilo-btn" onclick="HiLo.action()">🃏 ИГРАТЬ</button>
@@ -630,8 +659,8 @@
                         <button class="btn-small" onclick="Coin.mod('half')">1/2</button><button class="btn-small" onclick="Coin.mod('double')">2x</button><button class="btn-small" onclick="Coin.mod('max')">MAX</button>
                     </div>
                     <div class="quick-amounts">
-                        <button class="btn-small" onclick="Coin.set(50)">50</button><button class="btn-small" onclick="Coin.set(100)">100</button>
-                        <button class="btn-small" onclick="Coin.set(500)">500</button><button class="btn-small" onclick="Coin.set(1000)">1K</button>
+                        <button class="btn-small" onclick="Coin.set(1)">1</button><button class="btn-small" onclick="Coin.set(3)">3</button>
+                        <button class="btn-small" onclick="Coin.set(13)">13</button><button class="btn-small" onclick="Coin.set(25)">25</button>
                     </div>
                 </div>
                 <button class="main-btn btn-green" id="coin-btn" onclick="Coin.action()">🪙 ИГРАТЬ</button>
@@ -653,8 +682,8 @@
                     <button class="btn-small" onclick="Upgrader.mod('half')">1/2</button><button class="btn-small" onclick="Upgrader.mod('double')">2x</button><button class="btn-small" onclick="Upgrader.mod('max')">MAX</button>
                 </div>
                 <div class="quick-amounts">
-                    <button class="btn-small" onclick="Upgrader.set(50)">50</button><button class="btn-small" onclick="Upgrader.set(100)">100</button>
-                    <button class="btn-small" onclick="Upgrader.set(500)">500</button><button class="btn-small" onclick="Upgrader.set(1000)">1K</button>
+                    <button class="btn-small" onclick="Upgrader.set(1)">1</button><button class="btn-small" onclick="Upgrader.set(3)">3</button>
+                    <button class="btn-small" onclick="Upgrader.set(13)">13</button><button class="btn-small" onclick="Upgrader.set(25)">25</button>
                 </div>
                 <button class="main-btn btn-green" id="upg-btn" onclick="Upgrader.play()">⚙️ АПГРЕЙД (<span id="upg-chance">49%</span>)</button>
             </div>
@@ -671,8 +700,8 @@
                     <button class="btn-small" onclick="Tower.mod('half')">1/2</button><button class="btn-small" onclick="Tower.mod('double')">2x</button><button class="btn-small" onclick="Tower.mod('max')">MAX</button>
                 </div>
                 <div class="quick-amounts">
-                    <button class="btn-small" onclick="Tower.set(50)">50</button><button class="btn-small" onclick="Tower.set(100)">100</button>
-                    <button class="btn-small" onclick="Tower.set(500)">500</button><button class="btn-small" onclick="Tower.set(1000)">1K</button>
+                    <button class="btn-small" onclick="Tower.set(1)">1</button><button class="btn-small" onclick="Tower.set(3)">3</button>
+                    <button class="btn-small" onclick="Tower.set(13)">13</button><button class="btn-small" onclick="Tower.set(25)">25</button>
                 </div>
                 <button class="main-btn btn-green" id="tower-btn" onclick="Tower.action()">🗼 ИГРАТЬ</button>
             </div>
@@ -692,8 +721,8 @@
                     <button class="btn-small" style="background:var(--red); color:#fff;" onclick="Mines.setCount(24)">24 💣 MAX</button>
                 </div>
                 <div class="quick-amounts">
-                    <button class="btn-small" onclick="Mines.set(50)">50</button><button class="btn-small" onclick="Mines.set(100)">100</button>
-                    <button class="btn-small" onclick="Mines.set(500)">500</button><button class="btn-small" onclick="Mines.set(1000)">1K</button>
+                    <button class="btn-small" onclick="Mines.set(1)">1</button><button class="btn-small" onclick="Mines.set(3)">3</button>
+                    <button class="btn-small" onclick="Mines.set(13)">13</button><button class="btn-small" onclick="Mines.set(25)">25</button>
                 </div>
                 <button class="main-btn btn-green" id="mines-btn" onclick="Mines.action()">💣 ИГРАТЬ</button>
             </div>
@@ -714,8 +743,8 @@
                     <button class="btn-small" id="shells-cup-5" onclick="Shells.setCups(5)">5 · 4.85x</button>
                 </div>
                 <div class="quick-amounts">
-                    <button class="btn-small" onclick="Shells.set(50)">50</button><button class="btn-small" onclick="Shells.set(100)">100</button>
-                    <button class="btn-small" onclick="Shells.set(500)">500</button><button class="btn-small" onclick="Shells.set(1000)">1K</button>
+                    <button class="btn-small" onclick="Shells.set(1)">1</button><button class="btn-small" onclick="Shells.set(3)">3</button>
+                    <button class="btn-small" onclick="Shells.set(13)">13</button><button class="btn-small" onclick="Shells.set(25)">25</button>
                 </div>
                 <button class="main-btn btn-green" id="shells-btn" onclick="Shells.action()">🥤 ИГРАТЬ</button>
             </div>
@@ -747,8 +776,8 @@
                     <button class="btn-small" id="dice-mode-over" onclick="Dice.setMode('over')">⬆ Больше</button>
                 </div>
                 <div class="quick-amounts">
-                    <button class="btn-small" onclick="Dice.set(50)">50</button><button class="btn-small" onclick="Dice.set(100)">100</button>
-                    <button class="btn-small" onclick="Dice.set(500)">500</button><button class="btn-small" onclick="Dice.set(1000)">1K</button>
+                    <button class="btn-small" onclick="Dice.set(1)">1</button><button class="btn-small" onclick="Dice.set(3)">3</button>
+                    <button class="btn-small" onclick="Dice.set(13)">13</button><button class="btn-small" onclick="Dice.set(25)">25</button>
                 </div>
                 <button class="main-btn btn-green" id="dice-btn" onclick="Dice.play()">🎲 БРОСИТЬ</button>
             </div>
@@ -771,8 +800,8 @@
                     <button class="btn-small" id="plinko-risk-high" onclick="Plinko.setRisk('high')">Высокий</button>
                 </div>
                 <div class="quick-amounts">
-                    <button class="btn-small" onclick="Plinko.set(50)">50</button><button class="btn-small" onclick="Plinko.set(100)">100</button>
-                    <button class="btn-small" onclick="Plinko.set(500)">500</button><button class="btn-small" onclick="Plinko.set(1000)">1K</button>
+                    <button class="btn-small" onclick="Plinko.set(1)">1</button><button class="btn-small" onclick="Plinko.set(3)">3</button>
+                    <button class="btn-small" onclick="Plinko.set(13)">13</button><button class="btn-small" onclick="Plinko.set(25)">25</button>
                 </div>
                 <button class="main-btn btn-gold" id="plinko-btn" onclick="Plinko.play()">🟣 БРОСИТЬ ШАР</button>
             </div>
@@ -796,8 +825,8 @@
                     <button class="btn-small" onclick="ArenaUI.mod('half')">1/2</button><button class="btn-small" onclick="ArenaUI.mod('double')">2x</button><button class="btn-small" onclick="ArenaUI.mod('max')">MAX</button>
                 </div>
                 <div class="quick-amounts">
-                    <button class="btn-small" onclick="ArenaUI.set(50)">50</button><button class="btn-small" onclick="ArenaUI.set(100)">100</button>
-                    <button class="btn-small" onclick="ArenaUI.set(500)">500</button><button class="btn-small" onclick="ArenaUI.set(1000)">1K</button>
+                    <button class="btn-small" onclick="ArenaUI.set(1)">1</button><button class="btn-small" onclick="ArenaUI.set(3)">3</button>
+                    <button class="btn-small" onclick="ArenaUI.set(13)">13</button><button class="btn-small" onclick="ArenaUI.set(25)">25</button>
                 </div>
                 <button class="main-btn btn-gold" id="arena-btn" onclick="ArenaUI.join()">🎯 ЗАНЯТЬ МЕСТО</button>
                 <div id="arena-players-list" style="margin-top:10px; display:flex; flex-direction:column; gap:4px; font-size:11px;"></div>
@@ -884,7 +913,7 @@
                     <div class="input-wrap"><input type="text" id="promo-input" placeholder="Введите код" style="text-transform:uppercase;"></div>
                     <button class="btn-small" style="flex:0 0 auto; padding:0 14px; background:var(--gold); color:#000;" onclick="if(window.Multiplayer) Multiplayer.redeemPromo(document.getElementById('promo-input').value); else App.toast('Мультиплеер не подключён', 'error')">Активировать</button>
                 </div>
-                <button class="main-btn btn-gold" id="daily-bonus-btn" onclick="if(window.Multiplayer) Multiplayer.claimDaily(); else App.toast('Мультиплеер не подключён', 'error')" style="margin-top:4px;">🎁 Забрать бонус (300, до 10 раз в день)</button>
+                <button class="main-btn btn-gold" id="daily-bonus-btn" onclick="if(window.Multiplayer) Multiplayer.claimDaily(); else App.toast('Мультиплеер не подключён', 'error')" style="margin-top:4px;">🎁 Забрать бонус (50, до 10 раз в день)</button>
                 <div style="font-size:10px; color:var(--text-muted); margin-top:8px; text-align:center;">Промокоды рассылает организатор тусовки в чат</div>
             </div>
 
@@ -912,10 +941,22 @@
             <div class="panel" style="margin: 10px 10px 0 10px;">
                 <div class="panel-title">🛒 Маркетплейс</div>
                 <div class="bet-row" id="market-tabs" style="margin-bottom:10px;">
-                    <button class="btn-small active" onclick="MarketUI.showTab('all', this)">Все лоты</button>
+                    <button class="btn-small active" onclick="MarketUI.showTab('shop', this)">Витрина</button>
+                    <button class="btn-small" onclick="MarketUI.showTab('all', this)">Все лоты</button>
                     <button class="btn-small" onclick="MarketUI.showTab('mine', this)">Мои лоты</button>
                 </div>
                 <div id="market-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+                <div id="shop-panel" style="display:none;">
+                    <div class="shop-toolbar">
+                        <input id="shop-search" class="shop-search" placeholder="Поиск гифта..." oninput="Showcase.onSearch(this.value)">
+                        <select id="shop-sort" class="shop-sort" onchange="Showcase.onSort(this.value)">
+                            <option value="price_asc">Дешевле</option>
+                            <option value="price_desc">Дороже</option>
+                            <option value="name">По имени</option>
+                        </select>
+                    </div>
+                    <div class="shop-grid" id="shop-grid"></div>
+                </div>
             </div>
         </div>
 
@@ -971,7 +1012,7 @@
 <div class="modal-overlay" id="topup-modal" onclick="if(event.target.id==='topup-modal') App.closeTopUp()">
     <div class="modal-content">
         <h3 style="margin-bottom: 12px; color: var(--gold); font-size:16px;">Банк лудомана</h3>
-        <input type="number" id="topup-input" class="modal-input" placeholder="Сумма (макс. 10.000)" max="10000" oninput="if(Number(this.value) > 10000) this.value = 10000;">
+        <input type="number" id="topup-input" class="modal-input" placeholder="Сумма (макс. 254)" max="254" oninput="if(Number(this.value) > 254) this.value = 254;">
         <div id="topup-cd-note" style="font-size:11px; color:var(--text-muted); margin-bottom:10px; display:none;"></div>
         <button class="modal-btn" style="background:var(--gold);color:#000;" id="topup-btn" onclick="App.addBalance()">💰 Пополнить</button>
         <button class="modal-btn" style="background:rgba(231,76,60,0.1);color:var(--red);" onclick="App.resetBalance()">🔄 Сбросить баланс</button>
@@ -981,7 +1022,7 @@
 </div>
 
 <script>
-    const MAX_MUL = 10000; const MAX_WIN = 5000000; // было 500000
+    const MAX_MUL = 10000; const MAX_WIN = 127132; // пересчитано под курс звёзд (было 5000000 фишек)
 
     // БЕЗОПАСНЫЙ ДОСТУП К LOCAL STORAGE (ЗАЩИТА ОТ КРАША ПРИ ЗАПУСКЕ)
     const LS = {
@@ -1012,7 +1053,7 @@
     window.Levels = {
         xp: 0, lvl: 1,
         // XP, необходимый чтобы перейти НА этот уровень (накопительно)
-        need(lvl) { return Math.floor(5250 * Math.pow(lvl, 1.55)); }, // 1750 -> 5250, ещё в 3 раза больше опыта на уровень
+        need(lvl) { return Math.floor(133 * Math.pow(lvl, 1.55)); }, // пересчитано под курс звёзд (было 5250) — опыт = сумме выигрыша в новой валюте
         init() {
             let s = LS.g('dydx_levels', {xp: 0, lvl: 1});
             this.xp = (typeof s.xp === 'number' && !isNaN(s.xp)) ? s.xp : 0;
@@ -1021,7 +1062,7 @@
         },
         save() { LS.s('dydx_levels', {xp: this.xp, lvl: this.lvl}); },
         // Вызывается при любой победе — addWin добавляет опыт и проверяет ап уровня
-        LEVEL_UP_REWARD: 15000, // фикс: раньше награда суммировалась за КАЖДЫЙ пройденный
+        LEVEL_UP_REWARD: 381, // пересчитано под курс звёзд (было 15000 фишек) // фикс: раньше награда суммировалась за КАЖДЫЙ пройденный
         // уровень (lvl*20), из-за чего один огромный выигрыш (напр. ставка в кости на
         // низком коэффициенте) мог перепрыгнуть сразу много уровней и дать ~100к+ за раз.
         // Теперь награда фиксированная и выдаётся ОДИН раз за вызов addWin(),
@@ -1125,7 +1166,7 @@
     };
 
     window.App = {
-        balance: 1000,
+        balance: 25,
         // Проверяет у сервера "версию сброса" (app_config.local_reset_version).
         // Если она не совпадает с той, что запомнена локально — это значит,
         // что где-то на сервере кто-то нажал "сбросить всё для всех", и этот
@@ -1153,8 +1194,8 @@
         async init() {
             await this.checkGlobalReset();
 
-            let bStr = localStorage.getItem('dydx_balance'); this.balance = bStr ? Math.floor(parseFloat(bStr)) : 1000;
-            if(isNaN(this.balance) || this.balance < 0) this.balance = 1000;
+            let bStr = localStorage.getItem('dydx_balance'); this.balance = bStr ? Math.floor(parseFloat(bStr)) : 25;
+            if(isNaN(this.balance) || this.balance < 0) this.balance = 25;
 
             window.Stats.init(); window.Levels.init(); window.Gifts.init(); window.Tasks.init(); window.Roulette.init(); window.Upgrader.init(); window.Tower.init(); window.Mines.init(); window.Shells.init(); window.Dice.init(); window.Plinko.init(); window.Crash.init(); window.HiLo.init(); window.Coin.init(); window.ProfileBg.init();
             this.updBalUI();
@@ -1260,12 +1301,12 @@
         addBalance() {
             if (this.cdRemaining() > 0) return this.toast('Нужно подождать перед следующим пополнением', 'error');
             let v = Math.floor(Number(document.getElementById('topup-input').value)); if (!v || isNaN(v) || v <= 0) return this.toast('Введите сумму', 'error');
-            if (v > 10000) { v = 10000; this.toast('Максимум 10.000 за раз', 'error'); }
+            if (v > 254) { v = 254; this.toast('Максимум 254 за раз', 'error'); }
             this.chgBal(v); this.toast(`Зачислено ${v}`, 'success');
             localStorage.setItem('dydx_topup_cd', String(Date.now() + this.TOPUP_COOLDOWN_MS));
             document.getElementById('topup-input').value = ''; this.refreshTopUpUI();
         },
-        resetBalance() { this.balance = 1000; this.updBalUI(); this.toast('Баланс сброшен', 'success'); this.closeTopUp(); },
+        resetBalance() { this.balance = 25; this.updBalUI(); this.toast('Баланс сброшен', 'success'); this.closeTopUp(); },
         async acceptTos() {
             const cb = document.getElementById('tos-checkbox'); if (!cb || !cb.checked) return;
             const btn = document.getElementById('tos-accept-btn'); if (btn) btn.disabled = true;
@@ -1296,6 +1337,7 @@
             const fab = document.getElementById('daily-bonus-fab'); if (fab) fab.style.visibility = (id === 'crypto') ? 'hidden' : 'visible';
             if(id === 'profile' && window.ProfileStats) window.ProfileStats.render();
             if(id === 'profile' && window.ProfileBg) window.ProfileBg.render();
+            if(id === 'market' && window.Showcase) window.Showcase.ensureLoaded();
         },
         toast(msg, type='') {
             const c = document.getElementById('toast-container'); if(c.children.length > 2) c.firstElementChild.remove();
@@ -1320,18 +1362,18 @@
     window.ProfileBg = {
         catalog: [
             { id: 'default', name: 'Обычный', price: 0, css: 'var(--bg-panel)' },
-            { id: 'gold', name: 'Золото', price: 5000, css: 'linear-gradient(135deg, #d7b45d, #7a5c1e)' },
-            { id: 'ruby', name: 'Рубин', price: 8000, css: 'linear-gradient(135deg, #e74c3c, #6e1717)' },
-            { id: 'emerald', name: 'Изумруд', price: 8000, css: 'linear-gradient(135deg, #2ecc71, #0e4324)' },
-            { id: 'royal', name: 'Королевский', price: 15000, css: 'linear-gradient(135deg, #8e6ae0, #1a1a3d)' },
-            { id: 'cosmos', name: 'Космос', price: 20000, css: 'radial-gradient(circle at 30% 30%, #2c3e91, #08081a)' },
-            // ↓ новые платные фоны — премиум-тир
-            { id: 'inferno', name: 'Инферно', price: 30000, css: 'linear-gradient(135deg, #ff4b2b, #2b0a00)', anim: true },
-            { id: 'abyss', name: 'Бездна', price: 35000, css: 'radial-gradient(circle at 70% 20%, #0d3b4a, #000814)', anim: true },
-            { id: 'aurora', name: 'Аврора', price: 45000, css: 'linear-gradient(135deg, #00c9ff, #7b2ff7, #00c9ff)', anim: true },
-            { id: 'phoenix', name: 'Феникс', price: 60000, css: 'linear-gradient(135deg, #ffd200, #f7971e, #a80000)', anim: true },
-            { id: 'diamond_elite', name: 'Бриллиант', price: 90000, css: 'linear-gradient(135deg, #e0eafc, #cfdef3, #8ec5fc)', anim: true, glow: true },
-            { id: 'void_prime', name: 'Void Prime', price: 150000, css: 'linear-gradient(135deg, #0f0c29, #302b63, #24243e)', anim: true, glow: true },
+            { id: 'gold', name: 'Золото', price: 127, css: 'linear-gradient(135deg, #d7b45d, #7a5c1e)' },
+            { id: 'ruby', name: 'Рубин', price: 203, css: 'linear-gradient(135deg, #e74c3c, #6e1717)' },
+            { id: 'emerald', name: 'Изумруд', price: 203, css: 'linear-gradient(135deg, #2ecc71, #0e4324)' },
+            { id: 'royal', name: 'Королевский', price: 381, css: 'linear-gradient(135deg, #8e6ae0, #1a1a3d)' },
+            { id: 'cosmos', name: 'Космос', price: 509, css: 'radial-gradient(circle at 30% 30%, #2c3e91, #08081a)' },
+            // ↓ новые платные фоны — премиум-тир (цены пересчитаны под курс звёзд)
+            { id: 'inferno', name: 'Инферно', price: 763, css: 'linear-gradient(135deg, #ff4b2b, #2b0a00)', anim: true },
+            { id: 'abyss', name: 'Бездна', price: 890, css: 'radial-gradient(circle at 70% 20%, #0d3b4a, #000814)', anim: true },
+            { id: 'aurora', name: 'Аврора', price: 1144, css: 'linear-gradient(135deg, #00c9ff, #7b2ff7, #00c9ff)', anim: true },
+            { id: 'phoenix', name: 'Феникс', price: 1526, css: 'linear-gradient(135deg, #ffd200, #f7971e, #a80000)', anim: true },
+            { id: 'diamond_elite', name: 'Бриллиант', price: 2289, css: 'linear-gradient(135deg, #e0eafc, #cfdef3, #8ec5fc)', anim: true, glow: true },
+            { id: 'void_prime', name: 'Void Prime', price: 3815, css: 'linear-gradient(135deg, #0f0c29, #302b63, #24243e)', anim: true, glow: true },
         ],
         init() { this.apply(); },
         owned() { return LS.g('dydx_bg_owned', ['default']); },
@@ -1447,16 +1489,16 @@
         st: { welcome:false, daily:false, rich:false, knyaz:false, ludo:false, rocketman:false, sniper:false, sapper:false, lucky:false, psychic:false, fearless:false, coinflip:false, marathon:false, unlucky:false, diamond:false, risk:false, madminer:false },
         lastD: 0,
         list: [
-            { id: 'channel_sub', t: '📢 Подписка на канал', d: 'Подпишись на @dydxgamenews', r: 5000, a: true, channel: true },
-            { id: 'welcome', t: 'Приветственный бонус', d: 'За первый вход', r: 1000, a: false }, { id: 'daily', t: 'Ежедневная награда', d: 'Заходи каждый день', r: 500, a: false },
-            { id: 'marathon', t: 'Марафонец', d: 'Сделай 100 ставок', r: 5000, a: true }, { id: 'unlucky', t: 'Невезучий', d: 'Слови краш на 1.00x', r: 1000, a: true },
-            { id: 'diamond', t: 'Алмазный магнат', d: 'Открой 15 алмазов за раунд', r: 15000, a: true }, { id: 'risk', t: 'Абсолютный риск', d: 'Выиграй 50x в Апгрейдере', r: 50000, a: true },
-            { id: 'madminer', t: 'Безумный Шахтер', d: 'Выиграй с 24 минами', r: 100000, a: true }, { id: 'rich', t: 'Богач', d: 'Выиграй > 10.000 за раз', r: 5000, a: true },
-            { id: 'knyaz', t: 'Из грязи в князи', d: 'Накопи 100.000', r: 25000, a: true }, { id: 'ludo', t: 'Лудоман', d: 'Сделай 50 любых ставок', r: 2000, a: true },
-            { id: 'rocketman', t: 'Ракетостроитель', d: 'Сыграй в Ракету 10 раз', r: 1500, a: true }, { id: 'sniper', t: 'Снайпер', d: 'Поймай 10x в Ракете', r: 3000, a: true },
-            { id: 'sapper', t: 'Сапер', d: 'Победа в Минах (>=5)', r: 2000, a: true }, { id: 'lucky', t: 'Счастливчик', d: 'Угадай Зеро в Рулетке', r: 4000, a: true },
-            { id: 'psychic', t: 'Экстрасенс', d: 'Сделай 5 шагов в Hi-Lo', r: 3000, a: true }, { id: 'fearless', t: 'Бесстрашный', d: 'Пройди Башню (Сложно)', r: 10000, a: true },
-            { id: 'coinflip', t: 'Орёл и Решка', d: 'Стрик из 3 побед', r: 3000, a: true }
+            { id: 'channel_sub', t: '📢 Подписка на канал', d: 'Подпишись на @dydxgamenews', r: 127, a: true, channel: true },
+            { id: 'welcome', t: 'Приветственный бонус', d: 'За первый вход', r: 25, a: false }, { id: 'daily', t: 'Ежедневная награда', d: 'Заходи каждый день', r: 100, a: false },
+            { id: 'marathon', t: 'Марафонец', d: 'Сделай 100 ставок', r: 127, a: true }, { id: 'unlucky', t: 'Невезучий', d: 'Слови краш на 1.00x', r: 25, a: true },
+            { id: 'diamond', t: 'Алмазный магнат', d: 'Открой 15 алмазов за раунд', r: 381, a: true }, { id: 'risk', t: 'Абсолютный риск', d: 'Выиграй 50x в Апгрейдере', r: 1271, a: true },
+            { id: 'madminer', t: 'Безумный Шахтер', d: 'Выиграй с 24 минами', r: 2543, a: true }, { id: 'rich', t: 'Богач', d: 'Выиграй > 254 за раз', r: 127, a: true },
+            { id: 'knyaz', t: 'Из грязи в князи', d: 'Накопи 2.543', r: 636, a: true }, { id: 'ludo', t: 'Лудоман', d: 'Сделай 50 любых ставок', r: 51, a: true },
+            { id: 'rocketman', t: 'Ракетостроитель', d: 'Сыграй в Ракету 10 раз', r: 38, a: true }, { id: 'sniper', t: 'Снайпер', d: 'Поймай 10x в Ракете', r: 76, a: true },
+            { id: 'sapper', t: 'Сапер', d: 'Победа в Минах (>=5)', r: 51, a: true }, { id: 'lucky', t: 'Счастливчик', d: 'Угадай Зеро в Рулетке', r: 102, a: true },
+            { id: 'psychic', t: 'Экстрасенс', d: 'Сделай 5 шагов в Hi-Lo', r: 76, a: true }, { id: 'fearless', t: 'Бесстрашный', d: 'Пройди Башню (Сложно)', r: 254, a: true },
+            { id: 'coinflip', t: 'Орёл и Решка', d: 'Стрик из 3 побед', r: 76, a: true }
         ],
         init() {
             let s = LS.g('dydx_tasks', {}); this.st = Object.assign(this.st, s); let d = localStorage.getItem('dydx_tasks_time'); if(d) this.lastD = parseInt(d);
@@ -1468,7 +1510,7 @@
             window.App.chgBal(task.r); LS.s('dydx_tasks', this.st); window.App.toast(`Выполнено! +${task.r}`, 'success'); window.App.taskNotify(`Задание выполнено: ${task.t}`); if(window.Sound) window.Sound.task(); this.rnd();
         },
         chk(t, v = 0) {
-            if(t==='win'&&v>=10000&&!this.st.rich) this.claim('rich'); if(t==='balance'&&window.App.balance>=100000&&!this.st.knyaz) this.claim('knyaz');
+            if(t==='win'&&v>=254&&!this.st.rich) this.claim('rich'); if(t==='balance'&&window.App.balance>=2543&&!this.st.knyaz) this.claim('knyaz');
             if(t==='bets') { if(v>=50&&!this.st.ludo) this.claim('ludo'); if(v>=100&&!this.st.marathon) this.claim('marathon'); }
             if(t==='crash'&&v>=10&&!this.st.rocketman) this.claim('rocketman'); if(t==='sniper'&&v>=10&&!this.st.sniper) this.claim('sniper');
             if(t==='sapper'&&v>=5&&!this.st.sapper) this.claim('sapper'); if(t==='lucky'&&!this.st.lucky) this.claim('lucky');
@@ -1519,7 +1561,7 @@
                 }
                 this.st.channel_sub = true; LS.s('dydx_tasks', this.st);
                 if (typeof data.new_balance === 'number') { window.App.balance = data.new_balance; window.App.updBalUI(); }
-                window.App.toast(`Выполнено! +5000`, 'success'); window.App.taskNotify('Задание выполнено: Подписка на канал'); if(window.Sound) window.Sound.task();
+                window.App.toast(`Выполнено! +127`, 'success'); window.App.taskNotify('Задание выполнено: Подписка на канал'); if(window.Sound) window.Sound.task();
                 this.rnd();
             } catch (e) {
                 window.App.toast('Ошибка проверки — попробуйте ещё раз', 'error');
@@ -1561,10 +1603,10 @@
         // Несколько уровней кейсов — разная цена и разные шансы редкости
         CASES: [
             { id: 'starter', name: 'Стартовый', emoji: '📦', cost: 300, weights: { common: 75, rare: 20, epic: 4.5, legendary: 0.5 } },
-            { id: 'standard', name: 'Стандартный', emoji: '🎁', cost: 1000, weights: { common: 55, rare: 27, epic: 13, legendary: 5 } },
-            { id: 'premium', name: 'Премиум', emoji: '💼', cost: 3500, weights: { common: 30, rare: 35, epic: 25, legendary: 10 } },
-            { id: 'elite', name: 'Элитный', emoji: '👑', cost: 10000, weights: { common: 10, rare: 30, epic: 40, legendary: 20 } },
-            { id: 'mythic', name: 'Мифический', emoji: '🔥', cost: 25000, weights: { common: 2, rare: 13, epic: 45, legendary: 40 } }
+            { id: 'standard', name: 'Стандартный', emoji: '🎁', cost: 25, weights: { common: 55, rare: 27, epic: 13, legendary: 5 } },
+            { id: 'premium', name: 'Премиум', emoji: '💼', cost: 89, weights: { common: 30, rare: 35, epic: 25, legendary: 10 } },
+            { id: 'elite', name: 'Элитный', emoji: '👑', cost: 254, weights: { common: 10, rare: 30, epic: 40, legendary: 20 } },
+            { id: 'mythic', name: 'Мифический', emoji: '🔥', cost: 636, weights: { common: 2, rare: 13, epic: 45, legendary: 40 } }
         ],
         currentCase: 'standard',
 
@@ -1590,7 +1632,7 @@
             { name: 'Гладкий', sym: '', w: 40 }, { name: 'Звёзды', sym: '✦', w: 25 }, { name: 'Молнии', sym: '⚡', w: 15 },
             { name: 'Сердца', sym: '♥', w: 10 }, { name: 'Черепа', sym: '☠', w: 7 }, { name: 'Короны', sym: '♛', w: 3 }
         ],
-        UPGRADE_COST: { common: 2000, rare: 5000, epic: 12000, legendary: 30000 },
+        UPGRADE_COST: { common: 51, rare: 127, epic: 305, legendary: 763 }, // пересчитано под курс звёзд
 
         inv: {}, nftCollection: [], pl: false, upgrading: false, mpMode: false,
         init() {
@@ -1669,7 +1711,7 @@
             if (this.pl || this.upgrading) return;
             let gift = this.POOL.find(g => g.id === giftId); if (!gift || !gift.upgradable) return;
             let owned = this.inv[giftId] || 0; if (owned <= 0) return window.App.toast('Нет обычной копии для улучшения', 'error');
-            let cost = this.UPGRADE_COST[gift.rarity] || 5000;
+            let cost = this.UPGRADE_COST[gift.rarity] || 127;
             if (window.App.balance < cost) return window.App.toast('Недостаточно фишек', 'error');
 
             this.upgrading = true;
@@ -3336,12 +3378,142 @@
             if (window.Multiplayer) window.Multiplayer.cryptoSell(coinId, qty);
         }
     };
+    // ================= ВИТРИНА (прямая покупка гифтов за звёзды) =================
+    window.Showcase = {
+        catalog: [],       // полный список с сервера (id, name, tier, price_stars, anim_file, owned)
+        loaded: false,
+        search: '',
+        sort: 'price_asc',
+        animCache: {},     // anim_file -> распарсенный lottie JSON (чтобы не грузить повторно)
+        animInstances: {}, // catalog id -> живой экземпляр lottie (чтобы не плодить дубли при повторном рендере)
+        io: null,          // IntersectionObserver — анимация грузится только когда карточка реально видна
+
+        ensureLoaded() {
+            if (!window.Multiplayer) { this.renderOfflineMsg(); return; }
+            if (!this.loaded) { this.loaded = true; window.Multiplayer.refreshMarketShop(); }
+            else { window.Multiplayer.refreshMarketShop(); } // на всякий случай подтянуть актуальные owned/баланс
+        },
+        renderOfflineMsg() {
+            const grid = document.getElementById('shop-grid'); if (!grid) return;
+            grid.innerHTML = `<div class="shop-empty" style="grid-column:1/-1;">Витрина работает только в мультиплеере</div>`;
+        },
+        setState(data) {
+            this.catalog = data.catalog || [];
+            this.render();
+        },
+        onSearch(v) { this.search = v.trim().toLowerCase(); this.render(); },
+        onSort(v) { this.sort = v; this.render(); },
+
+        getFiltered() {
+            let list = this.catalog;
+            if (this.search) list = list.filter(g => g.name.toLowerCase().includes(this.search));
+            list = list.slice();
+            if (this.sort === 'price_asc') list.sort((a, b) => a.price_stars - b.price_stars);
+            else if (this.sort === 'price_desc') list.sort((a, b) => b.price_stars - a.price_stars);
+            else if (this.sort === 'name') list.sort((a, b) => a.name.localeCompare(b.name));
+            return list;
+        },
+
+        render() {
+            const grid = document.getElementById('shop-grid'); if (!grid) return;
+            const list = this.getFiltered();
+            if (!list.length) { grid.innerHTML = `<div class="shop-empty" style="grid-column:1/-1;">Ничего не найдено</div>`; return; }
+
+            // Пересоздаём разметку карточек, но переиспользуем уже загруженные lottie-инстансы
+            // по id, где это возможно — иначе при каждом рендере (например после покупки)
+            // все 118 анимаций перезапускались бы с нуля, дёргая телефон.
+            if (this.io) this.io.disconnect();
+            grid.innerHTML = list.map(g => `
+                <div class="shop-card ${g.owned > 0 ? 'owned' : ''} shop-card-tier-${g.tier}" data-id="${g.id}" onclick="Showcase.openDetail('${g.id}')">
+                    ${g.owned > 0 ? `<div class="shop-card-badge">×${g.owned}</div>` : ''}
+                    <div class="shop-card-anim placeholder" id="shop-anim-${g.id}" data-anim="${g.anim_file}"></div>
+                    <div class="shop-card-name">${g.name}</div>
+                    <div class="shop-card-price">${window.Showcase.starIconHtml('sm')}${g.price_stars.toLocaleString()}</div>
+                </div>
+            `).join('');
+
+            this.io = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        this.loadCardAnim(entry.target);
+                        this.io.unobserve(entry.target);
+                    }
+                });
+            }, { rootMargin: '150px 0px' });
+            grid.querySelectorAll('.shop-card-anim').forEach(el => this.io.observe(el));
+        },
+
+        starIconHtml(size) {
+            return `<img src="assets/star-icon-32.png" class="star-icon${size==='lg'?' lg':''}" alt="⭐">`;
+        },
+
+        async loadCardAnim(container) {
+            const animFile = container.dataset.anim; if (!animFile) return;
+            container.classList.remove('placeholder');
+            try {
+                let data = this.animCache[animFile];
+                if (!data) {
+                    const res = await fetch(`gifts/${animFile}`);
+                    data = await res.json();
+                    this.animCache[animFile] = data;
+                }
+                lottie.loadAnimation({ container, renderer: 'svg', loop: true, autoplay: true, animationData: data });
+            } catch (e) { /* анимация не загрузилась — карточка просто останется без превью, не критично */ }
+        },
+
+        async openDetail(id) {
+            const g = this.catalog.find(x => x.id === id); if (!g) return;
+            let modal = document.getElementById('shop-detail-modal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'shop-detail-modal';
+                modal.className = 'shop-modal-overlay';
+                modal.onclick = (e) => { if (e.target === modal) this.closeDetail(); };
+                document.body.appendChild(modal);
+            }
+            modal.innerHTML = `
+                <div class="shop-modal">
+                    <button class="shop-modal-close" onclick="Showcase.closeDetail()">✕</button>
+                    <div class="shop-modal-anim" id="shop-modal-anim"></div>
+                    <div class="shop-modal-name">${g.name}</div>
+                    <div class="shop-modal-sub">${g.tier === 'nft' ? 'Коллекционный гифт' : 'Обычный гифт'}${g.owned > 0 ? ` · у вас: ${g.owned}` : ''}</div>
+                    <div class="shop-modal-price">${this.starIconHtml('lg')}${g.price_stars.toLocaleString()}</div>
+                    <button class="main-btn btn-gold" onclick="Showcase.buy('${g.id}')">Купить</button>
+                </div>`;
+            requestAnimationFrame(() => modal.classList.add('active'));
+            try {
+                let data = this.animCache[g.anim_file];
+                if (!data) {
+                    const res = await fetch(`gifts/${g.anim_file}`);
+                    data = await res.json();
+                    this.animCache[g.anim_file] = data;
+                }
+                const c = document.getElementById('shop-modal-anim');
+                if (c) lottie.loadAnimation({ container: c, renderer: 'svg', loop: true, autoplay: true, animationData: data });
+            } catch (e) {}
+        },
+        closeDetail() {
+            const modal = document.getElementById('shop-detail-modal');
+            if (modal) modal.classList.remove('active');
+        },
+        async buy(id) {
+            const g = this.catalog.find(x => x.id === id); if (!g) return;
+            if (!window.Multiplayer) return window.App.toast('Витрина работает только в мультиплеере', 'error');
+            if (g.price_stars > window.App.balance) return window.App.toast('Недостаточно звёзд', 'error');
+            const ok = await window.Multiplayer.buyMarketGift(id);
+            if (ok) this.closeDetail();
+        }
+    };
+
     window.MarketUI = {
-        tab: 'all', allListings: [], myListings: [],
+        tab: 'shop', allListings: [], myListings: [],
         showTab(tab, btn) {
             this.tab = tab;
             document.querySelectorAll('#market-tabs .btn-small').forEach(b => b.classList.remove('active'));
             if (btn) btn.classList.add('active');
+            document.getElementById('shop-panel').style.display = tab === 'shop' ? '' : 'none';
+            document.getElementById('market-list').style.display = tab === 'shop' ? 'none' : '';
+            if (tab === 'shop') { if (window.Showcase) window.Showcase.ensureLoaded(); return; }
             this.render();
         },
         promptSell(nftId, giftName, giftEmoji) {
@@ -3397,7 +3569,8 @@
 </script>
 
 <!-- МУЛЬТИПЛЕЕР: общий раунд Ракеты, Рулетки, Арены, промокоды, Дурак, маркетплейс -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="multiplayer-client.js?v=50"></script>
+<script src="multiplayer-client.js?v=54"></script>
 </body>
 </html>
