@@ -1379,18 +1379,18 @@
     window.ProfileBg = {
         catalog: [
             { id: 'default', name: 'Обычный', price: 0, css: 'var(--bg-panel)' },
-            { id: 'gold', name: 'Золото', price: 127, css: 'linear-gradient(135deg, #d7b45d, #7a5c1e)' },
-            { id: 'ruby', name: 'Рубин', price: 203, css: 'linear-gradient(135deg, #e74c3c, #6e1717)' },
-            { id: 'emerald', name: 'Изумруд', price: 203, css: 'linear-gradient(135deg, #2ecc71, #0e4324)' },
-            { id: 'royal', name: 'Королевский', price: 381, css: 'linear-gradient(135deg, #8e6ae0, #1a1a3d)' },
-            { id: 'cosmos', name: 'Космос', price: 509, css: 'radial-gradient(circle at 30% 30%, #2c3e91, #08081a)' },
+            { id: 'gold', name: 'Золото', price: 150, css: 'linear-gradient(135deg, #d7b45d, #7a5c1e)' },
+            { id: 'ruby', name: 'Рубин', price: 200, css: 'linear-gradient(135deg, #e74c3c, #6e1717)' },
+            { id: 'emerald', name: 'Изумруд', price: 200, css: 'linear-gradient(135deg, #2ecc71, #0e4324)' },
+            { id: 'royal', name: 'Королевский', price: 400, css: 'linear-gradient(135deg, #8e6ae0, #1a1a3d)' },
+            { id: 'cosmos', name: 'Космос', price: 500, css: 'radial-gradient(circle at 30% 30%, #2c3e91, #08081a)' },
             // ↓ новые платные фоны — премиум-тир (цены пересчитаны под курс звёзд)
-            { id: 'inferno', name: 'Инферно', price: 763, css: 'linear-gradient(135deg, #ff4b2b, #2b0a00)', anim: true },
-            { id: 'abyss', name: 'Бездна', price: 890, css: 'radial-gradient(circle at 70% 20%, #0d3b4a, #000814)', anim: true },
-            { id: 'aurora', name: 'Аврора', price: 1144, css: 'linear-gradient(135deg, #00c9ff, #7b2ff7, #00c9ff)', anim: true },
-            { id: 'phoenix', name: 'Феникс', price: 1526, css: 'linear-gradient(135deg, #ffd200, #f7971e, #a80000)', anim: true },
-            { id: 'diamond_elite', name: 'Бриллиант', price: 2289, css: 'linear-gradient(135deg, #e0eafc, #cfdef3, #8ec5fc)', anim: true, glow: true },
-            { id: 'void_prime', name: 'Void Prime', price: 3815, css: 'linear-gradient(135deg, #0f0c29, #302b63, #24243e)', anim: true, glow: true },
+            { id: 'inferno', name: 'Инферно', price: 750, css: 'linear-gradient(135deg, #ff4b2b, #2b0a00)', anim: true },
+            { id: 'abyss', name: 'Бездна', price: 900, css: 'radial-gradient(circle at 70% 20%, #0d3b4a, #000814)', anim: true },
+            { id: 'aurora', name: 'Аврора', price: 1100, css: 'linear-gradient(135deg, #00c9ff, #7b2ff7, #00c9ff)', anim: true },
+            { id: 'phoenix', name: 'Феникс', price: 1500, css: 'linear-gradient(135deg, #ffd200, #f7971e, #a80000)', anim: true },
+            { id: 'diamond_elite', name: 'Бриллиант', price: 2300, css: 'linear-gradient(135deg, #e0eafc, #cfdef3, #8ec5fc)', anim: true, glow: true },
+            { id: 'void_prime', name: 'Void Prime', price: 3800, css: 'linear-gradient(135deg, #0f0c29, #302b63, #24243e)', anim: true, glow: true },
         ],
         init() { this.apply(); },
         owned() { return LS.g('dydx_bg_owned', ['default']); },
@@ -3420,6 +3420,8 @@
         search: '',
         sort: 'price_asc',
         animCache: {},     // путь -> распарсенный lottie JSON (чтобы не грузить повторно один и тот же файл)
+        cardInstances: {}, // id гифта -> живой lottie-инстанс карточки в сетке (для play/pause по видимости)
+        io: null,          // IntersectionObserver — следит, какие карточки реально видны на экране
 
         ensureLoaded() {
             if (!window.Multiplayer) { this.renderOfflineMsg(); return; }
@@ -3458,18 +3460,58 @@
             const list = this.getFiltered();
             if (!list.length) { grid.innerHTML = `<div class="shop-empty" style="grid-column:1/-1;">Ничего не найдено</div>`; return; }
 
-            // ВАЖНО: в сетке анимации НЕ проигрываются вообще — раньше тут грузились
-            // и играли до 118 lottie-анимаций одновременно, телефон тупо вешало.
-            // Вместо этого — статичная иконка-заглушка, а живая анимация запускается
-            // только для ОДНОГО гифта, когда открываешь его детальную карточку.
+            // Как в самом Telegram: карточка стоит на первом кадре, пока её не видно.
+            // Как только она реально появляется на экране при скролле — грузится (лениво,
+            // один раз) и начинает играть. Уходит из вида — не выгружается, просто ставится
+            // на паузу (чтобы при возврате не грузить повторно и не дёргать анимацию заново).
+            if (this.io) this.io.disconnect();
+            this.cardInstances = {};
             grid.innerHTML = list.map(g => `
                 <div class="shop-card ${g.owned > 0 ? 'owned' : ''} shop-card-tier-${g.tier}" data-id="${g.id}" onclick="Showcase.openDetail('${g.id}')">
                     ${g.owned > 0 ? `<div class="shop-card-badge">×${g.owned}</div>` : ''}
-                    <div class="shop-card-anim placeholder">${g.tier === 'nft' ? '🎁' : '⭐'}</div>
+                    <div class="shop-card-anim placeholder" id="shop-anim-${g.id}">${g.tier === 'nft' ? '🎁' : '⭐'}</div>
                     <div class="shop-card-name">${g.name}</div>
                     <div class="shop-card-price">${window.Showcase.starIconHtml('sm')}${g.price_stars.toLocaleString()}</div>
                 </div>
             `).join('');
+
+            this.io = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    const el = entry.target; const id = el.dataset.gid;
+                    if (entry.isIntersecting) {
+                        this.playCard(id, el);
+                    } else if (this.cardInstances[id]) {
+                        this.cardInstances[id].pause();
+                    }
+                });
+            }, { root: grid.closest('.panel') || null, rootMargin: '80px 0px', threshold: 0.15 });
+
+            list.forEach(g => {
+                const el = document.getElementById('shop-anim-' + g.id);
+                if (el) { el.dataset.gid = g.id; this.io.observe(el); }
+            });
+        },
+
+        async playCard(id, container) {
+            let inst = this.cardInstances[id];
+            if (inst) { inst.play(); return; } // уже загружена — просто возобновляем
+            const g = this.catalog.find(x => x.id === id); if (!g) return;
+            try {
+                const path = this.animPath(g);
+                let data = this.animCache[path];
+                if (!data) {
+                    const res = await fetch(path);
+                    data = await res.json();
+                    this.animCache[path] = data;
+                }
+                // Карточка могла уже уйти с экрана, пока грузился fetch — тогда сразу же
+                // после инициализации ставим на паузу вместо автовоспроизведения.
+                container.classList.remove('placeholder'); container.innerText = '';
+                const stillVisible = container.getBoundingClientRect().top < window.innerHeight && container.getBoundingClientRect().bottom > 0;
+                inst = lottie.loadAnimation({ container, renderer: 'svg', loop: true, autoplay: stillVisible, animationData: data });
+                this.cardInstances[id] = inst;
+                if (!stillVisible) inst.goToAndStop(0, true);
+            } catch (e) { /* не загрузилось — так и останется заглушкой, не критично */ }
         },
 
         starIconHtml(size) {
