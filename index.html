@@ -177,7 +177,7 @@
         .shop-card:active { transform: scale(0.96); }
         .shop-card.owned { border-color: rgba(215,180,93,0.5); }
         .shop-card-badge { position: absolute; top: 8px; right: 8px; background: rgba(215,180,93,0.15); color: var(--gold); font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 8px; z-index: 2; }
-        .shop-card-anim { width: 100%; height: 88px; display: flex; align-items: center; justify-content: center; }
+        .shop-card-anim { width: 100%; height: 88px; display: flex; align-items: center; justify-content: center; font-size: 34px; }
         .shop-card-anim.placeholder { background: radial-gradient(circle, rgba(255,255,255,0.04), transparent 70%); border-radius: 12px; }
         .shop-card-name { font-size: 11.5px; font-weight: 700; margin-top: 4px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .shop-card-price { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 12px; font-weight: 800; color: var(--gold); margin-top: 4px; }
@@ -447,7 +447,7 @@
 <div id="app">
     <div class="toast-container" id="toast-container"></div>
     <div class="task-notify-container" id="task-notify-container"></div>
-    <div id="daily-bonus-fab" onclick="if(window.Multiplayer) Multiplayer.claimDaily(); else App.toast('Мультиплеер не подключён', 'error')">🎁 +50</div>
+    <div id="daily-bonus-fab" onclick="if(window.Multiplayer) Multiplayer.claimDaily(); else App.toast('Мультиплеер не подключён', 'error')">🎁 +20</div>
 
     <header>
         <div class="header-title"><h1>dy/dx</h1><span id="app-subtitle">Игры</span></div>
@@ -899,6 +899,11 @@
             <div style="display:flex; gap:8px; padding:10px 10px 0; overflow-x:auto;" id="profile-bg-shop"></div>
 
             <div class="panel" style="margin: 10px 10px 0;">
+                <div class="panel-title">Сводка</div>
+                <div class="crypto-stat-grid" id="profile-summary-grid"></div>
+            </div>
+
+            <div class="panel" style="margin: 10px 10px 0;">
                 <div style="display:flex; gap:6px; margin-bottom:10px;">
                     <button class="btn-small active" id="profile-tab-stats" onclick="ProfileStats.showTab('stats')">Статистика по играм</button>
                     <button class="btn-small" id="profile-tab-ops" onclick="ProfileStats.showTab('ops')">Операции</button>
@@ -913,27 +918,29 @@
                     <div class="input-wrap"><input type="text" id="promo-input" placeholder="Введите код" style="text-transform:uppercase;"></div>
                     <button class="btn-small" style="flex:0 0 auto; padding:0 14px; background:var(--gold); color:#000;" onclick="if(window.Multiplayer) Multiplayer.redeemPromo(document.getElementById('promo-input').value); else App.toast('Мультиплеер не подключён', 'error')">Активировать</button>
                 </div>
-                <button class="main-btn btn-gold" id="daily-bonus-btn" onclick="if(window.Multiplayer) Multiplayer.claimDaily(); else App.toast('Мультиплеер не подключён', 'error')" style="margin-top:4px;">🎁 Забрать бонус (50, до 10 раз в день)</button>
+                <button class="main-btn btn-gold" id="daily-bonus-btn" onclick="if(window.Multiplayer) Multiplayer.claimDaily(); else App.toast('Мультиплеер не подключён', 'error')" style="margin-top:4px;">🎁 Забрать бонус (20, до 10 раз в день)</button>
                 <div style="font-size:10px; color:var(--text-muted); margin-top:8px; text-align:center;">Промокоды рассылает организатор тусовки в чат</div>
             </div>
-
-            <div class="case-panel">
-                <div class="panel-title">Кейс с подарками</div>
-                <div class="bet-row" id="case-selectors" style="margin-bottom:10px;"></div>
-                <div class="case-visual" id="case-visual">🎁</div>
-                <div class="case-odds" id="case-odds"></div>
-                <button class="main-btn btn-gold" id="case-btn" onclick="Gifts.openCase()">🎁 ОТКРЫТЬ</button>
-            </div>
-
-            <div class="panel" style="margin: 10px 10px 0 10px; margin-bottom: 0;">
-                <div class="panel-title">Инвентарь</div>
-            </div>
-            <div class="inventory-grid" id="inventory-grid"></div>
 
             <div class="panel" style="margin: 14px 10px 0 10px; margin-bottom: 0;" id="nft-gallery-panel-title">
                 <div class="panel-title">✨ Улучшенные подарки</div>
             </div>
             <div class="nft-gallery" id="nft-gallery"></div>
+
+            <div class="panel" style="margin: 14px 10px 20px 10px;">
+                <div class="panel-title">👥 Пригласи друга</div>
+                <div style="font-size:11px; color:var(--text-muted); margin-bottom:10px;">
+                    Получай 5% со всех выигрышей друзей, которые зашли по твоей ссылке — каждый день, автоматически.
+                </div>
+                <div class="bet-row" style="margin-bottom:10px;">
+                    <div class="input-wrap" style="flex:1;"><input type="text" id="ref-link-input" readonly style="font-size:11px;"></div>
+                    <button class="btn-small" style="flex:0 0 auto; padding:0 14px; background:var(--gold); color:#000;" onclick="Referrals.copyLink()">Копировать</button>
+                </div>
+                <div class="crypto-stat-grid">
+                    <div class="crypto-stat-box"><div class="crypto-stat-label">Приглашено</div><div class="crypto-stat-val" id="ref-count">0</div></div>
+                    <div class="crypto-stat-box"><div class="crypto-stat-label">Заработано всего</div><div class="crypto-stat-val" id="ref-earned">0</div></div>
+                </div>
+            </div>
         </div>
 
         <!-- MARKET (вынесен из профиля в отдельную вкладку) -->
@@ -1023,6 +1030,7 @@
 
 <script>
     const MAX_MUL = 10000; const MAX_WIN = 127132; // пересчитано под курс звёзд (было 5000000 фишек)
+    const BOT_USERNAME = 'dydxGamesbot';
 
     // БЕЗОПАСНЫЙ ДОСТУП К LOCAL STORAGE (ЗАЩИТА ОТ КРАША ПРИ ЗАПУСКЕ)
     const LS = {
@@ -1042,8 +1050,15 @@
     try { window.Telegram.WebApp.expand(); window.Telegram.WebApp.disableVerticalSwipes(); } catch(e) {}
 
     window.Stats = {
-        b: 0, c: 0,
-        init() { let s = LS.g('dydx_st', {b:0, c:0}); this.b=s.b||0; this.c=s.c||0; },
+        b: 0, c: 0, firstSeen: 0,
+        init() {
+            let s = LS.g('dydx_st', {b:0, c:0});
+            this.b=s.b||0; this.c=s.c||0;
+            // Отметка первого запуска — нужна только для счётчика "дней в игре" в статистике.
+            let fs = localStorage.getItem('dydx_first_seen');
+            if (!fs) { fs = Date.now(); localStorage.setItem('dydx_first_seen', fs); }
+            this.firstSeen = Number(fs);
+        },
         save() { LS.s('dydx_st', {b:this.b, c:this.c}); },
         addBet() { this.b++; this.save(); window.Tasks.chk('bets', this.b); },
         addCrash() { this.c++; this.save(); window.Tasks.chk('crash', this.c); }
@@ -1051,9 +1066,13 @@
 
     // СИСТЕМА УРОВНЕЙ — растёт от суммарного объёма выигрышей (XP = сумма всех побед)
     window.Levels = {
-        xp: 0, lvl: 1,
-        // XP, необходимый чтобы перейти НА этот уровень (накопительно)
-        need(lvl) { return Math.floor(133 * Math.pow(lvl, 1.55)); }, // пересчитано под курс звёзд (было 5250) — опыт = сумме выигрыша в новой валюте
+        // Порог опыта (= сумма всех побед лайфтайм) для достижения этого уровня.
+        // Раньше порог для lvl=1 был всего 133 — то есть ОДНА крупная ставка
+        // сразу же давала левел-ап и щедрую награду поверх. Теперь порог растёт
+        // намного круче (5000 * lvl^1.8) — левел 2 требует 5000 суммарного
+        // выигрыша за всю жизнь аккаунта (это дни игры, не одна ставка),
+        // левел 10 — уже больше 300 000, левел 50 — больше 5 миллионов.
+        need(lvl) { return Math.floor(5000 * Math.pow(lvl, 1.8)); },
         init() {
             let s = LS.g('dydx_levels', {xp: 0, lvl: 1});
             this.xp = (typeof s.xp === 'number' && !isNaN(s.xp)) ? s.xp : 0;
@@ -1061,12 +1080,10 @@
             this.render();
         },
         save() { LS.s('dydx_levels', {xp: this.xp, lvl: this.lvl}); },
-        // Вызывается при любой победе — addWin добавляет опыт и проверяет ап уровня
-        LEVEL_UP_REWARD: 381, // пересчитано под курс звёзд (было 15000 фишек) // фикс: раньше награда суммировалась за КАЖДЫЙ пройденный
-        // уровень (lvl*20), из-за чего один огромный выигрыш (напр. ставка в кости на
-        // низком коэффициенте) мог перепрыгнуть сразу много уровней и дать ~100к+ за раз.
-        // Теперь награда фиксированная и выдаётся ОДИН раз за вызов addWin(),
-        // сколько бы уровней ни было пройдено за этот прирост опыта.
+        // Награда теперь растёт вместе с уровнем (а не фиксированная 381 всегда) —
+        // на низких уровнях скромная, на высоких — заметная, но всё равно
+        // выдаётся ОДИН раз за вызов addWin(), сколько бы уровней ни прошли за раз.
+        rewardForLevel(lvl) { return Math.min(3000, Math.round(50 + lvl * 15)); },
         addWin(amount) {
             amount = Math.floor(Number(amount)); if(!amount || amount <= 0) return;
             this.xp += amount;
@@ -1074,7 +1091,7 @@
             while (this.xp >= this.need(this.lvl)) {
                 this.lvl++; leveledUp = true;
             }
-            let totalReward = leveledUp ? this.LEVEL_UP_REWARD : 0;
+            let totalReward = leveledUp ? this.rewardForLevel(this.lvl) : 0;
             this.save(); this.render();
             if (leveledUp) {
                 // Важно: используем chgBal, а НЕ App.win() — win() сам вызывает
@@ -1271,11 +1288,10 @@
                 if (profNav) profNav.classList.add('active');
                 document.getElementById('app-subtitle').innerText = 'Профиль';
 
-                // ЗАМЕНИТЕ на username вашего бота-магазина, когда он будет запущен (см. bot/bot.js).
-                const STARS_BOT_USERNAME = null; // например: 'dydx_shop_bot'
-                if (STARS_BOT_USERNAME && window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
+                // ЗАМЕНИТЕ BOT_USERNAME вверху файла на username вашего бота, когда он будет запущен.
+                if (BOT_USERNAME && window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
                     this.toast('Открываю магазин фишек за звёзды...', '');
-                    window.Telegram.WebApp.openTelegramLink(`https://t.me/${STARS_BOT_USERNAME}?start=shop`);
+                    window.Telegram.WebApp.openTelegramLink(`https://t.me/${BOT_USERNAME}?start=shop`);
                 } else {
                     this.toast('В мультиплеере фишки только через промокод, ежедневный бонус или звёзды', '');
                 }
@@ -1337,6 +1353,7 @@
             const fab = document.getElementById('daily-bonus-fab'); if (fab) fab.style.visibility = (id === 'crypto') ? 'hidden' : 'visible';
             if(id === 'profile' && window.ProfileStats) window.ProfileStats.render();
             if(id === 'profile' && window.ProfileBg) window.ProfileBg.render();
+            if(id === 'profile' && window.Referrals) window.Referrals.init();
             if(id === 'market' && window.Showcase) window.Showcase.ensureLoaded();
         },
         toast(msg, type='') {
@@ -1442,7 +1459,25 @@
             this.render();
         },
         render() {
+            this.renderSummary();
             if (this.tab === 'stats') this.renderStats(); else this.renderOps();
+        },
+        renderSummary() {
+            const el = document.getElementById('profile-summary-grid'); if (!el) return;
+            const stats = LS.g('dydx_game_stats', {});
+            const ops = LS.g('dydx_ops', []);
+            let totalGames = 0, totalWagered = 0, totalNet = 0;
+            Object.values(stats).forEach(s => { totalGames += s.games; totalWagered += s.wagered; totalNet += s.net; });
+            const bestWin = ops.reduce((max, o) => o.amount > max ? o.amount : max, 0);
+            const daysInGame = Math.max(1, Math.ceil((Date.now() - (window.Stats.firstSeen || Date.now())) / 86400000));
+            el.innerHTML = `
+                <div class="crypto-stat-box"><div class="crypto-stat-label">Всего ставок</div><div class="crypto-stat-val">${totalGames.toLocaleString()}</div></div>
+                <div class="crypto-stat-box"><div class="crypto-stat-label">Всего поставлено</div><div class="crypto-stat-val">${totalWagered.toLocaleString()}</div></div>
+                <div class="crypto-stat-box"><div class="crypto-stat-label">Общий результат</div><div class="crypto-stat-val" style="color:${totalNet>=0?'#2ecc71':'#e74c3c'}">${totalNet>=0?'+':''}${totalNet.toLocaleString()}</div></div>
+                <div class="crypto-stat-box"><div class="crypto-stat-label">Лучший выигрыш</div><div class="crypto-stat-val">${bestWin.toLocaleString()}</div></div>
+                <div class="crypto-stat-box"><div class="crypto-stat-label">Уровень</div><div class="crypto-stat-val">${window.Levels ? window.Levels.lvl : 1}</div></div>
+                <div class="crypto-stat-box"><div class="crypto-stat-label">Дней в игре</div><div class="crypto-stat-val">${daysInGame}</div></div>
+            `;
         },
         renderStats() {
             const el = document.getElementById('profile-stats-list'); if (!el) return;
@@ -3384,9 +3419,7 @@
         loaded: false,
         search: '',
         sort: 'price_asc',
-        animCache: {},     // anim_file -> распарсенный lottie JSON (чтобы не грузить повторно)
-        animInstances: {}, // catalog id -> живой экземпляр lottie (чтобы не плодить дубли при повторном рендере)
-        io: null,          // IntersectionObserver — анимация грузится только когда карточка реально видна
+        animCache: {},     // путь -> распарсенный lottie JSON (чтобы не грузить повторно один и тот же файл)
 
         ensureLoaded() {
             if (!window.Multiplayer) { this.renderOfflineMsg(); return; }
@@ -3414,53 +3447,36 @@
             return list;
         },
 
+        // Путь к файлу анимации гифта. Каждый гифт лежит в СВОЕЙ папке
+        // (gifts/<id>/) — сейчас там только один файл default.json, но папка
+        // подготовлена под будущие "модели" (как в NFT-гифтах Telegram):
+        // gifts/<id>/model_gold.json, gifts/<id>/model_neon.json и т.д.
+        animPath(g, variant) { return `gifts/${g.id}/${variant || 'default'}.json`; },
+
         render() {
             const grid = document.getElementById('shop-grid'); if (!grid) return;
             const list = this.getFiltered();
             if (!list.length) { grid.innerHTML = `<div class="shop-empty" style="grid-column:1/-1;">Ничего не найдено</div>`; return; }
 
-            // Пересоздаём разметку карточек, но переиспользуем уже загруженные lottie-инстансы
-            // по id, где это возможно — иначе при каждом рендере (например после покупки)
-            // все 118 анимаций перезапускались бы с нуля, дёргая телефон.
-            if (this.io) this.io.disconnect();
+            // ВАЖНО: в сетке анимации НЕ проигрываются вообще — раньше тут грузились
+            // и играли до 118 lottie-анимаций одновременно, телефон тупо вешало.
+            // Вместо этого — статичная иконка-заглушка, а живая анимация запускается
+            // только для ОДНОГО гифта, когда открываешь его детальную карточку.
             grid.innerHTML = list.map(g => `
                 <div class="shop-card ${g.owned > 0 ? 'owned' : ''} shop-card-tier-${g.tier}" data-id="${g.id}" onclick="Showcase.openDetail('${g.id}')">
                     ${g.owned > 0 ? `<div class="shop-card-badge">×${g.owned}</div>` : ''}
-                    <div class="shop-card-anim placeholder" id="shop-anim-${g.id}" data-anim="${g.anim_file}"></div>
+                    <div class="shop-card-anim placeholder">${g.tier === 'nft' ? '🎁' : '⭐'}</div>
                     <div class="shop-card-name">${g.name}</div>
                     <div class="shop-card-price">${window.Showcase.starIconHtml('sm')}${g.price_stars.toLocaleString()}</div>
                 </div>
             `).join('');
-
-            this.io = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        this.loadCardAnim(entry.target);
-                        this.io.unobserve(entry.target);
-                    }
-                });
-            }, { rootMargin: '150px 0px' });
-            grid.querySelectorAll('.shop-card-anim').forEach(el => this.io.observe(el));
         },
 
         starIconHtml(size) {
             return `<img src="assets/star-icon-32.png" class="star-icon${size==='lg'?' lg':''}" alt="⭐">`;
         },
 
-        async loadCardAnim(container) {
-            const animFile = container.dataset.anim; if (!animFile) return;
-            container.classList.remove('placeholder');
-            try {
-                let data = this.animCache[animFile];
-                if (!data) {
-                    const res = await fetch(`gifts/${animFile}`);
-                    data = await res.json();
-                    this.animCache[animFile] = data;
-                }
-                lottie.loadAnimation({ container, renderer: 'svg', loop: true, autoplay: true, animationData: data });
-            } catch (e) { /* анимация не загрузилась — карточка просто останется без превью, не критично */ }
-        },
-
+        openDetailAnimInstance: null,
         async openDetail(id) {
             const g = this.catalog.find(x => x.id === id); if (!g) return;
             let modal = document.getElementById('shop-detail-modal');
@@ -3481,20 +3497,24 @@
                     <button class="main-btn btn-gold" onclick="Showcase.buy('${g.id}')">Купить</button>
                 </div>`;
             requestAnimationFrame(() => modal.classList.add('active'));
+            // Единственное место во всей витрине, где реально грузится и играет анимация.
+            if (this.openDetailAnimInstance) { this.openDetailAnimInstance.destroy(); this.openDetailAnimInstance = null; }
             try {
-                let data = this.animCache[g.anim_file];
+                const path = this.animPath(g);
+                let data = this.animCache[path];
                 if (!data) {
-                    const res = await fetch(`gifts/${g.anim_file}`);
+                    const res = await fetch(path);
                     data = await res.json();
-                    this.animCache[g.anim_file] = data;
+                    this.animCache[path] = data;
                 }
                 const c = document.getElementById('shop-modal-anim');
-                if (c) lottie.loadAnimation({ container: c, renderer: 'svg', loop: true, autoplay: true, animationData: data });
+                if (c) this.openDetailAnimInstance = lottie.loadAnimation({ container: c, renderer: 'svg', loop: true, autoplay: true, animationData: data });
             } catch (e) {}
         },
         closeDetail() {
             const modal = document.getElementById('shop-detail-modal');
             if (modal) modal.classList.remove('active');
+            if (this.openDetailAnimInstance) { this.openDetailAnimInstance.destroy(); this.openDetailAnimInstance = null; }
         },
         async buy(id) {
             const g = this.catalog.find(x => x.id === id); if (!g) return;
@@ -3502,6 +3522,30 @@
             if (g.price_stars > window.App.balance) return window.App.toast('Недостаточно звёзд', 'error');
             const ok = await window.Multiplayer.buyMarketGift(id);
             if (ok) this.closeDetail();
+        }
+    };
+
+    window.Referrals = {
+        state: null,
+        init() {
+            const input = document.getElementById('ref-link-input'); if (!input) return;
+            const link = BOT_USERNAME && window.ME
+                ? `https://t.me/${BOT_USERNAME}?start=${window.ME.id}`
+                : '⚠️ У разработчика ещё не настроен BOT_USERNAME';
+            input.value = link;
+            if (window.Multiplayer) window.Multiplayer.refreshReferrals();
+        },
+        setState(data) {
+            this.state = data;
+            const c = document.getElementById('ref-count'); if (c) c.innerText = data.referral_count || 0;
+            const e = document.getElementById('ref-earned'); if (e) e.innerText = (data.total_earned || 0).toLocaleString();
+        },
+        copyLink() {
+            const input = document.getElementById('ref-link-input'); if (!input || !input.value) return;
+            if (!BOT_USERNAME) return window.App.toast('Ссылка ещё не готова — жди обновления', 'error');
+            navigator.clipboard.writeText(input.value)
+                .then(() => window.App.toast('Ссылка скопирована!', 'success'))
+                .catch(() => { input.select(); document.execCommand('copy'); window.App.toast('Ссылка скопирована!', 'success'); });
         }
     };
 
@@ -3571,6 +3615,6 @@
 <!-- МУЛЬТИПЛЕЕР: общий раунд Ракеты, Рулетки, Арены, промокоды, Дурак, маркетплейс -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="multiplayer-client.js?v=54"></script>
+<script src="multiplayer-client.js?v=55"></script>
 </body>
 </html>

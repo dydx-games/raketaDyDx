@@ -52,6 +52,18 @@ window.Multiplayer = {
         );
         await sb.rpc('update_profile', { p_telegram_id: ME.id, p_username: ME.username, p_avatar_url: ME.avatar_url });
 
+        // Реферальная система: если игру открыли по ссылке вида t.me/бот?start=12345,
+        // Telegram сам подставляет "12345" сюда — это telegram_id того, кто позвал.
+        // set_referrer() внутри сама следит, чтобы это сработало только один раз
+        // за всю жизнь аккаунта (второй вызов просто вернёт "уже установлен").
+        try {
+            const tgApp = window.Telegram.WebApp;
+            const startParam = tgApp.initDataUnsafe && tgApp.initDataUnsafe.start_param;
+            if (startParam && /^\d+$/.test(startParam) && startParam !== ME.id) {
+                await sb.rpc('set_referrer', { p_telegram_id: ME.id, p_referrer_id: startParam });
+            }
+        } catch (e) {}
+
         // Бан и соглашение — до старта остальной инициализации, чтобы никто не
         // успел поиграть в обход. Если колонки banned/tos_accepted_at ещё не
         // созданы (SQL не применён), select вернёт null вместо ошибки — тогда
@@ -522,6 +534,11 @@ window.Multiplayer = {
         const { data, error } = await sb.rpc('get_market_state', { p_telegram_id: ME.id });
         if (error || !data) return;
         if (window.Showcase) window.Showcase.setState(data);
+    },
+    async refreshReferrals() {
+        const { data, error } = await sb.rpc('get_referral_stats', { p_telegram_id: ME.id });
+        if (error || !data) return;
+        if (window.Referrals) window.Referrals.setState(data);
     },
     async buyMarketGift(catalogId) {
         const { data, error } = await sb.rpc('buy_market_gift', { p_telegram_id: ME.id, p_catalog_id: catalogId });
