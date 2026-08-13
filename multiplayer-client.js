@@ -451,11 +451,11 @@ window.Multiplayer = {
         const fab = document.getElementById('daily-bonus-fab');
         if (btn) {
             btn.disabled = claimsLeft <= 0;
-            btn.innerText = claimsLeft > 0 ? `🎁 Забрать бонус (300) — ${claimsLeft}/10 сегодня` : '✅ На сегодня всё забрано';
+            btn.innerText = claimsLeft > 0 ? `🎁 Забрать бонус (20) — ${claimsLeft}/10 сегодня` : '✅ На сегодня всё забрано';
         }
         if (fab) {
             fab.style.display = claimsLeft > 0 ? '' : 'none';
-            fab.innerText = `🎁 +300 · ${claimsLeft}`;
+            fab.innerText = `🎁 +20 · ${claimsLeft}`;
         }
     },
 
@@ -523,7 +523,7 @@ window.Multiplayer = {
     async refreshDrawBank() {
         const { data, error } = await sb.from('draw_bank').select('balance').eq('id', 1).single();
         const el = document.getElementById('hub-draw-bank'); if (!el) return;
-        el.innerText = (!error && data) ? data.balance.toLocaleString() + ' фишек' : '—';
+        el.innerText = (!error && data) ? data.balance.toLocaleString() + ' звёзд' : '—';
     },
     async refreshCrypto() {
         const { data, error } = await sb.rpc('crypto_get_state', { p_telegram_id: ME.id });
@@ -558,7 +558,7 @@ window.Multiplayer = {
     async cryptoSell(coinId, qty) {
         const { data, error } = await sb.rpc('crypto_sell', { p_telegram_id: ME.id, p_coin_id: coinId, p_qty: qty });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return; }
-        window.App.toast(`Продано за ${data[0].proceeds} фишек`, 'success');
+        window.App.toast(`Продано за ${data[0].proceeds} звёзд`, 'success');
         await this.syncBalanceFromServer();
         this.refreshCrypto();
     },
@@ -582,7 +582,7 @@ window.Multiplayer = {
         const { data, error } = await sb.rpc('tycoon_collect', { p_telegram_id: ME.id });
         if (error || !data) { window.App.toast('Ошибка', 'error'); return; }
         if (!data[0].success) { window.App.toast(data[0].message || 'Пока нечего собирать', ''); return; }
-        window.App.toast(`+${data[0].collected} фишек!`, 'success');
+        window.App.toast(`+${data[0].collected} звёзд!`, 'success');
         if (data[0].new_balance !== null) { window.App.balance = data[0].new_balance; window.App.updBalUI(); }
         this.refreshTycoon();
     },

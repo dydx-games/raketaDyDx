@@ -554,7 +554,7 @@
             </div>
 
             <div style="margin: 14px 10px 24px; padding: 12px; background: rgba(255,255,255,0.03); border: 1px solid #1f222b; border-radius: 12px; font-size: 10px; line-height: 1.5; color: var(--text-muted);">
-                ⚠️ Все «фишки» и внутриигровые монеты в приложении — виртуальные, существуют
+                ⚠️ Все «звёзды», подарки (гифты) и внутриигровые монеты в приложении — виртуальные, существуют
                 только внутри игры. Их нельзя купить за реальные деньги и нельзя вывести или
                 обменять на деньги, криптовалюту или иное имущество. Все режимы носят
                 исключительно развлекательный характер и не являются азартной игрой в смысле
@@ -954,6 +954,9 @@
                 </div>
                 <div id="market-list" style="display:flex; flex-direction:column; gap:8px;"></div>
                 <div id="shop-panel" style="display:none;">
+                    <div style="font-size:9px; color:var(--text-muted); text-align:center; margin-bottom:8px;">
+                        ⚠️ Все подарки — виртуальные, только внутри игры. Вывод в реальные Telegram-подарки, деньги или что-либо ещё невозможен.
+                    </div>
                     <div class="shop-toolbar">
                         <input id="shop-search" class="shop-search" placeholder="Поиск гифта..." oninput="Showcase.onSearch(this.value)">
                         <select id="shop-sort" class="shop-sort" onchange="Showcase.onSort(this.value)">
@@ -1003,7 +1006,7 @@
         <h3 style="margin-top:0; text-align:center;">Пользовательское соглашение</h3>
         <div style="max-height:260px; overflow-y:auto; font-size:12px; line-height:1.5; color:var(--text-muted); background:rgba(255,255,255,0.03); border-radius:8px; padding:10px; margin-bottom:12px;">
             <p><b>Только для лиц старше 18 лет.</b></p>
-            <p>Внутренние «фишки» — виртуальная валюта без реальной денежной стоимости. Их нельзя купить за деньги и нельзя вывести/обменять на деньги, криптовалюту или иное имущество. Все игровые режимы носят исключительно развлекательный характер.</p>
+            <p>Внутренние «звёзды» и все подарки (гифты) в витрине — виртуальная валюта и виртуальные предметы без реальной денежной стоимости. Их нельзя купить за деньги и нельзя вывести/обменять на деньги, криптовалюту, реальные Telegram Stars или иное имущество. Все игровые режимы носят исключительно развлекательный характер.</p>
             <p>Используя приложение, вы соглашаетесь не создавать несколько аккаунтов для получения повторных бонусов, не использовать автоматизированные средства и не пытаться получить несанкционированный доступ к системе. Администрация вправе ограничить доступ при нарушении правил.</p>
             <p>Обрабатываются только данные вашего профиля Telegram (идентификатор, имя, аватар) — для отображения в игре и сохранения прогресса. Данные не передаются третьим лицам, кроме случаев, предусмотренных законом.</p>
             <p style="margin-bottom:0;">Полный текст соглашения: [ССЫЛКА НА ДОКУМЕНТ]</p>
@@ -1114,9 +1117,9 @@
         },
         popup(reward) {
             let t = document.getElementById('level-toast'); document.getElementById('lt-num').innerText = this.lvl;
-            let rEl = document.getElementById('lt-reward'); if (rEl) rEl.innerText = reward ? `+${reward.toLocaleString()} фишек` : '';
+            let rEl = document.getElementById('lt-reward'); if (rEl) rEl.innerText = reward ? `+${reward.toLocaleString()} звёзд` : '';
             t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 1800);
-            window.App.toast(`Новый уровень: ${this.lvl}!${reward ? ' Награда ' + reward.toLocaleString() + ' фишек' : ''}`, 'success');
+            window.App.toast(`Новый уровень: ${this.lvl}!${reward ? ' Награда ' + reward.toLocaleString() + ' звёзд' : ''}`, 'success');
         },
         openInfo() {
             let prevReq = this.lvl === 1 ? 0 : this.need(this.lvl - 1); let nextReq = this.need(this.lvl);
@@ -1290,10 +1293,10 @@
 
                 // ЗАМЕНИТЕ BOT_USERNAME вверху файла на username вашего бота, когда он будет запущен.
                 if (BOT_USERNAME && window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
-                    this.toast('Открываю магазин фишек за звёзды...', '');
+                    this.toast('Открываю магазин звёзд...', '');
                     window.Telegram.WebApp.openTelegramLink(`https://t.me/${BOT_USERNAME}?start=shop`);
                 } else {
-                    this.toast('В мультиплеере фишки только через промокод, ежедневный бонус или звёзды', '');
+                    this.toast('В мультиплеере звёзды только через промокод или ежедневный бонус', '');
                 }
                 return;
             }
@@ -1437,7 +1440,7 @@
             const item = this.catalog.find(b => b.id === id); if (!item) return;
             const owned = this.owned();
             if (!owned.includes(id)) {
-                if (item.price > window.App.balance) { window.App.toast('Недостаточно фишек', 'error'); return; }
+                if (item.price > window.App.balance) { window.App.toast('Недостаточно звёзд', 'error'); return; }
                 window.App.chgBal(-item.price, 'Фон профиля');
                 owned.push(id); LS.s('dydx_bg_owned', owned);
                 window.App.toast(`Фон «${item.name}» куплен!`, 'success');
@@ -1732,7 +1735,7 @@
         openCase() {
             if (this.pl || this.upgrading) return;
             let cs = this.getCase();
-            if (window.App.balance < cs.cost) return window.App.toast('Недостаточно фишек', 'error');
+            if (window.App.balance < cs.cost) return window.App.toast('Недостаточно звёзд', 'error');
             this.pl = true; window.App.chgBal(-cs.cost); window.Stats.addBet();
             let btn = document.getElementById('case-btn'); btn.className = 'main-btn btn-disabled'; btn.innerText = 'ОТКРЫВАЕМ...';
             let vis = document.getElementById('case-visual'); vis.innerText = cs.emoji; vis.classList.add('opening');
@@ -1747,7 +1750,7 @@
             let gift = this.POOL.find(g => g.id === giftId); if (!gift || !gift.upgradable) return;
             let owned = this.inv[giftId] || 0; if (owned <= 0) return window.App.toast('Нет обычной копии для улучшения', 'error');
             let cost = this.UPGRADE_COST[gift.rarity] || 127;
-            if (window.App.balance < cost) return window.App.toast('Недостаточно фишек', 'error');
+            if (window.App.balance < cost) return window.App.toast('Недостаточно звёзд', 'error');
 
             this.upgrading = true;
             this.inv[giftId] = owned - 1; this.save(); this.render(); // обычная копия списывается визуально сразу
@@ -1784,7 +1787,7 @@
                     let result = await window.Multiplayer.upgradeGiftServer(gift, cost, gift.rarity);
                     this.upgrading = false;
                     if (!result) {
-                        // сервер отказал (например недостаточно фишек по факту) — возвращаем локально списанную копию
+                        // сервер отказал (например недостаточно звёзд по факту) — возвращаем локально списанную копию
                         this.inv[giftId] = (this.inv[giftId] || 0) + 1; this.save(); this.render();
                         this.closeReveal();
                         return;
@@ -1958,7 +1961,7 @@
                 if(!this.bet.pl) {
                     let val = Math.floor(Number(document.getElementById(`crash-bet-1`).value));
                     if(!val || isNaN(val) || val <= 0) return window.App.toast('Неверная ставка', 'error');
-                    if(val > window.App.balance) return window.App.toast('Недостаточно фишек', 'error');
+                    if(val > window.App.balance) return window.App.toast('Недостаточно звёзд', 'error');
                     this.bet.v = val; this.bet.pl = true; this.bet.o = false; window.App.chgBal(-val, 'Ракета');
                     window.App.toast('Ставка принята', 'success'); window.Stats.addBet();
                 } else { this.bet.pl = false; window.App.chgBal(this.bet.v); window.App.toast('Ставка отменена'); }
@@ -1975,7 +1978,7 @@
                 if (this.bet.pl) return window.App.toast('Ставка уже сделана — дождитесь раунда', '');
                 let val = Math.floor(Number(document.getElementById('crash-bet-1').value));
                 if(!val || isNaN(val) || val <= 0) return window.App.toast('Неверная ставка', 'error');
-                if(val > window.App.balance) return window.App.toast('Недостаточно фишек', 'error');
+                if(val > window.App.balance) return window.App.toast('Недостаточно звёзд', 'error');
                 let ok = await window.Multiplayer.placeBet(val);
                 if (ok) { this.bet.v = val; this.bet.pl = true; this.bet.o = false; window.Stats.addBet(); window.App.toast('Ставка принята', 'success'); }
                 this.updBtns();
@@ -2174,7 +2177,7 @@
             if (this.mpMode) return this.mpPlay(bc);
             if(this.pl || this.lk) return;
             let bet = Math.floor(Number(document.getElementById('r-bet').value));
-            if(!bet || isNaN(bet) || bet<=0) return window.App.toast('Неверная ставка','error'); if(bet>window.App.balance) return window.App.toast('Недостаточно фишек','error');
+            if(!bet || isNaN(bet) || bet<=0) return window.App.toast('Неверная ставка','error'); if(bet>window.App.balance) return window.App.toast('Недостаточно звёзд','error');
 
             this.pl=true; this.lk=true; window.App.chgBal(-bet, 'Рулетка'); window.Stats.addBet(); this.rTr();
             document.getElementById('r-btn-red').disabled = true; document.getElementById('r-btn-green').disabled = true; document.getElementById('r-btn-black').disabled = true;
@@ -2199,7 +2202,7 @@
             if (this.pl || this.lk) return window.App.toast('Дождитесь следующего раунда', '');
             let bet = Math.floor(Number(document.getElementById('r-bet').value));
             if(!bet || isNaN(bet) || bet<=0) return window.App.toast('Неверная ставка','error');
-            if(bet>window.App.balance) return window.App.toast('Недостаточно фишек','error');
+            if(bet>window.App.balance) return window.App.toast('Недостаточно звёзд','error');
             let ok = await window.Multiplayer.rouletteBet(bc, bet);
             if (ok) { this.pl = true; this.myBetColor = bc; window.Stats.addBet(); window.App.toast('Ставка принята', 'success'); }
         },
@@ -2301,7 +2304,7 @@
             if(!this.pl) {
                 if(this.lk) return; if(this.rTmr) clearTimeout(this.rTmr);
                 this.b = Math.floor(Number(document.getElementById('hilo-bet').value));
-                if(!this.b || isNaN(this.b) || this.b<=0) return window.App.toast('Неверная ставка','error'); if(this.b>window.App.balance) return window.App.toast('Недостаточно фишек', 'error');
+                if(!this.b || isNaN(this.b) || this.b<=0) return window.App.toast('Неверная ставка','error'); if(this.b>window.App.balance) return window.App.toast('Недостаточно звёзд', 'error');
                 window.App.chgBal(-this.b, 'Hi-Lo'); window.Stats.addBet(); this.pl = true; this.m = 1; this.s = 0;
                 document.getElementById('hilo-start-controls').style.display = 'none'; document.getElementById('hilo-game-controls').style.display = 'block';
                 document.getElementById('hilo-btn').className = 'main-btn btn-gold'; document.getElementById('hilo-btn').innerText = `ЗАБРАТЬ ${this.b}`;
@@ -2352,7 +2355,7 @@
         action() {
             if(!this.pl) {
                 if(this.lk) return; this.b = Math.floor(Number(document.getElementById('coin-bet').value));
-                if(!this.b || isNaN(this.b) || this.b<=0) return window.App.toast('Неверная ставка','error'); if(this.b>window.App.balance) return window.App.toast('Недостаточно фишек', 'error');
+                if(!this.b || isNaN(this.b) || this.b<=0) return window.App.toast('Неверная ставка','error'); if(this.b>window.App.balance) return window.App.toast('Недостаточно звёзд', 'error');
                 window.App.chgBal(-this.b, 'Монетка'); window.Stats.addBet(); this.pl = true; this.m = 1; this.s = 0;
                 document.getElementById('coin-start-controls').style.display = 'none'; document.getElementById('coin-game-controls').style.display = 'block';
                 // Кнопка "Забрать" появляется только ПОСЛЕ первого удачного броска (см. guess()) —
@@ -2395,7 +2398,7 @@
         sT(m, btn) { if(this.pl) return; this.t = m; this.ch = (0.98/m)*100; document.getElementById('upg-chance').innerText = this.ch.toFixed(0)+'%'; document.getElementById('upg-center').innerText = m.toFixed(2)+'x'; if(btn) {document.querySelectorAll('#upg-selectors .btn-small').forEach(b => b.classList.remove('active')); btn.classList.add('active');} document.getElementById('upg-wheel').style.background = `conic-gradient(var(--green) 0% ${this.ch}%, var(--red) ${this.ch}% 100%)`; document.getElementById('upg-wheel').style.transform = `rotate(0deg)`; },
         play() {
             if(this.pl || this.lk) return; let bet = Math.floor(Number(document.getElementById('upg-bet').value));
-            if(!bet || isNaN(bet) || bet<=0) return window.App.toast('Неверная ставка', 'error'); if(bet>window.App.balance) return window.App.toast('Недостаточно фишек', 'error');
+            if(!bet || isNaN(bet) || bet<=0) return window.App.toast('Неверная ставка', 'error'); if(bet>window.App.balance) return window.App.toast('Недостаточно звёзд', 'error');
 
             this.pl=true; this.lk=true; window.App.chgBal(-bet, 'Апгрейдер'); window.Stats.addBet(); document.getElementById('upg-btn').className='main-btn btn-disabled'; document.getElementById('upg-btn').innerText='КРУТИМ...';
             let win = Math.random()*100 < this.ch;
@@ -2421,7 +2424,7 @@
             let btn = document.getElementById('tower-btn');
             if(!this.pl){
                 this.b = Math.floor(Number(document.getElementById('tower-bet').value));
-                if(!this.b || isNaN(this.b) || this.b<=0) return window.App.toast('Неверная ставка', 'error'); if(this.b>window.App.balance) return window.App.toast('Недостаточно фишек', 'error');
+                if(!this.b || isNaN(this.b) || this.b<=0) return window.App.toast('Неверная ставка', 'error'); if(this.b>window.App.balance) return window.App.toast('Недостаточно звёзд', 'error');
 
                 window.App.chgBal(-this.b, 'Башня'); window.Stats.addBet(); this.pl=true; this.r=0; this.m=1; this.g=[];
                 for(let i=0; i<8; i++){ let ra=[0,0,0], mt=this.d; while(mt>0){ let x=Math.floor(Math.random()*3); if(ra[x]===0){ra[x]=1;mt--;} } this.g.push(ra); }
@@ -2465,7 +2468,7 @@
             let btn = document.getElementById('mines-btn');
             if(!this.pl){
                 this.b = Math.floor(Number(document.getElementById('mines-bet').value)); this.c = parseInt(document.getElementById('mines-count').value);
-                if(!this.b || isNaN(this.b) || this.b<=0) return window.App.toast('Неверная ставка', 'error'); if(this.b>window.App.balance) return window.App.toast('Недостаточно фишек', 'error');
+                if(!this.b || isNaN(this.b) || this.b<=0) return window.App.toast('Неверная ставка', 'error'); if(this.b>window.App.balance) return window.App.toast('Недостаточно звёзд', 'error');
                 if(isNaN(this.c) || this.c<1 || this.c>24) { this.c=3; document.getElementById('mines-count').value=3; }
 
                 window.App.chgBal(-this.b, 'Мины'); window.Stats.addBet(); this.pl=true; this.o=0; this.m=1; this.g=Array(25).fill(0); let mt=this.c;
@@ -2560,7 +2563,7 @@
             if (this.pl) return;
             this.b = Math.floor(Number(document.getElementById('shells-bet').value));
             if(!this.b || isNaN(this.b) || this.b<=0) return window.App.toast('Неверная ставка','error');
-            if(this.b>window.App.balance) return window.App.toast('Недостаточно фишек', 'error');
+            if(this.b>window.App.balance) return window.App.toast('Недостаточно звёзд', 'error');
             window.App.chgBal(-this.b, 'Стаканчики'); window.Stats.addBet(); this.pl = true; this.lk = true;
             document.getElementById('shells-win').innerText = Math.floor(this.b*this.mult);
             document.getElementById('shells-btn').className = 'main-btn btn-disabled'; document.getElementById('shells-btn').innerText = 'Перемешиваем...';
@@ -2651,7 +2654,7 @@
             if (this.pl) return;
             this.b = Math.floor(Number(document.getElementById('dice-bet').value));
             if(!this.b || isNaN(this.b) || this.b<=0) return window.App.toast('Неверная ставка', 'error');
-            if(this.b > window.App.balance) return window.App.toast('Недостаточно фишек', 'error');
+            if(this.b > window.App.balance) return window.App.toast('Недостаточно звёзд', 'error');
             window.App.chgBal(-this.b, 'Кости'); window.Stats.addBet(); this.pl = true;
             document.getElementById('dice-btn').className = 'main-btn btn-disabled'; document.getElementById('dice-btn').innerText = 'Бросаем...';
             const cube = document.getElementById('dice-cube'); cube.classList.add('rolling');
@@ -2727,7 +2730,7 @@
             if (this.pl) return;
             const bet = Math.floor(Number(document.getElementById('plinko-bet').value));
             if (!bet || isNaN(bet) || bet <= 0) return window.App.toast('Неверная ставка', 'error');
-            if (bet > window.App.balance) return window.App.toast('Недостаточно фишек', 'error');
+            if (bet > window.App.balance) return window.App.toast('Недостаточно звёзд', 'error');
             this.pl = true;
             window.App.chgBal(-bet, 'Плинко'); window.Stats.addBet();
             const btn = document.getElementById('plinko-btn'); btn.className = 'main-btn btn-disabled'; btn.innerText = 'Падает...';
@@ -2781,7 +2784,7 @@
             if (!window.Multiplayer) return window.App.toast('Арена работает только в мультиплеере — см. инструкцию', 'error');
             let val = Math.floor(Number(document.getElementById('arena-bet').value));
             if (!val || isNaN(val) || val <= 0) return window.App.toast('Неверная ставка', 'error');
-            if (val > window.App.balance) return window.App.toast('Недостаточно фишек', 'error');
+            if (val > window.App.balance) return window.App.toast('Недостаточно звёзд', 'error');
             this.joining = true;
             const btn = document.getElementById('arena-btn');
             const prevText = btn ? btn.innerText : '';
@@ -2875,7 +2878,7 @@
             if (!window.Multiplayer) return window.App.toast('Дурак работает только в мультиплеере — см. инструкцию', 'error');
             let bet = Math.floor(Number(document.getElementById('durak-bet').value));
             if (!bet || isNaN(bet) || bet <= 0) return window.App.toast('Неверная ставка', 'error');
-            if (bet > window.App.balance) return window.App.toast('Недостаточно фишек', 'error');
+            if (bet > window.App.balance) return window.App.toast('Недостаточно звёзд', 'error');
             await window.Multiplayer.durakCreateRoom(bet);
         },
         async joinRoom(roomId) {
@@ -3039,7 +3042,7 @@
                         <div><b>${c.name}</b> <span style="color:var(--text-muted); font-size:11px;">${c.symbol}</span></div>
                         <div class="crypto-card-change ${isUp ? 'up' : 'down'}">${isUp ? '▲' : '▼'} ${changePct}%</div>
                     </div>
-                    <div class="crypto-card-price ${isUp ? 'up' : 'down'}">${c.price.toLocaleString()} фишек</div>
+                    <div class="crypto-card-price ${isUp ? 'up' : 'down'}">${c.price.toLocaleString()} звёзд</div>
                     <div style="font-size:9px; color:var(--text-muted); margin-top:2px;">Осталось купить: ${this.fmtCompact(Math.max(0, c.total_supply - c.circulating_supply))} / ${this.fmtCompact(c.total_supply)}</div>
                     ${chart}
                 </div>`;
@@ -3098,7 +3101,7 @@
                     </div>
                     <div style="text-align:right;">
                         <div class="crypto-card-price ${isUp ? 'up' : 'down'}" style="font-size:22px;">${c.price.toLocaleString()}</div>
-                        <div style="font-size:10px; color:var(--text-muted);">ФИШКИ</div>
+                        <div style="font-size:10px; color:var(--text-muted);">ЗВЁЗД</div>
                         <div class="crypto-card-change ${isUp ? 'up' : 'down'}" style="display:inline-block; margin-top:2px;">${isUp ? '▲' : '▼'} ${changePct}%</div>
                     </div>
                 </div>
@@ -3163,7 +3166,7 @@
                     <div style="font-size:11px; color:var(--text-muted); margin: 10px 0 6px;">Фишки на покупку</div>
                     <input type="number" class="crypto-big-input" id="crypto-buy-${c.id}" placeholder="0" oninput="CryptoUI.updateBuyPreview('${c.id}', ${c.price})">
                     <div class="crypto-pct-row">${buyPct(0.05,'5%')}${buyPct(0.1,'10%')}${buyPct(0.25,'25%')}${buyPct(0.5,'50%')}${buyPct(0.75,'75%')}${buyPct(1,'MAX')}</div>
-                    <div class="crypto-info-row"><span>Баланс</span><span>${balance.toLocaleString()} ФИШКИ</span></div>
+                    <div class="crypto-info-row"><span>Баланс</span><span>${balance.toLocaleString()} ЗВЁЗД</span></div>
                     <div class="crypto-info-row"><span>В портфеле</span><span>${hold.qty.toFixed(4)} ${c.symbol}</span></div>
                     <div id="crypto-buy-preview-${c.id}" class="crypto-preview-box"></div>
                     <button class="crypto-action-btn buy" onclick="CryptoUI.buy('${c.id}')">↗ Купить</button>`;
@@ -3182,11 +3185,11 @@
                         <span>${hold.qty.toFixed(4)}</span><span style="color:var(--text-muted); font-size:13px;">${c.symbol}</span>
                     </div>
                     <div class="crypto-pct-row">${sellPct(0.05,'5%')}${sellPct(0.1,'10%')}${sellPct(0.25,'25%')}${sellPct(0.5,'50%')}${sellPct(0.75,'75%')}${sellPct(1,'MAX')}</div>
-                    <div class="crypto-info-row"><span>Баланс</span><span>${balance.toLocaleString()} ФИШКИ</span></div>
+                    <div class="crypto-info-row"><span>Баланс</span><span>${balance.toLocaleString()} ЗВЁЗД</span></div>
                     <div class="crypto-info-row"><span>В портфеле</span><span>${hold.qty.toFixed(4)} ${c.symbol}</span></div>
                     <div class="crypto-preview-box">
-                        <div class="crypto-info-row"><span>Вы получите</span><span style="color:var(--gold); font-weight:800;">${est.toLocaleString()} ФИШКИ</span></div>
-                        <div class="crypto-info-row"><span>Комиссия (1%) → в банк розыгрышей</span><span style="color:#e74c3c;">-${fee.toLocaleString()} ФИШКИ</span></div>
+                        <div class="crypto-info-row"><span>Вы получите</span><span style="color:var(--gold); font-weight:800;">${est.toLocaleString()} ЗВЁЗД</span></div>
+                        <div class="crypto-info-row"><span>Комиссия (1%) → в банк розыгрышей</span><span style="color:#e74c3c;">-${fee.toLocaleString()} ЗВЁЗД</span></div>
                     </div>
                     <button class="crypto-action-btn sell" onclick="CryptoUI.sellPortion('${c.id}', 1)">↘ Продать всё</button>
                     ` : `<div style="font-size:11px; color:var(--text-muted); text-align:center; padding:20px 0;">Нечего продавать — сначала купите монету</div>`}`;
@@ -3340,7 +3343,7 @@
             if (tip) {
                 const d = new Date(c.time);
                 const timeStr = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                tip.innerHTML = `<div style="font-weight:800;">${Math.round(c.close).toLocaleString()} фишек</div><div style="font-size:9px; opacity:0.7;">≈ ${timeStr}</div>`;
+                tip.innerHTML = `<div style="font-weight:800;">${Math.round(c.close).toLocaleString()} звёзд</div><div style="font-size:9px; opacity:0.7;">≈ ${timeStr}</div>`;
                 tip.style.display = 'block';
                 // Позиционируем подсказку рядом с точкой, но не даём вылезти за края
                 const wrapRect = wrap.getBoundingClientRect();
@@ -3379,7 +3382,7 @@
             const qty = net / price;
             el.innerHTML = `
                 <div class="crypto-info-row"><span>Вы получите</span><span style="color:var(--gold); font-weight:800;">≈ ${qty.toFixed(4)} монет</span></div>
-                <div class="crypto-info-row"><span>Комиссия (1%) → в банк розыгрышей</span><span style="color:#e74c3c;">-${fee.toLocaleString()} ФИШКИ</span></div>`;
+                <div class="crypto-info-row"><span>Комиссия (1%) → в банк розыгрышей</span><span style="color:#e74c3c;">-${fee.toLocaleString()} ЗВЁЗД</span></div>`;
         },
         async buyPortion(coinId, fraction, btn) {
             // Раньше здесь бралось window.App.balance напрямую — а это значение может
@@ -3399,11 +3402,11 @@
             // На сервере при расчёте (комиссия + цена монеты) есть округление ВВЕРХ
             // (ceil) в двух местах подряд — итоговая списываемая сумма иногда
             // получается на 1-2 фишки больше запрошенной. Если MAX запрашивал ровно
-            // весь баланс, это давало ложное "Недостаточно фишек". Берём на 1 меньше
+            // весь баланс, это давало ложное "Недостаточно звёзд". Берём на 1 меньше
             // для MAX — небольшой запас с гарантией, а не догадка.
             const effectiveBalance = fraction >= 1 ? Math.max(0, balance - 1) : balance;
             const amount = Math.floor(effectiveBalance * fraction);
-            if (!amount || amount <= 0) { window.App.toast('Недостаточно фишек', 'error'); return; }
+            if (!amount || amount <= 0) { window.App.toast('Недостаточно звёзд', 'error'); return; }
             if (window.Multiplayer) window.Multiplayer.cryptoBuy(coinId, amount);
         },
         sellPortion(coinId, fraction) {
@@ -3604,7 +3607,7 @@
         },
         promptSell(nftId, giftName, giftEmoji) {
             if (!window.Multiplayer) return window.App.toast('Маркетплейс работает только в мультиплеере', 'error');
-            let price = prompt(`За сколько фишек продать "${giftEmoji} ${giftName}"?`);
+            let price = prompt(`За сколько звёзд продать "${giftEmoji} ${giftName}"?`);
             if (price === null) return;
             price = Math.floor(Number(price));
             if (!price || isNaN(price) || price <= 0) return window.App.toast('Неверная цена', 'error');
@@ -3657,6 +3660,6 @@
 <!-- МУЛЬТИПЛЕЕР: общий раунд Ракеты, Рулетки, Арены, промокоды, Дурак, маркетплейс -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="multiplayer-client.js?v=67"></script>
+<script src="multiplayer-client.js?v=56"></script>
 </body>
 </html>
