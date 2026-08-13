@@ -1524,16 +1524,16 @@
         st: { welcome:false, daily:false, rich:false, knyaz:false, ludo:false, rocketman:false, sniper:false, sapper:false, lucky:false, psychic:false, fearless:false, coinflip:false, marathon:false, unlucky:false, diamond:false, risk:false, madminer:false },
         lastD: 0,
         list: [
-            { id: 'channel_sub', t: '📢 Подписка на канал', d: 'Подпишись на @dydxgamenews', r: 127, a: true, channel: true },
-            { id: 'welcome', t: 'Приветственный бонус', d: 'За первый вход', r: 25, a: false }, { id: 'daily', t: 'Ежедневная награда', d: 'Заходи каждый день', r: 100, a: false },
-            { id: 'marathon', t: 'Марафонец', d: 'Сделай 100 ставок', r: 127, a: true }, { id: 'unlucky', t: 'Невезучий', d: 'Слови краш на 1.00x', r: 25, a: true },
-            { id: 'diamond', t: 'Алмазный магнат', d: 'Открой 15 алмазов за раунд', r: 381, a: true }, { id: 'risk', t: 'Абсолютный риск', d: 'Выиграй 50x в Апгрейдере', r: 1271, a: true },
-            { id: 'madminer', t: 'Безумный Шахтер', d: 'Выиграй с 24 минами', r: 2543, a: true }, { id: 'rich', t: 'Богач', d: 'Выиграй > 254 за раз', r: 127, a: true },
-            { id: 'knyaz', t: 'Из грязи в князи', d: 'Накопи 2.543', r: 636, a: true }, { id: 'ludo', t: 'Лудоман', d: 'Сделай 50 любых ставок', r: 51, a: true },
-            { id: 'rocketman', t: 'Ракетостроитель', d: 'Сыграй в Ракету 10 раз', r: 38, a: true }, { id: 'sniper', t: 'Снайпер', d: 'Поймай 10x в Ракете', r: 76, a: true },
-            { id: 'sapper', t: 'Сапер', d: 'Победа в Минах (>=5)', r: 51, a: true }, { id: 'lucky', t: 'Счастливчик', d: 'Угадай Зеро в Рулетке', r: 102, a: true },
-            { id: 'psychic', t: 'Экстрасенс', d: 'Сделай 5 шагов в Hi-Lo', r: 76, a: true }, { id: 'fearless', t: 'Бесстрашный', d: 'Пройди Башню (Сложно)', r: 254, a: true },
-            { id: 'coinflip', t: 'Орёл и Решка', d: 'Стрик из 3 побед', r: 76, a: true }
+            { id: 'channel_sub', t: '📢 Подписка на канал', d: 'Подпишись на @dydxgamenews', r: 200, a: true, channel: true },
+            { id: 'welcome', t: 'Приветственный бонус', d: 'За первый вход', r: 50, a: false }, { id: 'daily', t: 'Ежедневная награда', d: 'Заходи каждый день', r: 100, a: false },
+            { id: 'marathon', t: 'Марафонец', d: 'Сделай 100 ставок', r: 300, a: true }, { id: 'unlucky', t: 'Невезучий', d: 'Слови краш на 1.00x', r: 50, a: true },
+            { id: 'diamond', t: 'Алмазный магнат', d: 'Открой 15 алмазов за раунд', r: 500, a: true }, { id: 'risk', t: 'Абсолютный риск', d: 'Выиграй 50x в Апгрейдере', r: 1500, a: true },
+            { id: 'madminer', t: 'Безумный Шахтер', d: 'Выиграй с 24 минами', r: 3000, a: true }, { id: 'rich', t: 'Богач', d: 'Выиграй > 250 за раз', r: 200, a: true },
+            { id: 'knyaz', t: 'Из грязи в князи', d: 'Накопи 2.500', r: 1000, a: true }, { id: 'ludo', t: 'Лудоман', d: 'Сделай 50 любых ставок', r: 100, a: true },
+            { id: 'rocketman', t: 'Ракетостроитель', d: 'Сыграй в Ракету 10 раз', r: 100, a: true }, { id: 'sniper', t: 'Снайпер', d: 'Поймай 10x в Ракете', r: 150, a: true },
+            { id: 'sapper', t: 'Сапер', d: 'Победа в Минах (>=5)', r: 100, a: true }, { id: 'lucky', t: 'Счастливчик', d: 'Угадай Зеро в Рулетке', r: 200, a: true },
+            { id: 'psychic', t: 'Экстрасенс', d: 'Сделай 5 шагов в Hi-Lo', r: 150, a: true }, { id: 'fearless', t: 'Бесстрашный', d: 'Пройди Башню (Сложно)', r: 500, a: true },
+            { id: 'coinflip', t: 'Орёл и Решка', d: 'Стрик из 3 побед', r: 150, a: true }
         ],
         init() {
             let s = LS.g('dydx_tasks', {}); this.st = Object.assign(this.st, s); let d = localStorage.getItem('dydx_tasks_time'); if(d) this.lastD = parseInt(d);
@@ -1545,7 +1545,7 @@
             window.App.chgBal(task.r); LS.s('dydx_tasks', this.st); window.App.toast(`Выполнено! +${task.r}`, 'success'); window.App.taskNotify(`Задание выполнено: ${task.t}`); if(window.Sound) window.Sound.task(); this.rnd();
         },
         chk(t, v = 0) {
-            if(t==='win'&&v>=254&&!this.st.rich) this.claim('rich'); if(t==='balance'&&window.App.balance>=2543&&!this.st.knyaz) this.claim('knyaz');
+            if(t==='win'&&v>=250&&!this.st.rich) this.claim('rich'); if(t==='balance'&&window.App.balance>=2500&&!this.st.knyaz) this.claim('knyaz');
             if(t==='bets') { if(v>=50&&!this.st.ludo) this.claim('ludo'); if(v>=100&&!this.st.marathon) this.claim('marathon'); }
             if(t==='crash'&&v>=10&&!this.st.rocketman) this.claim('rocketman'); if(t==='sniper'&&v>=10&&!this.st.sniper) this.claim('sniper');
             if(t==='sapper'&&v>=5&&!this.st.sapper) this.claim('sapper'); if(t==='lucky'&&!this.st.lucky) this.claim('lucky');
@@ -3657,6 +3657,6 @@
 <!-- МУЛЬТИПЛЕЕР: общий раунд Ракеты, Рулетки, Арены, промокоды, Дурак, маркетплейс -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="multiplayer-client.js?v=60"></script>
+<script src="multiplayer-client.js?v=55"></script>
 </body>
 </html>
