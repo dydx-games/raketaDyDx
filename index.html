@@ -186,6 +186,11 @@
         .pg-upgrade-btn:active { transform: scale(0.95); }
         .pg-upgrade-btn:disabled { background: #1f222b; color: var(--text-muted); opacity: 0.6; cursor: not-allowed; }
         .pg-show-all-btn { grid-column: 1/-1; margin-top: 4px; background: var(--bg-panel-light); color: var(--gold); border: 1px solid var(--border); border-radius: 8px; padding: 8px; font-size: 12px; font-weight: 700; cursor: pointer; }
+        .pg-pattern-overlay { position: absolute; inset: 0; display: flex; flex-wrap: wrap; align-content: space-around; justify-content: space-around; font-size: 11px; opacity: 0.22; pointer-events: none; overflow: hidden; border-radius: 12px; z-index: 1; }
+        .pg-card-model { font-size: 8px; color: var(--gold); font-weight: 800; margin-top: 1px; }
+        .spin-swatch { width: 70px; height: 70px; border-radius: 16px; margin: 0 auto 12px; background: var(--bg-panel-light); display: none; transition: background 0.06s linear; }
+        .spin-phase-label { text-align: center; font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+        .spin-name { text-align: center; font-size: 20px; font-weight: 900; min-height: 28px; }
         .shop-card { background: linear-gradient(155deg, var(--bg-panel-light) 0%, var(--bg-panel) 130%); border: 1px solid #23262f; border-radius: 16px; padding: 10px; position: relative; overflow: hidden; cursor: pointer; transition: transform 0.15s var(--ease), border-color 0.15s; }
         .shop-card:active { transform: scale(0.96); }
         .shop-card.owned { border-color: rgba(215,180,93,0.5); }
@@ -3517,7 +3522,12 @@
         // (gifts/<id>/) — сейчас там только один файл default.json, но папка
         // подготовлена под будущие "модели" (как в NFT-гифтах Telegram):
         // gifts/<id>/model_gold.json, gifts/<id>/model_neon.json и т.д.
-        animPath(g, variant) { return `gifts/${g.id}/${variant || 'default'}.json`; },
+        // variant не задан/'default' -> обычная анимация; иначе variant это имя файла
+        // МОДЕЛИ внутри подпапки models/ (напр. 'model_skibidi.json').
+        animPath(g, variant) {
+            if (!variant || variant === 'default') return `gifts/${g.id}/default.json`;
+            return `gifts/${g.id}/models/${variant}`;
+        },
 
         render() {
             const grid = document.getElementById('shop-grid'); if (!grid) return;
@@ -3563,20 +3573,21 @@
             });
         },
 
-        async playCard(id, container) {
-            let inst = this.cardInstances[id];
+        async playCard(id, container, variant) {
+            const cacheKey = variant ? `${id}::${variant}` : id;
+            let inst = this.cardInstances[cacheKey];
             // Если инстанс уже есть, но его контейнер — старый, отсоединённый от страницы
             // узел (например гифт уже показывался в другом месте — в витрине, а теперь
             // рендерится в профиле в НОВОМ контейнере) — пересоздаём заново на актуальном
             // месте, а не пытаемся играть анимацию в невидимой удалённой карточке.
             if (inst && (!inst.wrapper || !inst.wrapper.isConnected || inst.wrapper !== container)) {
                 try { inst.destroy(); } catch (e) {}
-                inst = null; delete this.cardInstances[id];
+                inst = null; delete this.cardInstances[cacheKey];
             }
             if (inst) { if (!inst._playedOnce) inst.play(); return; }
             const g = this.catalog.find(x => x.id === id); if (!g) return;
             try {
-                const path = this.animPath(g);
+                const path = this.animPath(g, variant);
                 let data = this.animCache[path];
                 if (!data) {
                     const res = await fetch(path);
@@ -3590,7 +3601,7 @@
                 inst = lottie.loadAnimation({ container, renderer: 'svg', loop: false, autoplay: stillVisible, animationData: data });
                 inst._playedOnce = false;
                 inst.addEventListener('complete', () => { inst._playedOnce = true; });
-                this.cardInstances[id] = inst;
+                this.cardInstances[cacheKey] = inst;
                 if (!stillVisible) inst.goToAndStop(0, true);
             } catch (e) { /* не загрузилось — так и останется заглушкой, не критично */ }
         },
@@ -3679,6 +3690,7 @@
         io: null,
         expanded: false, // раскрыта ли вся коллекция (по умолчанию — только топ-3)
         pinned: [],      // массив id закреплённых гифтов (как в Telegram — можно закрепить несколько)
+        myModels: [],    // выпавшие апгрейды игрока (catalog_id, model_name, backdrop_hex, pattern_symbol...)
 
         ensureLoaded() {
             this.pinned = LS.g('dydx_pinned_shop_gifts', []);
@@ -3687,7 +3699,13 @@
         },
         setState(data) {
             this.catalog = (data.catalog || []).filter(g => g.owned > 0);
+            this.myModels = data.my_models || [];
             this.render();
+        },
+        // Самый свежий выпавший апгрейд для этого гифта (если есть) — именно его
+        // показываем вместо стандартной анимации/вида гифта.
+        getMyModelFor(catalogId) {
+            return this.myModels.find(m => m.catalog_id === catalogId) || null;
         },
         togglePin(id) {
             const idx = this.pinned.indexOf(id);
@@ -3706,32 +3724,86 @@
             const cost = g ? Math.ceil(g.price_stars * 0.2) : 0;
             if (cost > window.App.balance) return window.App.toast('Недостаточно звёзд', 'error');
             if (btn) { btn.disabled = true; btn.innerText = '...'; }
+
+            // Сначала получаем реальный результат с сервера (он уже честно списал
+            // звёзды и выкатил итог) — крутим анимацию ПОСЛЕ, просто как красивую
+            // задержку перед показом уже известного ответа.
             const result = await window.Multiplayer.upgradeGiftModel(catalogId);
-            if (result) this.showUpgradeResult(result);
-            // render() уже вызовется сам через refreshMarketShop -> setState, восстановит кнопку заново
+            if (btn) { btn.disabled = false; }
+            if (!result) return;
+
+            const [modelNames, backdrops, patterns] = await Promise.all([
+                window.sb.rpc('get_gift_models_list', { p_catalog_id: catalogId }).then(r => (r.data || []).map(x => x.name)),
+                window.sb.rpc('get_all_backdrops_list').then(r => r.data || []),
+                window.sb.rpc('get_all_patterns_list').then(r => r.data || []),
+            ]);
+
+            await this.playSpinReveal(result, modelNames, backdrops, patterns);
         },
-        showUpgradeResult(r) {
-            let modal = document.getElementById('upgrade-result-modal');
+
+        // Крутит барабан как в настоящем Telegram: сначала перебирает случайные
+        // имена моделей и тормозит на реально выпавшей, потом то же для фона
+        // (плюс сам цвет плашки меняется вместе с именем), потом для узора.
+        async spinReveal(nameEl, candidates, finalText, colorEl, finalHex) {
+            return new Promise(resolve => {
+                const steps = 16;
+                let i = 0;
+                const tick = () => {
+                    if (i >= steps || !candidates.length) {
+                        nameEl.innerText = finalText;
+                        if (colorEl && finalHex) colorEl.style.background = finalHex;
+                        resolve();
+                        return;
+                    }
+                    const pick = candidates[Math.floor(Math.random() * candidates.length)];
+                    if (typeof pick === 'string') { nameEl.innerText = pick; }
+                    else { nameEl.innerText = pick.name; if (colorEl) colorEl.style.background = pick.hex; }
+                    i++;
+                    const delay = 35 + Math.pow(i / steps, 2.2) * 220; // затухание — крутится быстро, потом медленнее
+                    setTimeout(tick, delay);
+                };
+                tick();
+            });
+        },
+
+        async playSpinReveal(result, modelNames, backdrops, patterns) {
+            let modal = document.getElementById('upgrade-spin-modal');
             if (!modal) {
                 modal = document.createElement('div');
-                modal.id = 'upgrade-result-modal';
+                modal.id = 'upgrade-spin-modal';
                 modal.className = 'shop-modal-overlay';
-                modal.onclick = (e) => { if (e.target === modal) modal.classList.remove('active'); };
                 document.body.appendChild(modal);
             }
-            const backdropSwatch = r.backdrop_hex ? `<div style="width:60px; height:60px; border-radius:14px; margin:0 auto 10px; background:${r.backdrop_hex};"></div>` : '';
             modal.innerHTML = `
                 <div class="shop-modal">
-                    <button class="shop-modal-close" onclick="document.getElementById('upgrade-result-modal').classList.remove('active')">✕</button>
-                    <div style="text-align:center; font-size:13px; color:var(--text-muted); margin-bottom:6px;">🎉 Апгрейд выполнен!</div>
-                    ${backdropSwatch}
-                    <div class="shop-modal-name">${r.model_name || '—'}</div>
-                    <div class="shop-modal-sub">Модель · редкость ${r.model_rarity ?? '?'}%</div>
-                    <div class="shop-modal-sub">Фон: ${r.backdrop_name || '—'}</div>
-                    <div class="shop-modal-sub">Узор: ${r.pattern_symbol ? r.pattern_symbol + ' ' : ''}${r.pattern_name || '—'}</div>
-                    <button class="main-btn btn-gold" style="margin-top:14px;" onclick="document.getElementById('upgrade-result-modal').classList.remove('active')">Отлично!</button>
+                    <div style="text-align:center; font-size:13px; color:var(--text-muted); margin-bottom:10px;">✨ Улучшение...</div>
+                    <div class="spin-swatch" id="spin-swatch"></div>
+                    <div class="spin-phase-label" id="spin-phase-label">Модель</div>
+                    <div class="spin-name" id="spin-name">...</div>
+                    <button class="main-btn btn-gold" id="spin-done-btn" style="margin-top:14px; display:none;" onclick="document.getElementById('upgrade-spin-modal').classList.remove('active')">Отлично!</button>
                 </div>`;
-            requestAnimationFrame(() => modal.classList.add('active'));
+            modal.classList.add('active');
+
+            const nameEl = document.getElementById('spin-name');
+            const swatchEl = document.getElementById('spin-swatch');
+            const phaseEl = document.getElementById('spin-phase-label');
+
+            // Фаза 1 — модель
+            phaseEl.innerText = 'Модель'; swatchEl.style.background = 'var(--bg-panel-light)';
+            await this.spinReveal(nameEl, modelNames, result.model_name || '—');
+            await new Promise(r => setTimeout(r, 500));
+
+            // Фаза 2 — фон (плашка меняет цвет вместе с именем)
+            phaseEl.innerText = 'Фон'; swatchEl.style.display = '';
+            await this.spinReveal(nameEl, backdrops, result.backdrop_name || '—', swatchEl, result.backdrop_hex);
+            await new Promise(r => setTimeout(r, 500));
+
+            // Фаза 3 — узор
+            phaseEl.innerText = 'Узор';
+            const patternCandidates = patterns.map(p => ({ name: p.name || 'Гладкий', hex: null }));
+            await this.spinReveal(nameEl, patternCandidates, (result.pattern_symbol ? result.pattern_symbol + ' ' : '') + (result.pattern_name || 'Гладкий'));
+
+            document.getElementById('spin-done-btn').style.display = '';
         },
         getSorted() {
             // Закреплённые — всегда первыми (в порядке закрепления), остальные — как пришли с сервера
@@ -3751,15 +3823,21 @@
             const visible = this.expanded ? sorted : sorted.slice(0, 3);
 
             if (this.io) this.io.disconnect();
-            grid.innerHTML = visible.map(g => `
-                <div class="pg-card ${this.pinned.includes(g.id) ? 'pinned' : ''}">
+            grid.innerHTML = visible.map(g => {
+                const myModel = this.getMyModelFor(g.id);
+                const cardStyle = myModel && myModel.backdrop_hex ? `style="background:linear-gradient(155deg, ${myModel.backdrop_hex}33 0%, var(--bg-panel) 130%); border-color:${myModel.backdrop_hex}66;"` : '';
+                const patternOverlay = myModel && myModel.pattern_symbol
+                    ? `<div class="pg-pattern-overlay">${Array(6).fill(`<span>${myModel.pattern_symbol}</span>`).join('')}</div>` : '';
+                return `
+                <div class="pg-card ${this.pinned.includes(g.id) ? 'pinned' : ''}" ${cardStyle}>
                     <button class="pg-pin-btn ${this.pinned.includes(g.id) ? 'active' : ''}" onclick="ProfileGifts.togglePin('${g.id}')" title="Закрепить">📌</button>
                     <div class="pg-card-badge">×${g.owned}</div>
-                    <div class="pg-card-anim placeholder" id="pg-anim-${g.id}">🎁</div>
-                    <div class="pg-card-name">${g.name}</div>
+                    ${patternOverlay}
+                    <div class="pg-card-anim placeholder" id="pg-anim-${g.id}" data-variant="${myModel ? myModel.model_anim_file : ''}">🎁</div>
+                    <div class="pg-card-name">${g.name}${myModel ? `<div class="pg-card-model">${myModel.model_name}</div>` : ''}</div>
                     <button class="pg-upgrade-btn" onclick="ProfileGifts.upgrade('${g.id}', this)" title="Стоит 20% от цены гифта — выпадет случайная модель/фон/узор">⬆ Улучшить (${Math.ceil(g.price_stars * 0.2).toLocaleString()}⭐)</button>
-                </div>
-            `).join('');
+                </div>`;
+            }).join('');
 
             if (sorted.length > 3) {
                 grid.innerHTML += `<button class="pg-show-all-btn" onclick="ProfileGifts.toggleExpand()">${this.expanded ? '▲ Свернуть' : `▼ Показать все (${sorted.length})`}</button>`;
@@ -3767,9 +3845,10 @@
 
             this.io = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
-                    const el = entry.target; const id = el.dataset.gid;
-                    if (entry.isIntersecting) window.Showcase && window.Showcase.playCard(id, el);
-                    else if (window.Showcase && window.Showcase.cardInstances[id]) window.Showcase.cardInstances[id].pause();
+                    const el = entry.target; const id = el.dataset.gid; const variant = el.dataset.variant || undefined;
+                    const cacheKey = variant ? `${id}::${variant}` : id;
+                    if (entry.isIntersecting) window.Showcase && window.Showcase.playCard(id, el, variant);
+                    else if (window.Showcase && window.Showcase.cardInstances[cacheKey]) window.Showcase.cardInstances[cacheKey].pause();
                 });
             }, { rootMargin: '80px 0px', threshold: 0.15 });
 
@@ -3846,6 +3925,6 @@
 <!-- МУЛЬТИПЛЕЕР: общий раунд Ракеты, Рулетки, Арены, промокоды, Дурак, маркетплейс -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="multiplayer-client.js?v=95"></script>
+<script src="multiplayer-client.js?v=100"></script>
 </body>
 </html>
