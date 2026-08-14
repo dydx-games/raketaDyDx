@@ -549,6 +549,14 @@ window.Multiplayer = {
         this.refreshMarketShop();
         return true;
     },
+    async upgradeGiftModel(catalogId) {
+        const { data, error } = await sb.rpc('upgrade_gift_model', { p_telegram_id: ME.id, p_catalog_id: catalogId });
+        if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return null; }
+        window.App.toast(data[0].message, 'success');
+        await this.syncBalanceFromServer();
+        this.refreshMarketShop();
+        return data[0];
+    },
     async cryptoBuy(coinId, chipsAmount) {
         const { data, error } = await sb.rpc('crypto_buy', { p_telegram_id: ME.id, p_coin_id: coinId, p_chips_amount: chipsAmount });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return; }
