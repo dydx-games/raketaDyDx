@@ -193,6 +193,11 @@
         .shop-modal-sub { font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 2px; }
         .shop-modal-price { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 22px; font-weight: 900; color: var(--gold); margin: 14px 0; }
         .shop-modal-close { position: absolute; top: 14px; right: 16px; color: var(--text-muted); font-size: 20px; cursor: pointer; background: none; border: none; }
+
+        .auto-out-switch { width: 38px; height: 22px; border-radius: 12px; background: var(--bg-panel-light); border: 1px solid #23262f; position: relative; cursor: pointer; flex-shrink: 0; transition: background 0.2s; }
+        .auto-out-switch.active { background: var(--gold); }
+        .auto-out-knob { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+        .auto-out-switch.active .auto-out-knob { transform: translateX(16px); }
         .profile-header { transition: background 0.3s; border-radius: 16px; padding: 14px; margin: 0 10px; background-size: 46px 46px, 250% 250%; }
         .profile-header.bg-anim { animation: bgHueShift 8s ease-in-out infinite; background-size: 46px 46px, 300% 300%; }
         .profile-header.bg-glow { box-shadow: 0 0 24px rgba(215,180,93,0.35), inset 0 0 30px rgba(255,255,255,0.06); }
@@ -584,6 +589,13 @@
                     <button class="btn-small" onclick="Crash.set(1)">1</button><button class="btn-small" onclick="Crash.set(3)">3</button>
                     <button class="btn-small" onclick="Crash.set(13)">13</button><button class="btn-small" onclick="Crash.set(25)">25</button>
                 </div>
+                <div class="bet-row" style="align-items:center; margin-bottom:8px;">
+                    <div class="auto-out-switch" id="crash-autoout-switch" onclick="Crash.toggleAutoOut()"><div class="auto-out-knob"></div></div>
+                    <span style="font-size:12px; color:var(--text-light);">Авто-вывод</span>
+                    <div class="input-wrap" id="crash-autoout-input-wrap" style="display:none; flex:1;">
+                        <input type="number" id="crash-autoout-target" value="2.0" step="0.1" min="1.01" placeholder="напр. 2.0" oninput="Crash.setAutoOutTarget(this.value)">
+                    </div>
+                </div>
                 <button class="main-btn btn-green" id="crash-btn-1" onclick="Crash.action()">🚀 СТАВКА</button>
             </div>
             <div class="panel" style="margin-bottom: 20px;" id="crash-live-feed-panel">
@@ -897,6 +909,11 @@
                 </div>
             </div>
             <div style="display:flex; gap:8px; padding:10px 10px 0; overflow-x:auto;" id="profile-bg-shop"></div>
+
+            <div class="panel" style="margin: 10px 10px 0;">
+                <div class="panel-title">🎁 Мои подарки</div>
+                <div class="profile-gifts-grid" id="profile-gifts-grid"></div>
+            </div>
 
             <div class="panel" style="margin: 10px 10px 0;">
                 <div class="panel-title">Сводка</div>
@@ -1357,6 +1374,7 @@
             if(id === 'profile' && window.ProfileStats) window.ProfileStats.render();
             if(id === 'profile' && window.ProfileBg) window.ProfileBg.render();
             if(id === 'profile' && window.Referrals) window.Referrals.init();
+            if(id === 'profile' && window.ProfileGifts) window.ProfileGifts.ensureLoaded();
             if(id === 'market' && window.Showcase) window.Showcase.ensureLoaded();
         },
         toast(msg, type='') {
@@ -1599,7 +1617,7 @@
                 }
                 this.st.channel_sub = true; LS.s('dydx_tasks', this.st);
                 if (typeof data.new_balance === 'number') { window.App.balance = data.new_balance; window.App.updBalUI(); }
-                window.App.toast(`Выполнено! +127`, 'success'); window.App.taskNotify('Задание выполнено: Подписка на канал'); if(window.Sound) window.Sound.task();
+                window.App.toast(`Выполнено!`, 'success'); window.App.taskNotify('Задание выполнено: Подписка на канал'); if(window.Sound) window.Sound.task();
                 this.rnd();
             } catch (e) {
                 window.App.toast('Ошибка проверки — попробуйте ещё раз', 'error');
@@ -1934,6 +1952,7 @@
     };
     window.Crash = {
         state: 0, mult: 1, target: 1, startTime: 0, anim: null, timer: null, history: [], bet: {v:100, pl:false, o:false}, locked: false,
+        autoOut: { on: false, target: 2.0 },
         mpMode: false, // true если подключён multiplayer-client.js — тогда раунд диктует сервер
         init() {
             let ch = LS.g('dydx_crash_h', []); this.history = Array.isArray(ch) ? ch.filter(x=>typeof x==='number'&&!isNaN(x)) : [];
@@ -1955,6 +1974,19 @@
             if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById(`crash-bet-1`).value = Math.max(0, Math.min(v, window.App.balance));
         },
         set(v) { if(!this.bet.pl) { document.getElementById(`crash-bet-1`).value = v; this.updBtns(); } },
+        toggleAutoOut() {
+            this.autoOut.on = !this.autoOut.on;
+            const sw = document.getElementById('crash-autoout-switch');
+            const wrap = document.getElementById('crash-autoout-input-wrap');
+            if (sw) sw.classList.toggle('active', this.autoOut.on);
+            if (wrap) wrap.style.display = this.autoOut.on ? '' : 'none';
+        },
+        setAutoOutTarget(v) {
+            let n = parseFloat(v);
+            if (isNaN(n) || n < 1.01) n = 1.01;
+            if (n > MAX_MUL) n = MAX_MUL;
+            this.autoOut.target = n;
+        },
         action() {
             if (this.mpMode) return this.mpAction();
             if (this.state === 0) {
@@ -2027,6 +2059,10 @@
 
             document.getElementById('crash-mult').innerText = this.mult.toFixed(2)+'x'; this.updBtns();
             let speed = Math.max(0.2, 3 - (this.mult * 0.15)); document.getElementById('crash-card').style.setProperty('--star-speed', speed + 's');
+
+            if (this.autoOut.on && this.bet.pl && !this.bet.o && !this.locked && this.mult >= this.autoOut.target) {
+                this.action();
+            }
 
             let dm = Math.min(this.mult, 10); let t = Math.log(dm) / Math.log(10); let mx = this.maxX * t; let my = this.maxY * Math.pow(t, 3);
             let idealAng = Math.atan2(this.maxY*3*Math.pow(t,2), this.maxX) * (180/Math.PI); this.rot = 45 - idealAng;
@@ -2127,6 +2163,13 @@
 
             document.getElementById('crash-mult').innerText = this.mult.toFixed(2)+'x'; this.updBtns();
             let speed = Math.max(0.2, 3 - (this.mult * 0.15)); document.getElementById('crash-card').style.setProperty('--star-speed', speed + 's');
+
+            // Авто-вывод: срабатывает в момент, когда множитель ПЕРЕСЕКАЕТ заданный
+            // игроком икс (а не когда происходит краш) — то есть по сути это тот же
+            // кэшаут, просто нажатый автоматически кодом вместо пальца игрока.
+            if (this.autoOut.on && this.bet.pl && !this.bet.o && !this.locked && this.mult >= this.autoOut.target) {
+                this.mpAction();
+            }
 
             let p = this.posAt(el);
             let idealAng = Math.atan2(this.maxY*3*Math.pow(p.t,2), this.maxX) * (180/Math.PI); this.rot = 45 - idealAng;
@@ -3502,7 +3545,9 @@
 
         async playCard(id, container) {
             let inst = this.cardInstances[id];
-            if (inst) { inst.play(); return; } // уже загружена — просто возобновляем
+            // Уже доиграла один раз — при возврате в зону видимости НЕ перезапускаем,
+            // так и оставляем на последнем кадре (как и просили — сыграть 1 раз).
+            if (inst) { if (!inst._playedOnce) inst.play(); return; }
             const g = this.catalog.find(x => x.id === id); if (!g) return;
             try {
                 const path = this.animPath(g);
@@ -3516,7 +3561,9 @@
                 // после инициализации ставим на паузу вместо автовоспроизведения.
                 container.classList.remove('placeholder'); container.innerText = '';
                 const stillVisible = container.getBoundingClientRect().top < window.innerHeight && container.getBoundingClientRect().bottom > 0;
-                inst = lottie.loadAnimation({ container, renderer: 'svg', loop: true, autoplay: stillVisible, animationData: data });
+                inst = lottie.loadAnimation({ container, renderer: 'svg', loop: false, autoplay: stillVisible, animationData: data });
+                inst._playedOnce = false;
+                inst.addEventListener('complete', () => { inst._playedOnce = true; });
                 this.cardInstances[id] = inst;
                 if (!stillVisible) inst.goToAndStop(0, true);
             } catch (e) { /* не загрузилось — так и останется заглушкой, не критично */ }
@@ -3558,7 +3605,7 @@
                     this.animCache[path] = data;
                 }
                 const c = document.getElementById('shop-modal-anim');
-                if (c) this.openDetailAnimInstance = lottie.loadAnimation({ container: c, renderer: 'svg', loop: true, autoplay: true, animationData: data });
+                if (c) this.openDetailAnimInstance = lottie.loadAnimation({ container: c, renderer: 'svg', loop: false, autoplay: true, animationData: data });
             } catch (e) {}
         },
         closeDetail() {
@@ -3596,6 +3643,54 @@
             navigator.clipboard.writeText(input.value)
                 .then(() => window.App.toast('Ссылка скопирована!', 'success'))
                 .catch(() => { input.select(); document.execCommand('copy'); window.App.toast('Ссылка скопирована!', 'success'); });
+        }
+    };
+
+    // ================= МОИ ПОДАРКИ (профиль) — витрина того же каталога, но только owned>0 =================
+    window.ProfileGifts = {
+        catalog: [],
+        loaded: false,
+        io: null,
+
+        ensureLoaded() {
+            if (!window.Multiplayer) return;
+            window.Multiplayer.refreshMarketShop(); // всегда подтягиваем свежее — купить могли на другом экране
+        },
+        setState(data) {
+            this.catalog = (data.catalog || []).filter(g => g.owned > 0);
+            this.render();
+        },
+
+        render() {
+            const grid = document.getElementById('profile-gifts-grid'); if (!grid) return;
+            if (!this.catalog.length) {
+                grid.innerHTML = `<div class="shop-empty" style="grid-column:1/-1;">Пока нет подарков — загляни в Маркетплейс → Витрина</div>`;
+                return;
+            }
+            if (this.io) this.io.disconnect();
+            grid.innerHTML = this.catalog.map(g => `
+                <div class="shop-card ${g.tier === 'nft' ? '' : 'shop-card-tier-basic'}">
+                    <div class="shop-card-badge">×${g.owned}</div>
+                    <div class="shop-card-anim placeholder" id="pg-anim-${g.id}">🎁</div>
+                    <div class="shop-card-name">${g.name}</div>
+                    <!-- Место под будущую кнопку "Улучшить" (как модели NFT-гифтов в Telegram) —
+                         пока неактивна, сама механика улучшения ещё не готова. -->
+                    <button class="flag-btn" style="width:100%; margin-top:6px; opacity:0.5; cursor:not-allowed;" disabled title="Скоро">⬆ Улучшить</button>
+                </div>
+            `).join('');
+
+            this.io = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    const el = entry.target; const id = el.dataset.gid;
+                    if (entry.isIntersecting) window.Showcase && window.Showcase.playCard(id, el);
+                    else if (window.Showcase && window.Showcase.cardInstances[id]) window.Showcase.cardInstances[id].pause();
+                });
+            }, { rootMargin: '80px 0px', threshold: 0.15 });
+
+            this.catalog.forEach(g => {
+                const el = document.getElementById('pg-anim-' + g.id);
+                if (el) { el.dataset.gid = g.id; this.io.observe(el); }
+            });
         }
     };
 
@@ -3665,6 +3760,6 @@
 <!-- МУЛЬТИПЛЕЕР: общий раунд Ракеты, Рулетки, Арены, промокоды, Дурак, маркетплейс -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="multiplayer-client.js?v=56"></script>
+<script src="multiplayer-client.js?v=80"></script>
 </body>
 </html>

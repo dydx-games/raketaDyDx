@@ -534,6 +534,7 @@ window.Multiplayer = {
         const { data, error } = await sb.rpc('get_market_state', { p_telegram_id: ME.id });
         if (error || !data) return;
         if (window.Showcase) window.Showcase.setState(data);
+        if (window.ProfileGifts) window.ProfileGifts.setState(data);
     },
     async refreshReferrals() {
         const { data, error } = await sb.rpc('get_referral_stats', { p_telegram_id: ME.id });
