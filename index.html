@@ -3516,6 +3516,13 @@
             // один раз) и начинает играть. Уходит из вида — не выгружается, просто ставится
             // на паузу (чтобы при возврате не грузить повторно и не дёргать анимацию заново).
             if (this.io) this.io.disconnect();
+            // КРИТИЧНО: раньше здесь просто обнулялась ссылка на cardInstances, а старые
+            // lottie-инстансы оставались висеть в памяти (со своими requestAnimationFrame
+            // циклами и привязкой к уже удалённым DOM-узлам) — при каждой перерисовке сетки
+            // (после покупки, поиска, смены сортировки) утечка копилась и в итоге вешала
+            // webview телефона (белый экран, вылет в хаб). Теперь честно уничтожаем каждый
+            // инстанс перед тем как выбросить ссылки на них.
+            Object.values(this.cardInstances).forEach(inst => { try { inst.destroy(); } catch (e) {} });
             this.cardInstances = {};
             grid.innerHTML = list.map(g => `
                 <div class="shop-card ${g.owned > 0 ? 'owned' : ''} shop-card-tier-${g.tier}" data-id="${g.id}" onclick="Showcase.openDetail('${g.id}')">
@@ -3545,8 +3552,14 @@
 
         async playCard(id, container) {
             let inst = this.cardInstances[id];
-            // Уже доиграла один раз — при возврате в зону видимости НЕ перезапускаем,
-            // так и оставляем на последнем кадре (как и просили — сыграть 1 раз).
+            // Если инстанс уже есть, но его контейнер — старый, отсоединённый от страницы
+            // узел (например гифт уже показывался в другом месте — в витрине, а теперь
+            // рендерится в профиле в НОВОМ контейнере) — пересоздаём заново на актуальном
+            // месте, а не пытаемся играть анимацию в невидимой удалённой карточке.
+            if (inst && (!inst.wrapper || !inst.wrapper.isConnected || inst.wrapper !== container)) {
+                try { inst.destroy(); } catch (e) {}
+                inst = null; delete this.cardInstances[id];
+            }
             if (inst) { if (!inst._playedOnce) inst.play(); return; }
             const g = this.catalog.find(x => x.id === id); if (!g) return;
             try {
@@ -3760,6 +3773,6 @@
 <!-- МУЛЬТИПЛЕЕР: общий раунд Ракеты, Рулетки, Арены, промокоды, Дурак, маркетплейс -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="multiplayer-client.js?v=80"></script>
+<script src="multiplayer-client.js?v=85"></script>
 </body>
 </html>
