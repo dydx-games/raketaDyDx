@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -3685,12 +3685,11 @@
 
     // ================= МОИ ПОДАРКИ (профиль) — витрина того же каталога, но только owned>0 =================
     window.ProfileGifts = {
-        catalog: [],
+        items: [],      // ТЕПЕРЬ каждая купленная копия — отдельный элемент (не группируем по гифту)
         loaded: false,
         io: null,
         expanded: false, // раскрыта ли вся коллекция (по умолчанию — только топ-3)
-        pinned: [],      // массив id закреплённых гифтов (как в Telegram — можно закрепить несколько)
-        myModels: [],    // выпавшие апгрейды игрока (catalog_id, model_name, backdrop_hex, pattern_symbol...)
+        pinned: [],      // массив inventory_id закреплённых экземпляров
 
         ensureLoaded() {
             this.pinned = LS.g('dydx_pinned_shop_gifts', []);
@@ -3698,19 +3697,13 @@
             window.Multiplayer.refreshMarketShop(); // всегда подтягиваем свежее — купить могли на другом экране
         },
         setState(data) {
-            this.catalog = (data.catalog || []).filter(g => g.owned > 0);
-            this.myModels = data.my_models || [];
+            this.items = data.my_items || [];
             this.render();
         },
-        // Самый свежий выпавший апгрейд для этого гифта (если есть) — именно его
-        // показываем вместо стандартной анимации/вида гифта.
-        getMyModelFor(catalogId) {
-            return this.myModels.find(m => m.catalog_id === catalogId) || null;
-        },
-        togglePin(id) {
-            const idx = this.pinned.indexOf(id);
+        togglePin(invId) {
+            const idx = this.pinned.indexOf(invId);
             if (idx >= 0) this.pinned.splice(idx, 1);
-            else this.pinned.unshift(id);
+            else this.pinned.unshift(invId);
             LS.s('dydx_pinned_shop_gifts', this.pinned);
             this.render();
         },
@@ -3718,17 +3711,17 @@
             this.expanded = !this.expanded;
             this.render();
         },
-        async upgrade(catalogId, btn) {
+        async upgrade(inventoryId, catalogId, btn) {
             if (!window.Multiplayer) return window.App.toast('Апгрейд работает только в мультиплеере', 'error');
-            const g = this.catalog.find(x => x.id === catalogId);
-            const cost = g ? Math.ceil(g.price_stars * 0.2) : 0;
+            const item = this.items.find(x => x.inventory_id === inventoryId);
+            const cost = item ? Math.ceil(item.price_stars * 0.2) : 0;
             if (cost > window.App.balance) return window.App.toast('Недостаточно звёзд', 'error');
             if (btn) { btn.disabled = true; btn.innerText = '...'; }
 
             // Сначала получаем реальный результат с сервера (он уже честно списал
             // звёзды и выкатил итог) — крутим анимацию ПОСЛЕ, просто как красивую
             // задержку перед показом уже известного ответа.
-            const result = await window.Multiplayer.upgradeGiftModel(catalogId);
+            const result = await window.Multiplayer.upgradeGiftModel(inventoryId);
             if (btn) { btn.disabled = false; }
             if (!result) return;
 
@@ -3740,6 +3733,7 @@
 
             await this.playSpinReveal(result, modelNames, backdrops, patterns);
         },
+
 
         // Крутит барабан как в настоящем Telegram: сначала перебирает случайные
         // имена моделей и тормозит на реально выпавшей, потом то же для фона
@@ -3808,14 +3802,14 @@
         getSorted() {
             // Закреплённые — всегда первыми (в порядке закрепления), остальные — как пришли с сервера
             const pinnedSet = new Set(this.pinned);
-            const pinnedItems = this.pinned.map(id => this.catalog.find(g => g.id === id)).filter(Boolean);
-            const restItems = this.catalog.filter(g => !pinnedSet.has(g.id));
+            const pinnedItems = this.pinned.map(id => this.items.find(x => x.inventory_id === id)).filter(Boolean);
+            const restItems = this.items.filter(x => !pinnedSet.has(x.inventory_id));
             return [...pinnedItems, ...restItems];
         },
 
         render() {
             const grid = document.getElementById('profile-gifts-grid'); if (!grid) return;
-            if (!this.catalog.length) {
+            if (!this.items.length) {
                 grid.innerHTML = `<div class="shop-empty" style="grid-column:1/-1;">Пока нет подарков — загляни в Маркетплейс → Витрина</div>`;
                 return;
             }
@@ -3823,19 +3817,21 @@
             const visible = this.expanded ? sorted : sorted.slice(0, 3);
 
             if (this.io) this.io.disconnect();
-            grid.innerHTML = visible.map(g => {
-                const myModel = this.getMyModelFor(g.id);
-                const cardStyle = myModel && myModel.backdrop_hex ? `style="background:linear-gradient(155deg, ${myModel.backdrop_hex}33 0%, var(--bg-panel) 130%); border-color:${myModel.backdrop_hex}66;"` : '';
-                const patternOverlay = myModel && myModel.pattern_symbol
-                    ? `<div class="pg-pattern-overlay">${Array(6).fill(`<span>${myModel.pattern_symbol}</span>`).join('')}</div>` : '';
+            grid.innerHTML = visible.map(item => {
+                const hasModel = !!item.model_name;
+                const cardStyle = hasModel && item.backdrop_hex ? `style="background:linear-gradient(155deg, ${item.backdrop_hex}33 0%, var(--bg-panel) 130%); border-color:${item.backdrop_hex}66;"` : '';
+                const patternOverlay = hasModel && item.pattern_symbol
+                    ? `<div class="pg-pattern-overlay">${Array(6).fill(`<span>${item.pattern_symbol}</span>`).join('')}</div>` : '';
+                const domId = 'inv-' + item.inventory_id;
                 return `
-                <div class="pg-card ${this.pinned.includes(g.id) ? 'pinned' : ''}" ${cardStyle}>
-                    <button class="pg-pin-btn ${this.pinned.includes(g.id) ? 'active' : ''}" onclick="ProfileGifts.togglePin('${g.id}')" title="Закрепить">📌</button>
-                    <div class="pg-card-badge">×${g.owned}</div>
+                <div class="pg-card ${this.pinned.includes(item.inventory_id) ? 'pinned' : ''}" ${cardStyle}>
+                    <button class="pg-pin-btn ${this.pinned.includes(item.inventory_id) ? 'active' : ''}" onclick="ProfileGifts.togglePin(${item.inventory_id})" title="Закрепить">📌</button>
                     ${patternOverlay}
-                    <div class="pg-card-anim placeholder" id="pg-anim-${g.id}" data-variant="${myModel ? myModel.model_anim_file : ''}">🎁</div>
-                    <div class="pg-card-name">${g.name}${myModel ? `<div class="pg-card-model">${myModel.model_name}</div>` : ''}</div>
-                    <button class="pg-upgrade-btn" onclick="ProfileGifts.upgrade('${g.id}', this)" title="Стоит 20% от цены гифта — выпадет случайная модель/фон/узор">⬆ Улучшить (${Math.ceil(g.price_stars * 0.2).toLocaleString()}⭐)</button>
+                    <div class="pg-card-anim placeholder" id="pg-anim-${domId}" data-variant="${hasModel ? item.model_anim_file : ''}">🎁</div>
+                    <div class="pg-card-name">${item.gift_name}${hasModel ? `<div class="pg-card-model">${item.model_name}</div>` : ''}</div>
+                    ${hasModel
+                        ? `<button class="pg-upgrade-btn" disabled title="Уже улучшена">✓ Улучшено</button>`
+                        : `<button class="pg-upgrade-btn" onclick="ProfileGifts.upgrade(${item.inventory_id}, '${item.catalog_id}', this)" title="Стоит 20% от цены гифта — выпадет случайная модель/фон/узор, только один раз для этой копии">⬆ Улучшить (${Math.ceil(item.price_stars * 0.2).toLocaleString()}⭐)</button>`}
                 </div>`;
             }).join('');
 
@@ -3852,9 +3848,13 @@
                 });
             }, { rootMargin: '80px 0px', threshold: 0.15 });
 
-            visible.forEach(g => {
-                const el = document.getElementById('pg-anim-' + g.id);
-                if (el) { el.dataset.gid = g.id; this.io.observe(el); }
+            visible.forEach(item => {
+                const domId = 'inv-' + item.inventory_id;
+                const el = document.getElementById('pg-anim-' + domId);
+                // playCard ищет гифт в Showcase.catalog по id — используем catalog_id, но
+                // ключ кэша анимации всё равно уникален через inventory_id в domId/variant,
+                // так что разные копии одного гифта с разными моделями не конфликтуют.
+                if (el) { el.dataset.gid = item.catalog_id; this.io.observe(el); }
             });
         }
     };
@@ -3925,6 +3925,6 @@
 <!-- МУЛЬТИПЛЕЕР: общий раунд Ракеты, Рулетки, Арены, промокоды, Дурак, маркетплейс -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="multiplayer-client.js?v=100"></script>
+<script src="multiplayer-client.js?v=105"></script>
 </body>
 </html>
