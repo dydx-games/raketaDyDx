@@ -185,6 +185,29 @@
         .pg-upgrade-btn { width: 100%; margin-top: 4px; font-size: 8.5px; padding: 3px 2px; background: var(--gold); color: #000; border: none; border-radius: 5px; font-weight: 800; cursor: pointer; }
         .pg-sell-btn { width: 100%; margin-top: 4px; font-size: 8.5px; padding: 3px 2px; background: transparent; color: var(--text-muted); border: 1px solid var(--border); border-radius: 5px; font-weight: 700; cursor: pointer; }
         .pg-sell-btn:hover { border-color: #e74c3c; color: #e74c3c; }
+
+        .pg-detail-overlay { position: fixed; inset: 0; background: rgba(5,5,8,0.85); z-index: 200;
+            display: none; align-items: flex-end; justify-content: center; }
+        .pg-detail-overlay.active { display: flex; }
+        .pg-detail-card { width: 100%; max-width: 460px; background: var(--bg-panel); border-radius: 20px 20px 0 0;
+            overflow: hidden; max-height: 88vh; display: flex; flex-direction: column; animation: pg-detail-up 0.22s ease; }
+        @keyframes pg-detail-up { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .pg-detail-header { position: relative; padding: 44px 20px 26px; text-align: center; overflow: hidden; }
+        .pg-detail-close { position: absolute; top: 12px; left: 14px; width: 30px; height: 30px; border-radius: 50%;
+            background: rgba(0,0,0,0.3); border: none; color: #fff; font-size: 15px; cursor: pointer; z-index: 2; }
+        .pg-detail-pattern { position: absolute; inset: 0; display: flex; flex-wrap: wrap; align-content: space-around;
+            justify-content: space-around; opacity: 0.16; font-size: 20px; pointer-events: none; }
+        .pg-detail-anim { width: 130px; height: 130px; margin: 0 auto 12px; position: relative; z-index: 1; }
+        .pg-detail-title { font-size: 20px; font-weight: 900; color: #fff; position: relative; z-index: 1; }
+        .pg-detail-sub { font-size: 12px; color: rgba(255,255,255,0.75); margin-top: 3px; position: relative; z-index: 1; }
+        .pg-detail-body { padding: 4px 4px 18px; overflow-y: auto; }
+        .pg-detail-row { display: flex; justify-content: space-between; align-items: center; padding: 13px 18px;
+            border-bottom: 1px solid var(--border); font-size: 13px; }
+        .pg-detail-row:last-child { border-bottom: none; }
+        .pg-detail-label { color: var(--text-muted); }
+        .pg-detail-value { font-weight: 700; display: flex; align-items: center; gap: 6px; }
+        .pg-detail-pct { font-size: 10px; font-weight: 800; color: var(--gold); background: rgba(215,180,93,0.15);
+            padding: 2px 6px; border-radius: 6px; }
         .pg-upgrade-btn:active { transform: scale(0.95); }
         .pg-upgrade-btn:disabled { background: #1f222b; color: var(--text-muted); opacity: 0.6; cursor: not-allowed; }
         .pg-show-all-btn { grid-column: 1/-1; margin-top: 4px; background: var(--bg-panel-light); color: var(--gold); border: 1px solid var(--border); border-radius: 8px; padding: 8px; font-size: 12px; font-weight: 700; cursor: pointer; }
@@ -3727,6 +3750,60 @@
             this.expanded = !this.expanded;
             this.render();
         },
+        openDetail(inventoryId) {
+            const item = this.items.find(x => x.inventory_id === inventoryId);
+            if (!item) return;
+            const hasModel = !!item.model_name;
+
+            let modal = document.getElementById('pg-detail-modal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'pg-detail-modal';
+                modal.className = 'pg-detail-overlay';
+                document.body.appendChild(modal);
+            }
+
+            const bg = item.backdrop_hex || '#2a3439';
+            const patternTile = item.pattern_symbol
+                ? `<div class="pg-detail-pattern">${Array(30).fill(`<span>${item.pattern_symbol}</span>`).join('')}</div>` : '';
+            const collectibleNum = (item.inventory_id * 137 + 40000).toLocaleString('ru-RU'); // стабильный псевдо-номер, просто для антуража
+            const valueStars = hasModel ? Math.round(item.price_stars * (1 + (100 - (item.model_rarity || 3)) / 20)) : item.price_stars;
+
+            const row = (label, value, pct) => `
+                <div class="pg-detail-row">
+                    <div class="pg-detail-label">${label}</div>
+                    <div class="pg-detail-value">${value}${pct ? `<span class="pg-detail-pct">${pct}%</span>` : ''}</div>
+                </div>`;
+
+            modal.innerHTML = `
+                <div class="pg-detail-card">
+                    <div class="pg-detail-header" style="background: linear-gradient(160deg, ${bg} 0%, ${bg}cc 100%);">
+                        <button class="pg-detail-close" onclick="ProfileGifts.closeDetail()">✕</button>
+                        ${patternTile}
+                        <div class="pg-detail-anim" id="pg-detail-anim"></div>
+                        <div class="pg-detail-title">${item.gift_name}</div>
+                        <div class="pg-detail-sub">Экземпляр #${collectibleNum}</div>
+                    </div>
+                    <div class="pg-detail-body">
+                        ${row('Владелец', (window.App && window.App.username) || 'Вы')}
+                        ${hasModel ? row('Модель', item.model_name, item.model_rarity) : row('Модель', '— не улучшена —')}
+                        ${hasModel && item.backdrop_name ? row('Фон', item.backdrop_name) : ''}
+                        ${hasModel && item.pattern_symbol ? row('Узор', item.pattern_name || 'Узор', null) : ''}
+                        ${row('Стоимость', `~${valueStars.toLocaleString()} ⭐`)}
+                    </div>
+                </div>`;
+            modal.classList.add('active');
+
+            const animEl = document.getElementById('pg-detail-anim');
+            if (window.Showcase) {
+                const cacheKey = 'detail::' + item.inventory_id;
+                window.Showcase.playCard(item.catalog_id, animEl, hasModel ? item.model_anim_file : undefined, cacheKey);
+            }
+        },
+        closeDetail() {
+            const modal = document.getElementById('pg-detail-modal');
+            if (modal) modal.classList.remove('active');
+        },
         async sell(inventoryId, btn) {
             if (!window.Multiplayer) return window.App.toast('Продажа работает только в мультиплеере', 'error');
             if (!confirm('Продать этот гифт? Действие нельзя отменить.')) return;
@@ -3880,21 +3957,21 @@
             if (this.io) this.io.disconnect();
             grid.innerHTML = visible.map(item => {
                 const hasModel = !!item.model_name;
-                const cardStyle = hasModel && item.backdrop_hex ? `style="background:linear-gradient(155deg, ${item.backdrop_hex}33 0%, var(--bg-panel) 130%); border-color:${item.backdrop_hex}66;"` : '';
+                const cardStyle = hasModel && item.backdrop_hex ? `style="background:linear-gradient(155deg, ${item.backdrop_hex}77 0%, var(--bg-panel) 115%); border-color:${item.backdrop_hex}; border-width:1.5px;"` : '';
                 const patternOverlay = hasModel && item.pattern_symbol
                     ? `<div class="pg-pattern-overlay">${Array(6).fill(`<span>${item.pattern_symbol}</span>`).join('')}</div>` : '';
                 const domId = 'inv-' + item.inventory_id;
                 const sellPrice = Math.floor(item.price_stars * 0.5);
                 return `
-                <div class="pg-card ${this.pinned.includes(item.inventory_id) ? 'pinned' : ''}" ${cardStyle}>
-                    <button class="pg-pin-btn ${this.pinned.includes(item.inventory_id) ? 'active' : ''}" onclick="ProfileGifts.togglePin(${item.inventory_id})" title="Закрепить">📌</button>
+                <div class="pg-card ${this.pinned.includes(item.inventory_id) ? 'pinned' : ''}" ${cardStyle} onclick="ProfileGifts.openDetail(${item.inventory_id})">
+                    <button class="pg-pin-btn ${this.pinned.includes(item.inventory_id) ? 'active' : ''}" onclick="event.stopPropagation(); ProfileGifts.togglePin(${item.inventory_id})" title="Закрепить">📌</button>
                     ${patternOverlay}
                     <div class="pg-card-anim placeholder" id="pg-anim-${domId}" data-variant="${hasModel ? item.model_anim_file : ''}">🎁</div>
                     <div class="pg-card-name">${item.gift_name}${hasModel ? `<div class="pg-card-model">${item.model_name}</div>` : ''}</div>
                     ${hasModel
                         ? `<button class="pg-upgrade-btn" disabled title="Уже улучшена">✓ Улучшено</button>`
-                        : `<button class="pg-upgrade-btn" onclick="ProfileGifts.upgrade(${item.inventory_id}, '${item.catalog_id}', this)" title="Стоит 20% от цены гифта — выпадет случайная модель/фон/узор, только один раз для этой копии">⬆ Улучшить (${Math.ceil(item.price_stars * 0.2).toLocaleString()}⭐)</button>`}
-                    <button class="pg-sell-btn" onclick="ProfileGifts.sell(${item.inventory_id}, this)" title="Продать за 50% от цены гифта">💰 Продать (${sellPrice.toLocaleString()}⭐)</button>
+                        : `<button class="pg-upgrade-btn" onclick="event.stopPropagation(); ProfileGifts.upgrade(${item.inventory_id}, '${item.catalog_id}', this)" title="Стоит 20% от цены гифта — выпадет случайная модель/фон/узор, только один раз для этой копии">⬆ Улучшить (${Math.ceil(item.price_stars * 0.2).toLocaleString()}⭐)</button>`}
+                    <button class="pg-sell-btn" onclick="event.stopPropagation(); ProfileGifts.sell(${item.inventory_id}, this)" title="Продать за 50% от цены гифта">💰 Продать (${sellPrice.toLocaleString()}⭐)</button>
                 </div>`;
             }).join('');
 
@@ -3989,6 +4066,6 @@
 <!-- МУЛЬТИПЛЕЕР: общий раунд Ракеты, Рулетки, Арены, промокоды, Дурак, маркетплейс -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="multiplayer-client.js?v=120"></script>
+<script src="multiplayer-client.js?v=125"></script>
 </body>
 </html>
