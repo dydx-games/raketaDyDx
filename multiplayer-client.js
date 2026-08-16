@@ -530,8 +530,14 @@ window.Multiplayer = {
         if (error || !data) return;
         if (window.CryptoUI) window.CryptoUI.render(data);
     },
+    _marketShopRequestId: 0,
     async refreshMarketShop() {
+        const myRequestId = ++this._marketShopRequestId;
         const { data, error } = await sb.rpc('get_market_state', { p_telegram_id: ME.id });
+        // Если за время ожидания ответа успел уйти ещё один (более новый) запрос —
+        // этот ответ устарел, применять его нельзя (иначе иногда "теряются" гифты,
+        // если ответы приходят не в том порядке, в котором ушли запросы).
+        if (myRequestId !== this._marketShopRequestId) return;
         if (error || !data) return;
         if (window.Showcase) window.Showcase.setState(data);
         if (window.ProfileGifts) window.ProfileGifts.setState(data);

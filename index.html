@@ -3584,8 +3584,8 @@
             });
         },
 
-        async playCard(id, container, variant) {
-            const cacheKey = variant ? `${id}::${variant}` : id;
+        async playCard(id, container, variant, forceKey) {
+            const cacheKey = forceKey || (variant ? `${id}::${variant}` : id);
             let inst = this.cardInstances[cacheKey];
             // Если инстанс уже есть, но его контейнер — старый, отсоединённый от страницы
             // узел (например гифт уже показывался в другом месте — в витрине, а теперь
@@ -3891,8 +3891,12 @@
             this.io = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     const el = entry.target; const id = el.dataset.gid; const variant = el.dataset.variant || undefined;
-                    const cacheKey = variant ? `${id}::${variant}` : id;
-                    if (entry.isIntersecting) window.Showcase && window.Showcase.playCard(id, el, variant);
+                    // Ключ кэша — по КОНКРЕТНОМУ экземпляру (inventory_id), а не по паре
+                    // "гифт+модель": иначе два разных экземпляра с ОДИНАКОВОЙ выпавшей
+                    // моделью отжимали бы друг у друга общий инстанс анимации, и один
+                    // из них визуально пропадал бы с экрана.
+                    const cacheKey = 'inv::' + el.dataset.invKey;
+                    if (entry.isIntersecting) window.Showcase && window.Showcase.playCard(id, el, variant, cacheKey);
                     else if (window.Showcase && window.Showcase.cardInstances[cacheKey]) window.Showcase.cardInstances[cacheKey].pause();
                 });
             }, { rootMargin: '80px 0px', threshold: 0.15 });
@@ -3900,10 +3904,7 @@
             visible.forEach(item => {
                 const domId = 'inv-' + item.inventory_id;
                 const el = document.getElementById('pg-anim-' + domId);
-                // playCard ищет гифт в Showcase.catalog по id — используем catalog_id, но
-                // ключ кэша анимации всё равно уникален через inventory_id в domId/variant,
-                // так что разные копии одного гифта с разными моделями не конфликтуют.
-                if (el) { el.dataset.gid = item.catalog_id; this.io.observe(el); }
+                if (el) { el.dataset.gid = item.catalog_id; el.dataset.invKey = item.inventory_id; this.io.observe(el); }
             });
         }
     };
@@ -3974,6 +3975,6 @@
 <!-- МУЛЬТИПЛЕЕР: общий раунд Ракеты, Рулетки, Арены, промокоды, Дурак, маркетплейс -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="multiplayer-client.js?v=110"></script>
+<script src="multiplayer-client.js?v=115"></script>
 </body>
 </html>
