@@ -555,10 +555,20 @@ window.Multiplayer = {
         this.refreshMarketShop();
         return true;
     },
+    async sellGift(inventoryId) {
+        const { data, error } = await sb.rpc('sell_gift', { p_telegram_id: ME.id, p_inventory_id: inventoryId });
+        if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return null; }
+        window.App.toast(data[0].message, 'success');
+        await this.syncBalanceFromServer();
+        this.refreshMarketShop();
+        return data[0];
+    },
     async upgradeGiftModel(inventoryId) {
         const { data, error } = await sb.rpc('upgrade_gift_model', { p_telegram_id: ME.id, p_inventory_id: inventoryId });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return null; }
-        window.App.toast(data[0].message, 'success');
+        // Никакого toast с результатом тут — иначе апгрейд "спойлерится" текстом
+        // ДО того, как отыграет анимация барабана. Сам результат уже пришёл в
+        // data[0], им распорядится playSpinReveal после прокрутки.
         await this.syncBalanceFromServer();
         this.refreshMarketShop();
         return data[0];
