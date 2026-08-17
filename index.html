@@ -197,7 +197,11 @@
             background: rgba(0,0,0,0.3); border: none; color: #fff; font-size: 15px; cursor: pointer; z-index: 2; }
         .pg-detail-pattern { position: absolute; inset: 0; display: flex; flex-wrap: wrap; align-content: space-around;
             justify-content: space-around; opacity: 0.16; font-size: 20px; pointer-events: none; }
-        .pg-detail-anim { width: 130px; height: 130px; margin: 0 auto 12px; position: relative; z-index: 1; }
+        .pg-detail-anim-wrap { width: 150px; height: 150px; margin: 0 auto 12px; position: relative; z-index: 1;
+            border-radius: 50%; background: radial-gradient(circle, rgba(0,0,0,0.38) 0%, rgba(0,0,0,0.18) 65%, transparent 100%);
+            display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 28px rgba(0,0,0,0.35); }
+        .pg-detail-anim { width: 130px; height: 130px; position: relative; z-index: 1;
+            filter: drop-shadow(0 2px 10px rgba(0,0,0,0.5)); }
         .pg-detail-title { font-size: 20px; font-weight: 900; color: #fff; position: relative; z-index: 1; }
         .pg-detail-sub { font-size: 12px; color: rgba(255,255,255,0.75); margin-top: 3px; position: relative; z-index: 1; }
         .pg-detail-body { padding: 4px 4px 18px; overflow-y: auto; }
@@ -3742,7 +3746,7 @@
         togglePin(invId) {
             const idx = this.pinned.indexOf(invId);
             if (idx >= 0) this.pinned.splice(idx, 1);
-            else this.pinned.unshift(invId);
+            else this.pinned.push(invId); // в конец — порядок закрепления = порядок отображения
             LS.s('dydx_pinned_shop_gifts', this.pinned);
             this.render();
         },
@@ -3766,7 +3770,6 @@
             const bg = item.backdrop_hex || '#2a3439';
             const patternTile = item.pattern_symbol
                 ? `<div class="pg-detail-pattern">${Array(30).fill(`<span>${item.pattern_symbol}</span>`).join('')}</div>` : '';
-            const collectibleNum = (item.inventory_id * 137 + 40000).toLocaleString('ru-RU'); // стабильный псевдо-номер, просто для антуража
             const valueStars = hasModel ? Math.round(item.price_stars * (1 + (100 - (item.model_rarity || 3)) / 20)) : item.price_stars;
 
             const row = (label, value, pct) => `
@@ -3780,9 +3783,8 @@
                     <div class="pg-detail-header" style="background: linear-gradient(160deg, ${bg} 0%, ${bg}cc 100%);">
                         <button class="pg-detail-close" onclick="ProfileGifts.closeDetail()">✕</button>
                         ${patternTile}
-                        <div class="pg-detail-anim" id="pg-detail-anim"></div>
+                        <div class="pg-detail-anim-wrap"><div class="pg-detail-anim" id="pg-detail-anim"></div></div>
                         <div class="pg-detail-title">${item.gift_name}</div>
-                        <div class="pg-detail-sub">Экземпляр #${collectibleNum}</div>
                     </div>
                     <div class="pg-detail-body">
                         ${row('Владелец', (window.App && window.App.username) || 'Вы')}
@@ -4066,6 +4068,6 @@
 <!-- МУЛЬТИПЛЕЕР: общий раунд Ракеты, Рулетки, Арены, промокоды, Дурак, маркетплейс -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="multiplayer-client.js?v=125"></script>
+<script src="multiplayer-client.js?v=128"></script>
 </body>
 </html>
