@@ -3858,10 +3858,24 @@
                 const pick = isLast ? { name: finalName, anim_file: finalAnimFile } : sample[i % sample.length];
                 let data;
                 try { data = await load(pick.anim_file); } catch (e) { continue; }
+
                 if (inst) { try { inst.destroy(); } catch (e) {} }
+                // Полностью убираем старый контейнер и ставим свежий — у Lottie
+                // внутренние id элементов (градиенты/маски) могут "прилипать" между
+                // анимациями при быстрой пересборке через innerHTML='', из-за чего
+                // визуально иногда проскакивают остатки предыдущей модели, хотя
+                // имя уже показывает верное. Новый DOM-узел исключает эту утечку.
                 container.innerHTML = '';
-                inst = lottie.loadAnimation({ container, renderer: 'svg', loop: isLast, autoplay: isLast, animationData: data });
+                const freshInner = document.createElement('div');
+                freshInner.style.width = '100%';
+                freshInner.style.height = '100%';
+                container.appendChild(freshInner);
+                await new Promise(r => requestAnimationFrame(r)); // даём DOM осесть перед новым рендером
+
+                inst = lottie.loadAnimation({ container: freshInner, renderer: 'svg', loop: isLast, autoplay: isLast, animationData: data, name: `spin-${Date.now()}-${i}` });
                 if (!isLast) inst.goToAndStop(0, true);
+                // Имя обновляем ТОЛЬКО после того, как анимация под него реально создана —
+                // так текст и картинка гарантированно относятся к одному и тому же кадру.
                 nameEl.innerText = pick.name;
                 const delay = 40 + Math.pow(i / steps, 2) * 160;
                 await new Promise(r => setTimeout(r, delay));
@@ -4068,6 +4082,6 @@
 <!-- МУЛЬТИПЛЕЕР: общий раунд Ракеты, Рулетки, Арены, промокоды, Дурак, маркетплейс -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="multiplayer-client.js?v=128"></script>
+<script src="multiplayer-client.js?v=129"></script>
 </body>
 </html>
