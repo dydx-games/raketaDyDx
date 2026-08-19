@@ -555,6 +555,11 @@ window.Multiplayer = {
         this.refreshMarketShop();
         return true;
     },
+    async scratchCardPlay(bet) {
+        const { data, error } = await sb.rpc('scratch_card_play', { p_telegram_id: ME.id, p_bet: bet });
+        if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return null; }
+        return data[0];
+    },
     async slotsSpin(bet) {
         const { data, error } = await sb.rpc('slots_spin', { p_telegram_id: ME.id, p_bet: bet });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return null; }

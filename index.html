@@ -283,7 +283,7 @@
         .hub-card:active { transform: scale(0.97); border-color: rgba(215,180,93,0.4); box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
         .hub-card-emoji { transition: transform 0.18s var(--ease); }
         .hub-card:active .hub-card-emoji { transform: scale(1.15) rotate(-4deg); }
-        .hub-card-emoji svg { width: 30px; height: 30px; color: var(--gold); stroke-width: 1.6; }
+        .hub-card-emoji svg { width: 30px; height: 30px; color: var(--gold); stroke-width: 1.7; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.45)); }
         .hub-card::before { content: ''; position: absolute; top: -30px; right: -30px; width: 90px; height: 90px; background: radial-gradient(circle, rgba(215,180,93,0.18), transparent 70%); pointer-events: none; }
         .hub-card:active { transform: scale(0.98); }
         .hub-card-emoji { width: 56px; height: 56px; min-width: 56px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 30px; background: radial-gradient(circle at 30% 30%, rgba(215,180,93,0.25), rgba(20,22,28,0.5)); }
@@ -459,6 +459,18 @@
 
         .coinflip-board { display: flex; justify-content: center; align-items: center; height: 160px; margin: 10px 10px 0; background-color: var(--bg-panel); border-radius: var(--border-radius); border: 1px solid #1f222b; perspective: 1000px; position: relative; overflow: hidden; }
 
+        .scratch-wrap { position: relative; width: 270px; height: 270px; margin: 0 auto; border-radius: 18px; overflow: hidden;
+            touch-action: none; user-select: none; box-shadow: 0 10px 28px rgba(0,0,0,0.4); }
+        .scratch-grid { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
+            gap: 4px; padding: 4px; background: #0a0b0f; }
+        .scratch-cell { display: flex; align-items: center; justify-content: center; font-size: 40px; border-radius: 8px;
+            background: linear-gradient(155deg, #1b1e28 0%, #0e0f14 100%); }
+        #scratch-canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: pointer; }
+        .scratch-coin-cursor { position: absolute; width: 34px; height: 34px; font-size: 26px; display: none;
+            transform: translate(-50%, -50%); pointer-events: none; z-index: 5; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6)); }
+        .scratch-wrap.active .scratch-coin-cursor { display: flex; align-items: center; justify-content: center; }
+        .scratch-wrap.jackpot-flash { animation: slots-jackpot-flash 0.35s ease 3; }
+
         .slots-reel { width: 70px; height: 70px; border-radius: 14px; background: linear-gradient(155deg, #1b1e28 0%, #0e0f14 100%);
             border: 1px solid var(--border); overflow: hidden; position: relative;
             box-shadow: inset 0 2px 8px rgba(0,0,0,0.5); }
@@ -558,12 +570,12 @@
             <div class="hub-grid">
                 <div class="hub-card" onclick="App.s('crash', null, 'Ракета')">
                     <div class="hub-live-badge"><span class="hub-live-dot"></span>LIVE</div>
-                    <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c2.5 2 4 5.5 4 9.5 0 2-.5 4-1.5 6l-2.5 3-2.5-3c-1-2-1.5-4-1.5-6C8 7.5 9.5 4 12 2z"/><circle cx="12" cy="10" r="1.6"/><path d="M9 15l-2.5 1.5L7 20M15 15l2.5 1.5L17 20"/></svg></div>
+                    <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c2.5 2 4 5.5 4 9.5 0 2-.5 4-1.5 6l-2.5 3-2.5-3c-1-2-1.5-4-1.5-6C8 7.5 9.5 4 12 2z" fill="currentColor" fill-opacity="0.16"/><circle cx="12" cy="10" r="1.6" fill="currentColor"/><path d="M9 15l-2.5 1.5L7 20M15 15l2.5 1.5L17 20"/></svg></div>
                     <div class="hub-card-info"><div class="hub-card-title">Ракета</div><div class="hub-card-desc">Один полёт на всех — заберите до взрыва</div></div>
                 </div>
                 <div class="hub-card" style="opacity:0.5; cursor:not-allowed;" onclick="App.toast('Рулетка временно закрыта — чиним найденный баг', 'error')">
                     <div class="hub-live-badge" style="background:rgba(231,76,60,0.2); color:#e74c3c; border-color:rgba(231,76,60,0.5);">ЗАКРЫТО</div>
-                    <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2"/><path d="M12 3v7M12 14v7M3 12h7M14 12h7M6 6l4.5 4.5M17.5 17.5L13 13M6 18l4.5-4.5M17.5 6.5L13 11"/></svg></div>
+                    <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" fill="currentColor" fill-opacity="0.1"/><circle cx="12" cy="12" r="2" fill="currentColor"/><path d="M12 3v7M12 14v7M3 12h7M14 12h7M6 6l4.5 4.5M17.5 17.5L13 13M6 18l4.5-4.5M17.5 6.5L13 11"/></svg></div>
                     <div class="hub-card-info"><div class="hub-card-title">Рулетка</div><div class="hub-card-desc">Временно недоступна — устраняем баг</div></div>
                 </div>
             </div>
@@ -571,11 +583,11 @@
             <div class="hub-category" style="color:#5dade2;">🤝 С другими игроками</div>
             <div class="hub-grid">
                 <div class="hub-card" onclick="App.s('arena', null, 'Арена')">
-                    <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5.5"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/></svg></div>
+                    <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" fill="currentColor" fill-opacity="0.08"/><circle cx="12" cy="12" r="5.5" fill="currentColor" fill-opacity="0.2"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/></svg></div>
                     <div class="hub-card-info"><div class="hub-card-title">Арена</div><div class="hub-card-desc">Одно колесо — победитель забирает банк</div></div>
                 </div>
                 <div class="hub-card" onclick="App.s('durak', null, 'Дурак')">
-                    <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="6" width="10" height="14" rx="1.5" transform="rotate(-8 9 13)"/><rect x="9" y="5" width="10" height="14" rx="1.5" transform="rotate(8 14 12)"/><circle cx="15" cy="9" r="1" fill="currentColor" stroke="none"/></svg></div>
+                    <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="6" width="10" height="14" rx="1.5" transform="rotate(-8 9 13)" fill="currentColor" fill-opacity="0.12"/><rect x="9" y="5" width="10" height="14" rx="1.5" transform="rotate(8 14 12)" fill="currentColor" fill-opacity="0.18"/><circle cx="15" cy="9" r="1" fill="currentColor" stroke="none"/></svg></div>
                     <div class="hub-card-info"><div class="hub-card-title">Дурак</div><div class="hub-card-desc">Классика на двоих на реальную ставку</div></div>
                 </div>
             </div>
@@ -583,39 +595,43 @@
             <div class="hub-category" style="color:#f1c40f;">⚡ Быстрые игры</div>
             <div class="hub-grid">
                 <div class="hub-card" onclick="App.s('hilo', null, 'Hi-Lo')">
-                    <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 11l6-6 6 6M6 19l6-6 6 6"/></svg></div>
+                    <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 11l6-6 6 6" fill="currentColor" fill-opacity="0.12"/><path d="M6 11l6-6 6 6M6 19l6-6 6 6"/></svg></div>
                     <div class="hub-card-info"><div class="hub-card-title">Hi-Lo</div><div class="hub-card-desc">Больше или меньше следующей карты?</div></div>
                 </div>
                 <div class="hub-card" onclick="App.s('coin', null, 'Монетка')">
-                    <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7l1.3 2.7 3 .4-2.2 2.1.5 3-2.6-1.4-2.6 1.4.5-3-2.2-2.1 3-.4z"/></svg></div>
+                    <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" fill="currentColor" fill-opacity="0.14"/><path d="M12 7l1.3 2.7 3 .4-2.2 2.1.5 3-2.6-1.4-2.6 1.4.5-3-2.2-2.1 3-.4z" fill="currentColor" fill-opacity="0.5"/></svg></div>
                     <div class="hub-card-info"><div class="hub-card-title">Монетка</div><div class="hub-card-desc">Орёл или решка — растите множитель</div></div>
                 </div>
                 <div class="hub-card" onclick="App.s('upgrader', null, 'Апгрейдер')">
-                    <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 14-5.3"/><path d="M20 12a8 8 0 0 1-14 5.3"/><path d="M18 4v3.5h-3.5M6 20v-3.5h3.5"/><path d="M12 8v4l2.5 1.5"/></svg></div>
+                    <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 14-5.3" fill="none"/><path d="M20 12a8 8 0 0 1-14 5.3" fill="none"/><path d="M18 4v3.5h-3.5M6 20v-3.5h3.5"/><path d="M12 8v4l2.5 1.5"/><circle cx="12" cy="12" r="9" fill="currentColor" fill-opacity="0.06" stroke="none"/></svg></div>
                     <div class="hub-card-info"><div class="hub-card-title">Апгрейдер</div><div class="hub-card-desc">Рискните предметом ради лучшего</div></div>
                 </div>
                 <div class="hub-card" onclick="App.s('tower', null, 'Башенка')">
-                    <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="3" width="8" height="4.5" rx="1"/><rect x="5.5" y="9.5" width="13" height="4.5" rx="1"/><rect x="3" y="16" width="18" height="4.5" rx="1"/></svg></div>
+                    <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="3" width="8" height="4.5" rx="1" fill="currentColor" fill-opacity="0.22"/><rect x="5.5" y="9.5" width="13" height="4.5" rx="1" fill="currentColor" fill-opacity="0.16"/><rect x="3" y="16" width="18" height="4.5" rx="1" fill="currentColor" fill-opacity="0.1"/></svg></div>
                     <div class="hub-card-info"><div class="hub-card-title">Башенка</div><div class="hub-card-desc">Поднимайтесь этаж за этажом</div></div>
                 </div>
                 <div class="hub-card" onclick="App.s('mines', null, 'Минное поле')">
-                    <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="7"/><path d="M12 6V3M9.5 3h5M17 6l1.5-1.5M4 10l2-1"/></svg></div>
+                    <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="7" fill="currentColor" fill-opacity="0.14"/><path d="M12 6V3M9.5 3h5M17 6l1.5-1.5M4 10l2-1"/></svg></div>
                     <div class="hub-card-info"><div class="hub-card-title">Mines</div><div class="hub-card-desc">Находите алмазы, обходите мины</div></div>
                 </div>
                 <div class="hub-card" onclick="App.s('shells', null, 'Стаканчики')">
-                    <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 10c0-3.5 3-6.5 7-6.5s7 3 7 6.5"/><path d="M4 10h16l-1.3 8.5a2 2 0 0 1-2 1.5H7.3a2 2 0 0 1-2-1.5z"/></svg></div>
+                    <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 10c0-3.5 3-6.5 7-6.5s7 3 7 6.5" fill="currentColor" fill-opacity="0.1"/><path d="M4 10h16l-1.3 8.5a2 2 0 0 1-2 1.5H7.3a2 2 0 0 1-2-1.5z" fill="currentColor" fill-opacity="0.16"/></svg></div>
                     <div class="hub-card-info"><div class="hub-card-title">Стаканчики</div><div class="hub-card-desc">Угадайте, под каким стаканом шарик</div></div>
+                </div>
+                <div class="hub-card" onclick="App.s('scratch', null, 'Скретч-карта')">
+                    <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4" width="17" height="16" rx="2.5" fill="currentColor" fill-opacity="0.1"/><path d="M6.5 15l3-3 2.5 2 3.5-4 2.5 2.5" stroke-dasharray="1.6 2.2"/><circle cx="17" cy="8" r="1.6" fill="currentColor" fill-opacity="0.4"/></svg></div>
+                    <div class="hub-card-info"><div class="hub-card-title">Скретч-карта</div><div class="hub-card-desc">Сотри пальцем — джекпот x300 за 🐸🐸🐸</div></div>
                 </div>
                 <div class="hub-card" onclick="App.s('slots', null, 'Слоты')">
                     <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><rect x="6" y="8" width="3.5" height="6" rx="0.8"/><rect x="10.3" y="8" width="3.5" height="6" rx="0.8"/><rect x="14.6" y="8" width="3.5" height="6" rx="0.8"/><path d="M20 8v-2M20 6a1.5 1.5 0 1 0 0-3"/></svg></div>
                     <div class="hub-card-info"><div class="hub-card-title">Слоты</div><div class="hub-card-desc">3 барабана — джекпот x1000 за тройку 🐸</div></div>
                 </div>
                 <div class="hub-card" onclick="App.s('dice', null, 'Кости')">
-                    <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="3"/><circle cx="8" cy="8" r="1.1" fill="currentColor" stroke="none"/><circle cx="16" cy="8" r="1.1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none"/><circle cx="8" cy="16" r="1.1" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1.1" fill="currentColor" stroke="none"/></svg></div>
+                    <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="3" fill="currentColor" fill-opacity="0.1"/><circle cx="8" cy="8" r="1.1" fill="currentColor" stroke="none"/><circle cx="16" cy="8" r="1.1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none"/><circle cx="8" cy="16" r="1.1" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1.1" fill="currentColor" stroke="none"/></svg></div>
                     <div class="hub-card-info"><div class="hub-card-title">Кости</div><div class="hub-card-desc">Больше или меньше — сами выбираете риск</div></div>
                 </div>
                 <div class="hub-card" onclick="App.s('plinko', null, 'Плинко')">
-                    <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4" r="1.3" fill="currentColor" stroke="none"/><circle cx="7" cy="9" r="1.1" fill="currentColor" stroke="none"/><circle cx="12" cy="9" r="1.1" fill="currentColor" stroke="none"/><circle cx="17" cy="9" r="1.1" fill="currentColor" stroke="none"/><circle cx="4.5" cy="14" r="1.1" fill="currentColor" stroke="none"/><circle cx="9.5" cy="14" r="1.1" fill="currentColor" stroke="none"/><circle cx="14.5" cy="14" r="1.1" fill="currentColor" stroke="none"/><circle cx="19.5" cy="14" r="1.1" fill="currentColor" stroke="none"/><path d="M9 20l3-4 3 4"/></svg></div>
+                    <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9 20l3-4 3 4z" fill="currentColor" fill-opacity="0.16"/><circle cx="12" cy="4" r="1.3" fill="currentColor" stroke="none"/><circle cx="7" cy="9" r="1.1" fill="currentColor" stroke="none"/><circle cx="12" cy="9" r="1.1" fill="currentColor" stroke="none"/><circle cx="17" cy="9" r="1.1" fill="currentColor" stroke="none"/><circle cx="4.5" cy="14" r="1.1" fill="currentColor" stroke="none"/><circle cx="9.5" cy="14" r="1.1" fill="currentColor" stroke="none"/><circle cx="14.5" cy="14" r="1.1" fill="currentColor" stroke="none"/><circle cx="19.5" cy="14" r="1.1" fill="currentColor" stroke="none"/><path d="M9 20l3-4 3 4"/></svg></div>
                     <div class="hub-card-info"><div class="hub-card-title">Плинко</div><div class="hub-card-desc">Уроните шар и ловите множители до 100x</div></div>
                 </div>
             </div>
@@ -623,11 +639,11 @@
             <div class="hub-category" style="color:var(--gold);">🏛️ Бизнес</div>
             <div class="hub-grid" style="margin-bottom: 20px;">
                 <div class="hub-card" onclick="App.s('tycoon', null, 'Империя')">
-                    <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10l4-2M8 20V6l4-2M12 20V9l4 1M16 20v-7l4-1v8"/></svg></div>
+                    <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10l4-2M8 20V6l4-2M12 20V9l4 1M16 20v-7l4-1v8" fill="currentColor" fill-opacity="0.1"/></svg></div>
                     <div class="hub-card-info"><div class="hub-card-title">Империя</div><div class="hub-card-desc">Стройте казино, получайте пассивный доход</div></div>
                 </div>
                 <div class="hub-card" onclick="App.s('crypto', null, 'Крипто')">
-                    <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l5-6 4 3 6-8"/><path d="M14 6h5v5"/></svg></div>
+                    <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l5-6 4 3 6-8v14l-15 0z" fill="currentColor" fill-opacity="0.1"/><path d="M4 17l5-6 4 3 6-8"/><path d="M14 6h5v5"/></svg></div>
                     <div class="hub-card-info"><div class="hub-card-title">Крипто</div><div class="hub-card-desc">Торгуйте dxxxcoin на своей бирже</div></div>
                 </div>
             </div>
@@ -751,6 +767,33 @@
                 </div>
                 <button class="main-btn btn-green" id="coin-btn" onclick="Coin.action()">🪙 ИГРАТЬ</button>
             </div>
+        </div>
+
+        <!-- SCRATCH CARD -->
+        <div class="game-view" id="view-scratch">
+            <div class="panel" style="text-align:center; margin-bottom:20px;">
+                <div class="scratch-wrap" id="scratch-wrap">
+                    <div class="scratch-grid" id="scratch-grid"></div>
+                    <canvas id="scratch-canvas" width="270" height="270"></canvas>
+                    <div class="scratch-coin-cursor" id="scratch-coin-cursor">🪙</div>
+                </div>
+                <div style="font-size:11px; color:var(--text-muted); line-height:1.6; margin-top:10px;">
+                    Сотри пальцем — если под слоем окажутся 3 ОДИНАКОВЫХ символа, это выигрыш<br>
+                    🐸🐸🐸 = x300 (джекпот) · 💎💎💎 = x8 · ⭐⭐⭐ = x4 · 🍋🍋🍋 = x2 · 🍒🍒🍒 = x1.5
+                </div>
+            </div>
+            <div class="panel" style="margin-bottom:20px;" id="scratch-start-controls">
+                <div class="bet-row">
+                    <div class="input-wrap"><input type="number" id="scratch-bet" value="100"></div>
+                    <button class="btn-small" onclick="Scratch.mod('half')">1/2</button><button class="btn-small" onclick="Scratch.mod('double')">2x</button><button class="btn-small" onclick="Scratch.mod('max')">MAX</button>
+                </div>
+                <div class="quick-amounts">
+                    <button class="btn-small" onclick="Scratch.set(1)">1</button><button class="btn-small" onclick="Scratch.set(3)">3</button>
+                    <button class="btn-small" onclick="Scratch.set(13)">13</button><button class="btn-small" onclick="Scratch.set(25)">25</button>
+                </div>
+                <button class="main-btn btn-green" id="scratch-btn" onclick="Scratch.buyCard()">🎫 КУПИТЬ КАРТУ</button>
+            </div>
+            <button class="main-btn btn-gold" id="scratch-newcard-btn" style="display:none; margin-bottom:20px;" onclick="Scratch.reset()">🎫 Новая карта</button>
         </div>
 
         <!-- SLOTS -->
@@ -1285,6 +1328,24 @@
                 osc.start(t0); osc.stop(t0 + 0.4);
             });
         },
+        // Короткий шершавый шорох для стирания скретч-карты — белый шум,
+        // пропущенный через полосовой фильтр (без фильтра шум звучит как
+        // статика/помехи, с фильтром — как настоящее царапанье монеткой).
+        scratch() {
+            const ctx = this.getCtx(); if (!ctx) return;
+            const t0 = ctx.currentTime;
+            const bufferSize = ctx.sampleRate * 0.06;
+            const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.5;
+            const noise = ctx.createBufferSource(); noise.buffer = buffer;
+            const filter = ctx.createBiquadFilter(); filter.type = 'bandpass'; filter.frequency.value = 2200; filter.Q.value = 0.7;
+            const gain = ctx.createGain();
+            gain.gain.setValueAtTime(0.12, t0);
+            gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.06);
+            noise.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+            noise.start(t0); noise.stop(t0 + 0.06);
+        },
         // Тот же высокий колокольчик, восходящим рядом из 4 нот — на выполнение задания.
         task() {
             const ctx = this.getCtx(); if (!ctx) return;
@@ -1334,7 +1395,7 @@
             let bStr = localStorage.getItem('dydx_balance'); this.balance = bStr ? Math.floor(parseFloat(bStr)) : 500;
             if(isNaN(this.balance) || this.balance < 0) this.balance = 500;
 
-            window.Stats.init(); window.Levels.init(); window.Gifts.init(); window.Tasks.init(); window.Roulette.init(); window.Upgrader.init(); window.Tower.init(); window.Mines.init(); window.Shells.init(); window.Dice.init(); window.Plinko.init(); window.Crash.init(); window.HiLo.init(); window.Coin.init(); window.Slots.init(); window.ProfileBg.init();
+            window.Stats.init(); window.Levels.init(); window.Gifts.init(); window.Tasks.init(); window.Roulette.init(); window.Upgrader.init(); window.Tower.init(); window.Mines.init(); window.Shells.init(); window.Dice.init(); window.Plinko.init(); window.Crash.init(); window.HiLo.init(); window.Coin.init(); window.Slots.init(); window.Scratch.init(); window.ProfileBg.init();
             this.updBalUI();
         },
         updBalUI() {
@@ -2531,6 +2592,158 @@
         }
     };
 
+    // SCRATCH CARD
+    window.Scratch = {
+        pl: false, lk: false, ctx: null, drawing: false, scratchedPct: 0, revealed: false, result: null,
+        emojiMap: { cherry:'🍒', lemon:'🍋', star:'⭐', diamond:'💎', pepe:'🐸' },
+        init() {},
+        mod(act) { if(this.pl) return; let v = Math.floor(Number(document.getElementById('scratch-bet').value)) || 0; if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById('scratch-bet').value = Math.max(0, Math.min(v, window.App.balance)); },
+        set(v) { if(!this.pl) document.getElementById('scratch-bet').value=v; },
+
+        async buyCard() {
+            if (this.pl || this.lk) return;
+            const bet = Math.floor(Number(document.getElementById('scratch-bet').value));
+            if (!bet || isNaN(bet) || bet <= 0) return window.App.toast('Неверная ставка', 'error');
+            if (bet > window.App.balance) return window.App.toast('Недостаточно звёзд', 'error');
+            if (!window.Multiplayer) return window.App.toast('Скретч-карты работают только в мультиплеере', 'error');
+
+            this.lk = true;
+            document.getElementById('scratch-btn').className = 'main-btn btn-disabled';
+            document.getElementById('scratch-btn').innerText = '...';
+            window.Stats.addBet();
+
+            const result = await window.Multiplayer.scratchCardPlay(bet);
+            this.lk = false;
+            if (!result) { document.getElementById('scratch-btn').className = 'main-btn btn-green'; document.getElementById('scratch-btn').innerText = '🎫 КУПИТЬ КАРТУ'; return; }
+
+            this.result = result;
+            window.App.balance = result.new_balance;
+            window.App.updBalUI();
+
+            this.pl = true;
+            document.getElementById('scratch-start-controls').style.display = 'none';
+            this.renderGrid(result.cells);
+            this.setupCanvas();
+        },
+
+        renderGrid(cells) {
+            const grid = document.getElementById('scratch-grid');
+            grid.innerHTML = cells.map((c, i) => `<div class="scratch-cell" id="scratch-cell-${i}">${c === 'pepe' ? '' : (this.emojiMap[c] || '❔')}</div>`).join('');
+            // Пепа — настоящая анимация (замороженная на первом кадре), не эмодзи.
+            // Грузим сразу для всех клеток с Пепой — они скрыты под серебристым
+            // слоем, так что игрок это не видит, пока не сотрёт сам.
+            cells.forEach((c, i) => { if (c === 'pepe') window.Slots.loadFrozenPepe(document.getElementById('scratch-cell-' + i)); });
+        },
+
+        setupCanvas() {
+            const canvas = document.getElementById('scratch-canvas');
+            const wrap = document.getElementById('scratch-wrap');
+            const cursor = document.getElementById('scratch-coin-cursor');
+            wrap.classList.add('active');
+            const size = 270;
+            canvas.width = size; canvas.height = size;
+            canvas.style.display = '';
+            const ctx = canvas.getContext('2d');
+            this.ctx = ctx;
+            this.scratchedPct = 0; this.revealed = false;
+
+            // Серебристый слой поверх карты — то, что игрок стирает
+            const grad = ctx.createLinearGradient(0, 0, size, size);
+            grad.addColorStop(0, '#c9ccd1'); grad.addColorStop(0.5, '#8f939c'); grad.addColorStop(1, '#c9ccd1');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, size, size);
+            ctx.fillStyle = 'rgba(0,0,0,0.15)';
+            ctx.font = '700 16px sans-serif'; ctx.textAlign = 'center';
+            ctx.fillText('ПОТРИ ЗДЕСЬ', size/2, size/2);
+
+            const getPos = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                return { x: (clientX - rect.left) * (size / rect.width), y: (clientY - rect.top) * (size / rect.height), cx: clientX - rect.left, cy: clientY - rect.top };
+            };
+
+            let lastScratchSound = 0;
+            const scratchAt = (x, y) => {
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.beginPath(); ctx.arc(x, y, 22, 0, Math.PI * 2); ctx.fill();
+                const now = Date.now();
+                if (now - lastScratchSound > 80) { window.Sound && window.Sound.scratch(); lastScratchSound = now; }
+            };
+
+            const onMove = (e) => {
+                if (this.revealed) return;
+                const pos = getPos(e);
+                cursor.style.left = pos.cx + 'px'; cursor.style.top = pos.cy + 'px';
+                if (!this.drawing) return;
+                e.preventDefault();
+                scratchAt(pos.x, pos.y);
+                this.checkScratchedAmount();
+            };
+            const onStart = (e) => { this.drawing = true; onMove(e); };
+            const onEnd = () => { this.drawing = false; };
+
+            canvas.onmousedown = onStart; canvas.onmousemove = onMove;
+            canvas.onmouseup = onEnd; canvas.onmouseleave = onEnd;
+            canvas.ontouchstart = onStart; canvas.ontouchmove = onMove; canvas.ontouchend = onEnd;
+        },
+
+        checkScratchedAmount() {
+            const canvas = document.getElementById('scratch-canvas');
+            const ctx = this.ctx;
+            // Не считаем прозрачность на каждый пиксель каждый раз (дорого) —
+            // берём уменьшенную выборку для скорости
+            const sampleSize = 40;
+            const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+            let cleared = 0; let total = 0;
+            for (let i = 3; i < data.length; i += 4 * 50) { total++; if (data[i] < 40) cleared++; }
+            this.scratchedPct = total ? cleared / total : 0;
+            if (this.scratchedPct > 0.45 && !this.revealed) this.finishReveal();
+        },
+
+        finishReveal() {
+            this.revealed = true;
+            const canvas = document.getElementById('scratch-canvas');
+            const wrap = document.getElementById('scratch-wrap');
+            // Красиво стираем остаток разом (плавное растворение), а не обрубаем резко
+            canvas.style.transition = 'opacity 0.4s ease';
+            canvas.style.opacity = '0';
+            wrap.classList.remove('active');
+            setTimeout(() => { canvas.style.display = 'none'; canvas.style.opacity = '1'; canvas.style.transition = 'none'; }, 420);
+
+            const result = this.result;
+            if (result.win_symbol === 'pepe') {
+                wrap.classList.add('jackpot-flash');
+                setTimeout(() => wrap.classList.remove('jackpot-flash'), 1500);
+                window.App.toast(`🐸 ДЖЕКПОТ! +${result.win_amount.toLocaleString()}⭐`, 'success');
+                if (window.Sound) window.Sound.coin();
+                window.Levels.addWin(result.win_amount);
+                window.Gifts.tryDrop();
+            } else if (result.win_amount > 0) {
+                window.App.toast(`Выигрыш! +${result.win_amount.toLocaleString()}⭐`, 'success');
+                if (window.Sound) window.Sound.coin();
+                window.Levels.addWin(result.win_amount);
+                window.Gifts.tryDrop();
+            } else {
+                window.App.toast('Не повезло', 'error');
+            }
+            window.Tasks.chk('win', result.win_amount);
+
+            document.getElementById('scratch-newcard-btn').style.display = '';
+        },
+
+        reset() {
+            this.pl = false; this.result = null;
+            document.getElementById('scratch-newcard-btn').style.display = 'none';
+            document.getElementById('scratch-start-controls').style.display = '';
+            document.getElementById('scratch-grid').innerHTML = '';
+            const canvas = document.getElementById('scratch-canvas');
+            canvas.style.display = 'none';
+            document.getElementById('scratch-btn').className = 'main-btn btn-green';
+            document.getElementById('scratch-btn').innerText = '🎫 КУПИТЬ КАРТУ';
+        }
+    };
+
     // SLOTS
     window.Slots = {
         pl: false, lk: false, lastBet: 100,
@@ -2555,6 +2768,20 @@
             }
             return map[sym] || '❔';
         },
+        // Кэш настоящей анимации Plush Pepe (грузим один раз, freeze на первом
+        // кадре) — используется вместо эмодзи 🐸 именно там, где Пепа реально
+        // ВЫПАЛА (не в мелькании барабана — там обычный эмодзи, это просто блюр).
+        _pepeAnimCache: null,
+        async loadFrozenPepe(container) {
+            try {
+                if (!this._pepeAnimCache) {
+                    const res = await fetch('gifts/gift_065/default.json');
+                    this._pepeAnimCache = await res.json();
+                }
+                const inst = lottie.loadAnimation({ container, renderer: 'svg', loop: false, autoplay: false, animationData: this._pepeAnimCache });
+                inst.goToAndStop(0, true);
+            } catch (e) { container.innerHTML = '🐸'; }
+        },
         // Строит вертикальную ленту символов внутри барабана и по-настоящему
         // прокручивает её вниз (а не трясёт эмодзи на месте) — с плавным
         // замедлением в конце, так что кажется, будто лента реально едет и
@@ -2568,7 +2795,10 @@
                 const s = allSymbols[Math.floor(Math.random() * allSymbols.length)];
                 html += `<div class="slots-reel-cell">${this.emojiFor(s)}</div>`;
             }
-            html += `<div class="slots-reel-cell">${this.emojiFor(finalSym)}</div>`; // финальный кадр — последний в ленте
+            // Финальная (итоговая) ячейка — если это Пепа, оставляем пустой контейнер
+            // под настоящую анимацию (загрузим её отдельно, ПОСЛЕ прокрутки)
+            const finalIsPepe = finalSym === 'pepe';
+            html += `<div class="slots-reel-cell" id="slots-final-${reelIdx}">${finalIsPepe ? '' : this.emojiFor(finalSym)}</div>`;
             strip.innerHTML = html;
             strip.style.transition = 'none';
             strip.style.transform = 'translateY(0)';
@@ -2585,6 +2815,11 @@
                     setTimeout(resolve, duration);
                 });
             });
+
+            if (finalIsPepe) {
+                const finalCell = document.getElementById('slots-final-' + reelIdx);
+                if (finalCell) await this.loadFrozenPepe(finalCell);
+            }
         },
         async action() {
             if (this.pl || this.lk) return;
@@ -4230,6 +4465,6 @@
 <!-- МУЛЬТИПЛЕЕР: общий раунд Ракеты, Рулетки, Арены, промокоды, Дурак, маркетплейс -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="multiplayer-client.js?v=133"></script>
+<script src="multiplayer-client.js?v=136"></script>
 </body>
 </html>
