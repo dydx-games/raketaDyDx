@@ -460,9 +460,10 @@
         .coinflip-board { display: flex; justify-content: center; align-items: center; height: 160px; margin: 10px 10px 0; background-color: var(--bg-panel); border-radius: var(--border-radius); border: 1px solid #1f222b; perspective: 1000px; position: relative; overflow: hidden; }
 
         .slots-reel { width: 70px; height: 70px; border-radius: 14px; background: linear-gradient(155deg, #1b1e28 0%, #0e0f14 100%);
-            border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 34px;
-            box-shadow: inset 0 2px 8px rgba(0,0,0,0.5); }        .slots-reel.spinning { animation: slots-spin-anim 0.15s linear infinite; }
-        @keyframes slots-spin-anim { 0% { transform: translateY(-4px); opacity: 0.6; } 50% { transform: translateY(4px); opacity: 1; } 100% { transform: translateY(-4px); opacity: 0.6; } }
+            border: 1px solid var(--border); overflow: hidden; position: relative;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.5); }
+        .slots-reel-strip { position: absolute; left: 0; top: 0; width: 100%; }
+        .slots-reel-cell { width: 70px; height: 70px; display: flex; align-items: center; justify-content: center; font-size: 34px; }
         #slots-board.jackpot-flash { animation: slots-jackpot-flash 0.35s ease 3; }
         @keyframes slots-jackpot-flash { 0%, 100% { box-shadow: none; } 50% { box-shadow: 0 0 40px 8px rgba(215,180,93,0.7); } }
         .coin-ui { width: 100px; height: 100px; background: radial-gradient(circle at 30% 30%, #F1C40F, #D35400); border-radius: 50%; border: 4px solid #F39C12; box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 10px 20px rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-size: 40px; font-weight: 900; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.5); transform-style: preserve-3d; position: relative; transition: transform 1.5s cubic-bezier(0.1, 0.8, 0.2, 1); }
@@ -756,9 +757,9 @@
         <div class="game-view" id="view-slots">
             <div class="panel" id="slots-board" style="text-align:center; margin-bottom:20px;">
                 <div style="display:flex; justify-content:center; gap:10px; padding:16px 0;">
-                    <div class="slots-reel" id="slots-reel-1">❔</div>
-                    <div class="slots-reel" id="slots-reel-2">❔</div>
-                    <div class="slots-reel" id="slots-reel-3">❔</div>
+                    <div class="slots-reel" id="slots-reel-1"><div class="slots-reel-strip" id="slots-strip-1"></div></div>
+                    <div class="slots-reel" id="slots-reel-2"><div class="slots-reel-strip" id="slots-strip-2"></div></div>
+                    <div class="slots-reel" id="slots-reel-3"><div class="slots-reel-strip" id="slots-strip-3"></div></div>
                 </div>
                 <div style="font-size:11px; color:var(--text-muted); line-height:1.6;">
                     3 🐸 = x1000 (супер редко) · 3 <b style="color:#e8262d;">7</b> = x150 · 3 🍇 = x45 · 3 💎 = x18 · 3 ⭐ = x6 · 3 🍋 = x2.5 · 3 🍒 = x2<br>
@@ -2539,13 +2540,51 @@
         emojiFor(sym) {
             const map = { cherry:'🍒', lemon:'🍋', star:'⭐', diamond:'💎', grape:'🍇', pepe:'🐸' };
             if (sym === 'seven') {
-                return `<svg viewBox="0 0 40 56" width="34" height="46"><defs><linearGradient id="sevenGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#ff6b6b"/><stop offset="45%" stop-color="#e8262d"/><stop offset="100%" stop-color="#9c0c12"/>
-                </linearGradient></defs>
-                <path d="M4 4h32l-2 8L18 52H8L24 12H4z" fill="url(#sevenGrad)" stroke="#ffe1a8" stroke-width="1.5" stroke-linejoin="round"/>
-                <path d="M6 6h28l-1.5 5H12L8 15z" fill="#ffffff" opacity="0.35"/></svg>`;
+                return `<svg viewBox="0 0 40 56" width="34" height="46"><defs>
+                    <linearGradient id="sevenGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#ff8a80"/><stop offset="35%" stop-color="#ef2d34"/><stop offset="75%" stop-color="#b3131a"/><stop offset="100%" stop-color="#7a0a0f"/>
+                    </linearGradient>
+                    <filter id="sevenShadow" x="-40%" y="-40%" width="180%" height="180%">
+                        <feDropShadow dx="0" dy="1.5" stdDeviation="1.4" flood-color="#000" flood-opacity="0.55"/>
+                    </filter>
+                </defs>
+                <path d="M3 3h34l-2.2 9L18 53H7L24.5 13H3z" fill="url(#sevenGrad)" stroke="#3a0a0c" stroke-width="2" stroke-linejoin="round" filter="url(#sevenShadow)"/>
+                <path d="M6 5.5h27l-2 6.5H12.5L8 16z" fill="#ffffff" opacity="0.55"/>
+                <path d="M17 24 L27 24 L18.5 50 L14.5 50z" fill="#ffffff" opacity="0.14"/>
+                <path d="M4.5 4.5h31l-1.4 5.5H10z" fill="none" stroke="#ffd9a0" stroke-width="0.8" opacity="0.7"/></svg>`;
             }
             return map[sym] || '❔';
+        },
+        // Строит вертикальную ленту символов внутри барабана и по-настоящему
+        // прокручивает её вниз (а не трясёт эмодзи на месте) — с плавным
+        // замедлением в конце, так что кажется, будто лента реально едет и
+        // тормозит именно на нужном символе, как в настоящем автомате.
+        async spinReel(reelIdx, finalSym, delayBeforeStop) {
+            const strip = document.getElementById('slots-strip-' + reelIdx);
+            const allSymbols = ['cherry','lemon','star','diamond','grape','seven','pepe'];
+            const cellsCount = 22; // сколько случайных символов "проезжает" перед итогом
+            let html = '';
+            for (let i = 0; i < cellsCount; i++) {
+                const s = allSymbols[Math.floor(Math.random() * allSymbols.length)];
+                html += `<div class="slots-reel-cell">${this.emojiFor(s)}</div>`;
+            }
+            html += `<div class="slots-reel-cell">${this.emojiFor(finalSym)}</div>`; // финальный кадр — последний в ленте
+            strip.innerHTML = html;
+            strip.style.transition = 'none';
+            strip.style.transform = 'translateY(0)';
+            void strip.offsetHeight; // форсируем перерасчёт стилей перед запуском анимации
+
+            const cellHeight = 70;
+            const totalDistance = cellsCount * cellHeight; // едем до последней (финальной) ячейки
+            const duration = 900 + delayBeforeStop;
+
+            await new Promise(resolve => {
+                requestAnimationFrame(() => {
+                    strip.style.transition = `transform ${duration}ms cubic-bezier(0.15, 0.85, 0.25, 1)`;
+                    strip.style.transform = `translateY(-${totalDistance}px)`;
+                    setTimeout(resolve, duration);
+                });
+            });
         },
         async action() {
             if (this.pl || this.lk) return;
@@ -2557,23 +2596,20 @@
             this.pl = true; this.lk = true; this.lastBet = bet;
             const btn = document.getElementById('slots-btn');
             btn.className = 'main-btn btn-disabled'; btn.innerText = 'КРУТИМ...';
-
-            const reels = [document.getElementById('slots-reel-1'), document.getElementById('slots-reel-2'), document.getElementById('slots-reel-3')];
-            reels.forEach(r => r.classList.add('spinning'));
             window.Stats.addBet();
 
             // Сервер уже честно списал ставку и посчитал результат — крутим
             // визуально ПОСЛЕ получения ответа, просто как красивую задержку
             // перед показом уже известного итога (так же, как апгрейд гифтов).
             const result = await window.Multiplayer.slotsSpin(bet);
-            if (!result) { this.pl = false; this.lk = false; btn.className = 'main-btn btn-green'; btn.innerText = '🎰 КРУТИТЬ'; reels.forEach(r => r.classList.remove('spinning')); return; }
+            if (!result) { this.pl = false; this.lk = false; btn.className = 'main-btn btn-green'; btn.innerText = '🎰 КРУТИТЬ'; return; }
 
-            await new Promise(r => setTimeout(r, 900)); // имитация вращения
-
-            reels.forEach(r => r.classList.remove('spinning'));
-            reels[0].innerHTML = this.emojiFor(result.reel1);
-            reels[1].innerHTML = this.emojiFor(result.reel2);
-            reels[2].innerHTML = this.emojiFor(result.reel3);
+            // Барабаны останавливаются по очереди (классика слот-машин), не разом
+            await Promise.all([
+                this.spinReel(1, result.reel1, 0),
+                this.spinReel(2, result.reel2, 250),
+                this.spinReel(3, result.reel3, 500),
+            ]);
 
             window.App.balance = result.new_balance;
             window.App.updBalUI();
@@ -2787,7 +2823,11 @@
             cupEls.forEach(el => el.removeAttribute('data-ball'));
             cupEls[Math.floor(Math.random()*this.cups)].setAttribute('data-ball', '1');
 
-            document.querySelectorAll('.shell-cup').forEach(el => el.classList.add('shuffling'));
+            // Раньше тут ещё добавлялся класс .shuffling (постоянное дрожание каждого
+            // стакана поверх настоящей перестановки) — визуально это превращало
+            // честное скольжение стаканов в мешанину. Убрали: теперь единственное
+            // движение — это реальный FLIP-перелёт при перестановке (swapCupsAnimated),
+            // без лишнего тряса поверх него.
 
             let step = 0; const totalSteps = 6 + Math.floor(Math.random()*4); // 6-9 перестановок подряд
             const doStep = () => {
@@ -2798,7 +2838,6 @@
                 step++;
                 if (step < totalSteps) setTimeout(doStep, 260);
                 else setTimeout(() => {
-                    document.querySelectorAll('.shell-cup').forEach(el => el.classList.remove('shuffling'));
                     this.lk = false;
                     document.getElementById('shells-btn').innerText = 'Выберите стакан';
                 }, 300);
@@ -4191,6 +4230,6 @@
 <!-- МУЛЬТИПЛЕЕР: общий раунд Ракеты, Рулетки, Арены, промокоды, Дурак, маркетплейс -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="multiplayer-client.js?v=132"></script>
+<script src="multiplayer-client.js?v=133"></script>
 </body>
 </html>
