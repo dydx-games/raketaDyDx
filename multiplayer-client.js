@@ -555,6 +555,11 @@ window.Multiplayer = {
         this.refreshMarketShop();
         return true;
     },
+    async slotsSpin(bet) {
+        const { data, error } = await sb.rpc('slots_spin', { p_telegram_id: ME.id, p_bet: bet });
+        if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return null; }
+        return data[0];
+    },
     async sellGift(inventoryId) {
         const { data, error } = await sb.rpc('sell_gift', { p_telegram_id: ME.id, p_inventory_id: inventoryId });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return null; }
