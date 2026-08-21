@@ -575,6 +575,11 @@ window.Multiplayer = {
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return null; }
         return data[0];
     },
+    async balloonPeek(roundId) {
+        const { data, error } = await sb.rpc('balloon_peek', { p_telegram_id: ME.id, p_round_id: roundId });
+        if (error || !data) return null;
+        return data[0];
+    },
     async digPlay(tool, bet) {
         const { data, error } = await sb.rpc('dig_play', { p_telegram_id: ME.id, p_tool: tool, p_bet: bet });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return null; }

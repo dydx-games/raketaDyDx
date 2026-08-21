@@ -483,9 +483,17 @@
         #scratch-grid.jackpot-flash { animation: slots-jackpot-flash 0.35s ease 3; }
 
         .balloon-stage { position: relative; height: 340px; overflow: hidden; padding: 0; }
-        .balloon-sky { position: absolute; inset: 0; background:
-            radial-gradient(ellipse at 50% 100%, rgba(215,180,93,0.10) 0%, transparent 55%),
-            linear-gradient(180deg, #1a1420 0%, #241522 55%, #150d18 100%); }
+        .balloon-bg-layer { position: absolute; inset: 0; opacity: 0; transition: opacity 0.6s ease; }
+        .balloon-bg-layer.active { opacity: 1; }
+        .bg-ground { background: linear-gradient(180deg, #2a2418 0%, #4a3d22 55%, #6b5a2e 100%); }
+        .bg-ground .hill { position:absolute; bottom:0; width:60%; height:70px; border-radius:50% 50% 0 0; background:#3a3018; }
+        .bg-ground .hill.h1 { left:-10%; }
+        .bg-ground .hill.h2 { right:-15%; height:50px; background:#4a3d1e; }
+        .bg-sky { background: linear-gradient(180deg, #1e3a5f 0%, #2f5a8a 45%, #4a7ab0 100%); }
+        .bg-sky .cloud { position:absolute; background:rgba(255,255,255,0.5); border-radius:50px; filter:blur(1px); }
+        .bg-space { background: radial-gradient(ellipse at 50% 30%, #1a1235 0%, #0a0618 60%, #050309 100%); }
+        .bg-space .star { position:absolute; background:#fff; border-radius:50%; }
+        .bg-space .planet { position:absolute; border-radius:50%; }
         .balloon-sky::before { content:''; position:absolute; inset:0; opacity:.5; background-image:
             radial-gradient(1.5px 1.5px at 20% 30%, rgba(255,255,255,.5), transparent),
             radial-gradient(1.5px 1.5px at 70% 20%, rgba(255,255,255,.4), transparent),
@@ -494,7 +502,7 @@
             radial-gradient(1px 1px at 10% 75%, rgba(255,255,255,.3), transparent); }
         .balloon-wrap { position: absolute; left: 50%; bottom: 30px; transform: translateX(-50%);
             display: flex; flex-direction: column; align-items: center;
-            transition: transform 0.12s linear; }
+            transition: transform 0.12s linear, bottom 0.5s ease-out; z-index: 2; }
         .balloon-body { width: 100px; height: 118px; border-radius: 50% 50% 50% 50% / 55% 55% 45% 45%;
             background: radial-gradient(circle at 35% 28%, #ff8a80 0%, #e8323c 42%, #a3121c 100%);
             box-shadow: 0 10px 34px rgba(220,40,50,0.45), inset -8px -10px 22px rgba(0,0,0,0.28);
@@ -517,6 +525,10 @@
             font-weight: 800; color: var(--red); opacity: 0; transition: opacity 0.2s; z-index: 3; }
         .balloon-pop-msg.show { opacity: 1; }
         .particle-pop { position: absolute; width: 5px; height: 5px; border-radius: 50%; background: #e8323c; pointer-events: none; }
+        .balloon-history { display:flex; gap:5px; overflow-x:auto; padding:8px 2px 0; }
+        .balloon-history .pill { flex-shrink:0; font-size:10px; font-weight:800; padding:4px 8px; border-radius:999px; }
+        .balloon-history .pill.win { background: rgba(52,211,153,0.15); color: var(--green); }
+        .balloon-history .pill.lose { background: rgba(244,87,106,0.15); color: var(--red); }
 
         .dig-lanes { display: flex; gap: 6px; justify-content: center; padding: 10px 4px; }
         .dig-lane { flex: 1; max-width: 62px; display: flex; flex-direction: column; gap: 4px; }
@@ -687,10 +699,6 @@
                     <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c3.5 0 6 3 6 7 0 3.2-2.4 6.4-4.7 8.2a1.6 1.6 0 0 1-2.6 0C8.4 15.4 6 12.2 6 9c0-4 2.5-7 6-7z" fill="currentColor" fill-opacity="0.14"/><path d="M11 19l-.6 1.6a1 1 0 0 0 1.2 1.3l.4-.1.4.1a1 1 0 0 0 1.2-1.3L13 19"/></svg></div>
                     <div class="hub-card-info"><div class="hub-card-title">Воздушный шар</div><div class="hub-card-desc">Забери, пока не лопнул — чем дольше, тем выше множитель</div></div>
                 </div>
-                <div class="hub-card" onclick="App.s('dig', null, 'Раскопки')">
-                    <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10l4-2M8 20V6l4-2M12 20V9l4 1M16 20v-7l4-1v8" fill="currentColor" fill-opacity="0.08"/><path d="M6 3l4 4M10 3L6 7" stroke-width="2.2"/><circle cx="18" cy="9" r="1.6" fill="currentColor" fill-opacity="0.5"/></svg></div>
-                    <div class="hub-card-info"><div class="hub-card-title">Раскопки</div><div class="hub-card-desc">Копай 5 дорожек разом — глубже инструмент, больше руды</div></div>
-                </div>
                 <div class="hub-card" onclick="App.s('scratch', null, 'Скретч-карта')">
                     <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4" width="17" height="16" rx="2.5" fill="currentColor" fill-opacity="0.1"/><path d="M6.5 15l3-3 2.5 2 3.5-4 2.5 2.5" stroke-dasharray="1.6 2.2"/><circle cx="17" cy="8" r="1.6" fill="currentColor" fill-opacity="0.4"/></svg></div>
                     <div class="hub-card-info"><div class="hub-card-title">Скретч-карта</div><div class="hub-card-desc">Открой до 10 клеток — джекпот x300 за 🐸🐸🐸</div></div>
@@ -844,8 +852,24 @@
 
         <!-- ВОЗДУШНЫЙ ШАР -->
         <div class="game-view" id="view-balloon">
-            <div class="panel balloon-stage" id="balloon-stage" style="margin-bottom:20px;">
-                <div class="balloon-sky"></div>
+            <div class="panel balloon-stage" id="balloon-stage" style="margin-bottom:0;">
+                <div class="balloon-bg-layer bg-ground active" id="bg-ground">
+                    <div class="hill h1"></div><div class="hill h2"></div>
+                </div>
+                <div class="balloon-bg-layer bg-sky" id="bg-sky">
+                    <div class="cloud" style="width:70px;height:24px;top:20%;left:10%;"></div>
+                    <div class="cloud" style="width:50px;height:18px;top:40%;left:60%;"></div>
+                    <div class="cloud" style="width:60px;height:20px;top:65%;left:25%;"></div>
+                </div>
+                <div class="balloon-bg-layer bg-space" id="bg-space">
+                    <div class="planet" style="width:44px;height:44px;top:15%;right:12%;background:radial-gradient(circle at 35% 35%, #c98a4a, #6b4420);"></div>
+                    <div class="star" style="width:2px;height:2px;top:10%;left:15%;"></div>
+                    <div class="star" style="width:1.5px;height:1.5px;top:25%;left:70%;"></div>
+                    <div class="star" style="width:2px;height:2px;top:50%;left:20%;"></div>
+                    <div class="star" style="width:1.5px;height:1.5px;top:70%;left:80%;"></div>
+                    <div class="star" style="width:2px;height:2px;top:35%;left:45%;"></div>
+                    <div class="star" style="width:1.5px;height:1.5px;top:80%;left:35%;"></div>
+                </div>
                 <div class="balloon-wrap" id="balloon-wrap">
                     <div class="balloon-body" id="balloon-body">
                         <div class="balloon-shine"></div>
@@ -855,30 +879,15 @@
                 <div class="balloon-mult" id="balloon-mult">1.00x</div>
                 <div class="balloon-pop-msg" id="balloon-pop-msg"></div>
             </div>
+            <div class="panel" style="margin-bottom:20px; padding-top:6px;">
+                <div class="balloon-history" id="balloon-history"></div>
+            </div>
             <div class="panel" style="margin-bottom:20px;">
                 <div class="bet-row">
                     <div class="input-wrap"><input type="number" id="balloon-bet" value="100"></div>
                     <button class="btn-small" onclick="Balloon.mod('half')">1/2</button><button class="btn-small" onclick="Balloon.mod('double')">2x</button><button class="btn-small" onclick="Balloon.mod('max')">MAX</button>
                 </div>
                 <button class="main-btn btn-green" id="balloon-btn" onclick="Balloon.action()">🎈 НАДУТЬ ШАРИК</button>
-            </div>
-        </div>
-
-        <!-- DIG (РАСКОПКИ) -->
-        <div class="game-view" id="view-dig">
-            <div class="panel" style="margin-bottom:20px;">
-                <div class="dig-lanes" id="dig-lanes"></div>
-                <div style="font-size:11px; color:var(--text-muted); text-align:center; margin-top:10px;">
-                    Одна ставка = копаем все 5 дорожек разом на глубину инструмента
-                </div>
-            </div>
-            <div class="panel" style="margin-bottom:20px;">
-                <div class="dig-tools-row" id="dig-tools-row"></div>
-                <div class="bet-row" style="margin-top:10px;">
-                    <div class="input-wrap"><input type="number" id="dig-bet" value="100"></div>
-                    <button class="btn-small" onclick="Dig.mod('half')">1/2</button><button class="btn-small" onclick="Dig.mod('double')">2x</button><button class="btn-small" onclick="Dig.mod('max')">MAX</button>
-                </div>
-                <button class="main-btn btn-green" id="dig-btn" onclick="Dig.play()">⛏ БРОСИТЬ ИНСТРУМЕНТ</button>
             </div>
         </div>
 
@@ -1473,6 +1482,26 @@
         }
     };
 
+    // Общая красная "7" (казино-стиль) — переиспользуется в Слотах и Скретч-карте.
+    // Настоящий жирный шрифтовой глиф вместо самодельного контура — гарантированно
+    // верные пропорции цифры, просто раскрашен градиентом/тенью/бликом.
+    window.sevenSvg = function() {
+        return `<svg viewBox="0 0 40 56" width="30" height="42">
+            <defs>
+                <linearGradient id="sevenGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#ff9a90"/><stop offset="40%" stop-color="#e8262d"/><stop offset="100%" stop-color="#7a0a0f"/>
+                </linearGradient>
+                <filter id="sevenShadow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feDropShadow dx="0" dy="2" stdDeviation="1.6" flood-color="#000" flood-opacity="0.5"/>
+                </filter>
+            </defs>
+            <text x="20" y="46" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-weight="900"
+                font-size="54" fill="url(#sevenGrad)" stroke="#5a0d10" stroke-width="1.4" filter="url(#sevenShadow)">7</text>
+            <text x="19.3" y="45" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-weight="900"
+                font-size="54" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="0.8">7</text>
+        </svg>`;
+    };
+
     window.App = {
         balance: 500,
         // Вибрация через нативный Telegram HapticFeedback — работает по-настоящему
@@ -1520,7 +1549,7 @@
             let bStr = localStorage.getItem('dydx_balance'); this.balance = bStr ? Math.floor(parseFloat(bStr)) : 500;
             if(isNaN(this.balance) || this.balance < 0) this.balance = 500;
 
-            window.Stats.init(); window.Levels.init(); window.Gifts.init(); window.Tasks.init(); window.Roulette.init(); window.Upgrader.init(); window.Tower.init(); window.Mines.init(); window.Shells.init(); window.Dice.init(); window.Plinko.init(); window.Crash.init(); window.HiLo.init(); window.Coin.init(); window.Slots.init(); window.Scratch.init(); window.Dig.init(); window.Balloon.init(); window.ProfileBg.init();
+            window.Stats.init(); window.Levels.init(); window.Gifts.init(); window.Tasks.init(); window.Roulette.init(); window.Upgrader.init(); window.Tower.init(); window.Mines.init(); window.Shells.init(); window.Dice.init(); window.Plinko.init(); window.Crash.init(); window.HiLo.init(); window.Coin.init(); window.Slots.init(); window.Scratch.init(); window.Balloon.init(); window.ProfileBg.init();
             this.updBalUI();
         },
         updBalUI() {
@@ -2742,26 +2771,60 @@
 
     // ВОЗДУШНЫЙ ШАР
     window.Balloon = {
-        pl: false, lk: false, roundId: null, startTime: 0, raf: null,
+        pl: false, lk: false, roundId: null, startTime: 0, raf: null, peekInterval: null, currentBet: 0,
         GROWTH: 0.1612, // та же константа, что в SQL — mult(t) = e^(GROWTH*t)
-        MIN_SIZE: 100, MAX_SIZE: 210, // px, во сколько раздувается шарик к моменту х10
-        init() {},
+        MIN_SIZE: 100, MAX_SIZE: 210,
+        history: [],
+        init() { this.renderHistory(); },
         mod(act) { if(this.pl) return; let v = Math.floor(Number(document.getElementById('balloon-bet').value)) || 0; if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById('balloon-bet').value = Math.max(0, Math.min(v, window.App.balance)); },
         currentMult() {
             const elapsed = (Date.now() - this.startTime) / 1000;
             return Math.exp(this.GROWTH * elapsed);
         },
+        // Прогресс к пределу x1000 по логарифмической шкале (0..1) — используется
+        // и для размера шарика, и для переключения фона земля->небо->космос
+        progress(mult) {
+            return Math.max(0, Math.min(1, Math.log(mult) / Math.log(1000)));
+        },
         updateVisual(mult) {
-            const t = Math.min(1, Math.log(mult) / Math.log(10)); // прогресс к x10 по логарифму — растёт быстро вначале, плавно дальше
-            const size = this.MIN_SIZE + (this.MAX_SIZE - this.MIN_SIZE) * t;
+            const t = this.progress(mult);
+            const sizeT = Math.min(1, Math.log(Math.max(1, mult)) / Math.log(10));
+            const size = this.MIN_SIZE + (this.MAX_SIZE - this.MIN_SIZE) * sizeT;
             const body = document.getElementById('balloon-body');
             body.style.width = size + 'px';
             body.style.height = (size * 1.18) + 'px';
-            const glow = Math.min(60, 34 + t * 40);
-            body.style.boxShadow = `0 10px ${glow}px rgba(220,40,50,${0.4 + t*0.25}), inset -8px -10px 22px rgba(0,0,0,0.28)`;
+            const glow = Math.min(60, 34 + sizeT * 40);
+            body.style.boxShadow = `0 10px ${glow}px rgba(220,40,50,${0.4 + sizeT*0.25}), inset -8px -10px 22px rgba(0,0,0,0.28)`;
+
             const multEl = document.getElementById('balloon-mult');
             multEl.innerText = mult.toFixed(2) + 'x';
             multEl.classList.toggle('rising', mult > 2);
+
+            // Три стадии фона: земля (t<0.33) -> небо (0.33-0.66) -> космос (t>0.66)
+            document.getElementById('bg-ground').classList.toggle('active', t < 0.4);
+            document.getElementById('bg-sky').classList.toggle('active', t >= 0.25 && t < 0.75);
+            document.getElementById('bg-space').classList.toggle('active', t >= 0.6);
+
+            // Шарик реально поднимается по экрану по мере роста
+            const wrap = document.getElementById('balloon-wrap');
+            wrap.style.bottom = (30 + t * 180) + 'px';
+
+            // Сумма звёзд, которую заберёшь ПРЯМО СЕЙЧАС — на самой кнопке,
+            // а не голый множитель
+            const btn = document.getElementById('balloon-btn');
+            if (btn && this.pl) {
+                const amount = Math.floor(this.currentBet * mult);
+                btn.innerText = `🎈 ЗАБРАТЬ ${amount.toLocaleString()}⭐ (x${mult.toFixed(2)})`;
+            }
+        },
+        renderHistory() {
+            const el = document.getElementById('balloon-history'); if (!el) return;
+            el.innerHTML = this.history.map(m => `<div class="pill ${m>=2?'win':'lose'}">${m.toFixed(2)}x</div>`).join('');
+        },
+        pushHistory(mult) {
+            this.history.unshift(mult);
+            if (this.history.length > 10) this.history.pop();
+            this.renderHistory();
         },
         async action() {
             if (this.lk) return;
@@ -2784,25 +2847,64 @@
             window.Stats.addBet();
 
             this.pl = true;
+            this.currentBet = bet;
             this.roundId = result.round_id;
             this.startTime = Date.now();
 
             const wrap = document.getElementById('balloon-wrap');
             wrap.classList.remove('popped'); wrap.classList.add('floating');
+            wrap.style.opacity = '1';
             document.getElementById('balloon-pop-msg').classList.remove('show');
+            document.getElementById('bg-ground').classList.add('active');
+            document.getElementById('bg-sky').classList.remove('active');
+            document.getElementById('bg-space').classList.remove('active');
             this.updateVisual(1);
 
             const btn = document.getElementById('balloon-btn');
-            btn.className = 'main-btn btn-gold'; btn.innerText = '🎈 ЗАБРАТЬ x1.00';
+            btn.className = 'main-btn btn-gold';
 
             const tick = () => {
                 if (!this.pl) return;
-                const mult = this.currentMult();
-                this.updateVisual(mult);
-                btn.innerText = `🎈 ЗАБРАТЬ x${mult.toFixed(2)}`;
+                this.updateVisual(this.currentMult());
                 this.raf = requestAnimationFrame(tick);
             };
             this.raf = requestAnimationFrame(tick);
+
+            // Тихая проверка раз в секунду — не лопнул ли уже шарик на сервере.
+            // Раньше без этого шарик мог визуально "лететь вечно", даже если
+            // на самом деле уже лопнул несколько секунд назад — просто клиент
+            // об этом не знал, пока сам не попробует забрать.
+            if (this.peekInterval) clearInterval(this.peekInterval);
+            this.peekInterval = setInterval(async () => {
+                if (!this.pl) return;
+                const peek = await window.Multiplayer.balloonPeek(this.roundId);
+                if (peek && peek.popped) {
+                    await this.handlePopped(peek.current_mult);
+                }
+            }, 1000);
+        },
+        async handlePopped(atMult) {
+            if (!this.pl) return;
+            this.pl = false;
+            if (this.raf) cancelAnimationFrame(this.raf);
+            if (this.peekInterval) clearInterval(this.peekInterval);
+
+            const wrap = document.getElementById('balloon-wrap');
+            wrap.classList.remove('floating');
+            wrap.classList.add('popped');
+            this.spawnPopParticles();
+
+            const msg = document.getElementById('balloon-pop-msg');
+            msg.innerText = `Шарик лопнул на x${atMult.toFixed(2)}!`;
+            msg.classList.add('show');
+            window.App.toast('Шарик лопнул!', 'error');
+            if (window.App.haptic) window.App.haptic('heavy');
+            this.pushHistory(atMult);
+
+            const btn = document.getElementById('balloon-btn');
+            btn.className = 'main-btn btn-green'; btn.innerText = '🎈 НАДУТЬ ШАРИК';
+
+            setTimeout(() => { wrap.style.opacity = '0'; }, 900);
         },
         async cashout() {
             if (!this.pl || this.lk) return;
@@ -2810,6 +2912,7 @@
             const result = await window.Multiplayer.balloonCashout(this.roundId);
             this.lk = false;
             if (this.raf) cancelAnimationFrame(this.raf);
+            if (this.peekInterval) clearInterval(this.peekInterval);
             this.pl = false;
 
             const wrap = document.getElementById('balloon-wrap');
@@ -2823,16 +2926,12 @@
             window.App.updBalUI();
 
             if (result.popped) {
-                wrap.classList.add('popped');
-                this.spawnPopParticles();
-                const msg = document.getElementById('balloon-pop-msg');
-                msg.innerText = `Шарик лопнул на x${result.cashout_mult.toFixed(2)}!`;
-                msg.classList.add('show');
-                window.App.toast('Шарик лопнул!', 'error');
-                if (window.App.haptic) window.App.haptic('heavy');
+                await this.handlePopped(result.cashout_mult);
             } else {
                 window.App.toast(`Забрано! x${result.cashout_mult.toFixed(2)} = +${result.win_amount.toLocaleString()}⭐`, 'success');
                 if (window.Sound) window.Sound.coin();
+                this.pushHistory(result.cashout_mult);
+                setTimeout(() => { wrap.style.opacity = '0'; }, 400);
             }
             window.Tasks.chk('win', result.win_amount || 0);
         },
@@ -2855,101 +2954,10 @@
         },
     };
 
-    // DIG (РАСКОПКИ)
-    window.Dig = {
-        pl: false, lk: false, tool: 'rusty',
-        tools: [
-            { id: 'rusty', label: 'Ржавый', cost: 1.1, depth: 1 },
-            { id: 'steel', label: 'Стальной', cost: 1.55, depth: 2 },
-            { id: 'silver', label: 'Посеребрённый', cost: 2.4, depth: 3 },
-            { id: 'crystal', label: 'Кристальный', cost: 4.3, depth: 4 },
-            { id: 'obsidian', label: 'Обсидиановый', cost: 7.9, depth: 5 },
-        ],
-        materialIcon: { coal: '⚫', copper: '🟠', garnet: '🔴', gold: '🟡', sapphire: '🔵', emerald: '🟢', empty: '' },
-        init() { this.renderTools(); this.renderLanesEmpty(); },
-        mod(act) { if(this.pl) return; let v = Math.floor(Number(document.getElementById('dig-bet').value)) || 0; if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById('dig-bet').value = Math.max(0, Math.min(v, window.App.balance)); },
-        selectTool(id) { if (this.pl) return; this.tool = id; this.renderTools(); },
-        renderTools() {
-            const row = document.getElementById('dig-tools-row'); if (!row) return;
-            row.innerHTML = this.tools.map(t => `
-                <div class="dig-tool-btn ${t.id === this.tool ? 'active' : ''}" onclick="Dig.selectTool('${t.id}')">
-                    ⛏ ${t.label}<span class="tool-cost">x${t.cost} · глубина ${t.depth}</span>
-                </div>`).join('');
-        },
-        renderLanesEmpty() {
-            const wrap = document.getElementById('dig-lanes'); if (!wrap) return;
-            wrap.innerHTML = Array.from({length: 5}, (_, i) => `
-                <div class="dig-lane" id="dig-lane-${i}">
-                    <div class="dig-chest">🧰</div>
-                </div>`).join('');
-        },
-        async play() {
-            if (this.pl || this.lk) return;
-            const bet = Math.floor(Number(document.getElementById('dig-bet').value));
-            if (!bet || isNaN(bet) || bet <= 0) return window.App.toast('Неверная ставка', 'error');
-            const toolInfo = this.tools.find(t => t.id === this.tool);
-            const cost = Math.ceil(bet * toolInfo.cost);
-            if (cost > window.App.balance) return window.App.toast(`Недостаточно звёзд (нужно ${cost})`, 'error');
-            if (!window.Multiplayer) return window.App.toast('Раскопки работают только в мультиплеере', 'error');
-
-            this.pl = true; this.lk = true;
-            const btn = document.getElementById('dig-btn');
-            btn.className = 'main-btn btn-disabled'; btn.innerText = 'КОПАЕМ...';
-            window.Stats.addBet();
-
-            const result = await window.Multiplayer.digPlay(this.tool, bet);
-            this.lk = false;
-            if (!result) { this.pl = false; btn.className = 'main-btn btn-green'; btn.innerText = '⛏ БРОСИТЬ ИНСТРУМЕНТ'; return; }
-
-            await this.animateReveal(result.lanes, toolInfo.depth);
-
-            window.App.balance = result.new_balance;
-            window.App.updBalUI();
-
-            if (result.total_win > bet) {
-                window.App.toast(`Выигрыш! +${result.total_win.toLocaleString()}⭐`, 'success');
-                if (window.Sound) window.Sound.coin();
-                window.Levels.addWin(result.total_win);
-            } else if (result.total_win > 0) {
-                window.App.toast(`Частичный возврат: +${result.total_win.toLocaleString()}⭐`, 'success');
-            } else {
-                window.App.toast('Пустая порода...', 'error');
-            }
-            window.Tasks.chk('win', result.total_win);
-
-            this.pl = false;
-            btn.className = 'main-btn btn-green'; btn.innerText = '⛏ БРОСИТЬ ИНСТРУМЕНТ';
-        },
-        async animateReveal(lanes, depth) {
-            this.renderLanesEmpty();
-            // Пересобираем каждую дорожку с пустыми ячейками под нужную глубину
-            lanes.forEach((lane) => {
-                const laneEl = document.getElementById('dig-lane-' + (lane.lane - 1));
-                const cellsHtml = Array.from({length: depth}, (_, i) => `<div class="dig-cell" id="dig-cell-${lane.lane}-${i}">▫️</div>`).join('');
-                laneEl.innerHTML = cellsHtml + laneEl.innerHTML;
-            });
-            // Раскрываем слои сверху вниз, по всем 5 дорожкам одновременно на каждом шаге
-            for (let d = 0; d < depth; d++) {
-                await new Promise(r => setTimeout(r, 220));
-                lanes.forEach((lane) => {
-                    const hit = lane.hits[d];
-                    if (!hit) return;
-                    const cell = document.getElementById(`dig-cell-${lane.lane}-${d}`);
-                    if (!cell) return;
-                    const icon = this.materialIcon[hit.material] || '▫️';
-                    cell.innerHTML = icon + (hit.payout > 0 ? `<span class="dig-payout">x${hit.payout.toFixed(2)}</span>` : '');
-                    cell.classList.add(hit.material === 'empty' ? 'hit-empty' : 'hit-reveal');
-                    window.App.haptic('tap');
-                });
-            }
-            await new Promise(r => setTimeout(r, 150));
-        },
-    };
-
     // SCRATCH CARD
     window.Scratch = {
         pl: false, lk: false, cardId: null, tapsLeft: 10, revealedCount: 0,
-        emojiMap: { cherry:'🍒', lemon:'🍋', star:'⭐', diamond:'💎', pepe:'🐸' },
+        emojiMap: { cherry:'🍒', lemon:'🍋', orange:'🍊', plum:'🍑', star:'⭐', diamond:'💎', grape:'🍇', clover:'🍀', seven: null, pepe:'🐸' },
         init() {},
         mod(act) { if(this.pl) return; let v = Math.floor(Number(document.getElementById('scratch-bet').value)) || 0; if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById('scratch-bet').value = Math.max(0, Math.min(v, window.App.balance)); },
         set(v) { if(!this.pl) document.getElementById('scratch-bet').value=v; },
@@ -3032,6 +3040,9 @@
             const content = document.getElementById('scratch-content-' + idx);
             if (result.symbol === 'pepe') {
                 await this.loadFrozenPepe(content);
+            } else if (result.symbol === 'seven') {
+                content.innerHTML = window.sevenSvg();
+                content.style.display = 'flex'; content.style.alignItems = 'center'; content.style.justifyContent = 'center'; content.style.width = '100%'; content.style.height = '100%';
             } else {
                 content.innerHTML = this.emojiMap[result.symbol] || '❔';
                 content.style.fontSize = '22px';
@@ -3095,20 +3106,7 @@
         set(v) { if(!this.pl) document.getElementById('slots-bet').value=v; },
         emojiFor(sym) {
             const map = { cherry:'🍒', lemon:'🍋', star:'⭐', diamond:'💎', grape:'🍇', pepe:'🐸' };
-            if (sym === 'seven') {
-                return `<svg viewBox="0 0 40 56" width="34" height="46"><defs>
-                    <linearGradient id="sevenGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stop-color="#ff8a80"/><stop offset="35%" stop-color="#ef2d34"/><stop offset="75%" stop-color="#b3131a"/><stop offset="100%" stop-color="#7a0a0f"/>
-                    </linearGradient>
-                    <filter id="sevenShadow" x="-40%" y="-40%" width="180%" height="180%">
-                        <feDropShadow dx="0" dy="1.5" stdDeviation="1.4" flood-color="#000" flood-opacity="0.55"/>
-                    </filter>
-                </defs>
-                <path d="M3 3h34l-2.2 9L18 53H7L24.5 13H3z" fill="url(#sevenGrad)" stroke="#3a0a0c" stroke-width="2" stroke-linejoin="round" filter="url(#sevenShadow)"/>
-                <path d="M6 5.5h27l-2 6.5H12.5L8 16z" fill="#ffffff" opacity="0.55"/>
-                <path d="M17 24 L27 24 L18.5 50 L14.5 50z" fill="#ffffff" opacity="0.14"/>
-                <path d="M4.5 4.5h31l-1.4 5.5H10z" fill="none" stroke="#ffd9a0" stroke-width="0.8" opacity="0.7"/></svg>`;
-            }
+            if (sym === 'seven') return window.sevenSvg();
             return map[sym] || '❔';
         },
         // Кэш настоящей анимации Plush Pepe (грузим один раз, freeze на первом
@@ -4806,6 +4804,6 @@
 <!-- МУЛЬТИПЛЕЕР: общий раунд Ракеты, Рулетки, Арены, промокоды, Дурак, маркетплейс -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="multiplayer-client.js?v=144"></script>
+<script src="multiplayer-client.js?v=145"></script>
 </body>
 </html>
