@@ -105,12 +105,18 @@ window.Multiplayer = {
         this.refreshDailyStatus();
         this.refreshDurakRoomList();
         this.startDurakLobbyPolling();
-        this.refreshMyNfts();
         this.refreshMarketListings();
         this.refreshTycoon();
         this.refreshCrypto();
         this.refreshDrawBank();
-        setInterval(() => this.refreshMarketListings(), 5000); // лента лотов обновляется каждые 5с
+        setInterval(() => {
+            // Опрашиваем лоты только если реально открыт экран маркетплейса с
+            // вкладкой "лоты" — раньше это било в базу каждые 5с для ВСЕХ
+            // игроков всегда, даже если человек играет в другую игру
+            if (window.MarketUI && window.MarketUI.tab !== 'shop' && document.getElementById('view-market') && document.getElementById('view-market').style.display !== 'none') {
+                this.refreshMarketListings();
+            }
+        }, 5000);
         setInterval(() => this.refreshTycoon(), 5000); // доход Империи — тоже раз в 5с
         setInterval(() => this.refreshCrypto(), 3000); // курс крипты — почаще, тик бота каждые 2с
         setInterval(() => this.refreshDrawBank(), 5000);
@@ -510,16 +516,6 @@ window.Multiplayer = {
             pattern: data[0].pattern, patternSym: data[0].pattern_sym, tier: data[0].tier
         };
     },
-    async refreshMyNfts() {
-        const { data } = await sb.from('user_nfts').select('*').eq('owner_telegram_id', ME.id).order('id', { ascending: false });
-        if (!data) return;
-        window.Gifts.nftCollection = data.map(n => ({
-            uid: n.id, giftId: n.gift_id, model: n.model, modelFilter: n.model_filter, modelGlow: n.model_glow,
-            backdrop: n.backdrop, backdropGrad: n.backdrop_grad, pattern: n.pattern, patternSym: n.pattern_sym,
-            tier: n.tier, ts: new Date(n.created_at).getTime()
-        }));
-        window.Gifts.render();
-    },
     async refreshDrawBank() {
         const { data, error } = await sb.from('draw_bank').select('balance').eq('id', 1).single();
         const el = document.getElementById('hub-draw-bank'); if (!el) return;
@@ -647,37 +643,28 @@ window.Multiplayer = {
         this.refreshTycoon();
     },
     async refreshMarketListings() {
-        const { data } = await sb.from('market_listings')
-            .select('*, user_nfts(gift_name, gift_emoji, model, model_filter, backdrop, backdrop_grad, pattern, pattern_sym, tier)')
-            .eq('status', 'active').order('created_at', { ascending: false });
-        if (!data) return;
-        const flat = data.map(l => ({
-            id: l.id, seller_telegram_id: l.seller_telegram_id, seller_username: l.seller_username, price: l.price, status: l.status,
-            gift_name: l.user_nfts ? l.user_nfts.gift_name : '?', gift_emoji: l.user_nfts ? l.user_nfts.gift_emoji : '🎁',
-            model: l.user_nfts ? l.user_nfts.model : '', model_filter: l.user_nfts ? l.user_nfts.model_filter : 'none',
-            backdrop: l.user_nfts ? l.user_nfts.backdrop : '', backdrop_grad: l.user_nfts ? l.user_nfts.backdrop_grad : '',
-            pattern_sym: l.user_nfts ? l.user_nfts.pattern_sym : '', tier: l.user_nfts ? l.user_nfts.tier : 'common'
-        }));
-        if (window.MarketUI) window.MarketUI.setListings(flat);
+        const { data, error } = await sb.rpc('get_market_listings');
+        if (error || !data) return;
+        if (window.MarketUI) window.MarketUI.setListings(data);
     },
-    async listNft(nftId, price) {
-        const { data, error } = await sb.rpc('list_nft', { p_telegram_id: ME.id, p_nft_id: nftId, p_price: price });
+    async listNft(inventoryId, price) {
+        const { data, error } = await sb.rpc('list_nft', { p_telegram_id: ME.id, p_inventory_id: inventoryId, p_price: price, p_username: ME.username });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return; }
         window.App.toast(data[0].message, 'success');
-        this.refreshMyNfts(); this.refreshMarketListings();
+        this.refreshMarketShop(); this.refreshMarketListings();
     },
     async cancelListing(listingId) {
         const { data, error } = await sb.rpc('cancel_listing', { p_telegram_id: ME.id, p_listing_id: listingId });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return; }
         window.App.toast(data[0].message, 'success');
-        this.refreshMarketListings();
+        this.refreshMarketShop(); this.refreshMarketListings();
     },
     async buyNft(listingId) {
         const { data, error } = await sb.rpc('buy_nft', { p_telegram_id: ME.id, p_username: ME.username, p_listing_id: listingId });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return; }
         window.App.toast(data[0].message, 'success');
         await this.syncBalanceFromServer();
-        this.refreshMyNfts(); this.refreshMarketListings();
+        this.refreshMarketShop(); this.refreshMarketListings();
     }
 };
 

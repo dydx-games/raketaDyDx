@@ -36,7 +36,21 @@
         /* ПРОФИЛЬ / ПОДАРКИ */
         :root { --r-common: #8E93A3; --r-rare: #3498db; --r-epic: #9b59b6; --r-legendary: var(--gold); }
         .profile-header { display: flex; align-items: center; gap: 12px; margin: 10px 10px 0; background: var(--bg-panel); border-radius: var(--border-radius); padding: 14px; }
-        .profile-avatar { width: 54px; height: 54px; border-radius: 50%; background: linear-gradient(135deg, var(--gold), var(--gold-bright)); display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 900; color: #000; flex-shrink: 0; }
+        .profile-avatar { width: 54px; height: 54px; border-radius: 50%; background: linear-gradient(135deg, var(--gold), var(--gold-bright)); display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 900; color: #000; flex-shrink: 0; position: relative; }
+
+        /* Рамки профиля — оборачиваем аватар в обёртку с padding, рамка рисуется по краю обёртки */
+        .avatar-frame-wrap { position: relative; display: inline-flex; border-radius: 50%; flex-shrink: 0; }
+        .avatar-frame-wrap.frame-silver { padding: 3px; background: linear-gradient(135deg, #e8eaef, #9a9fac, #e8eaef); }
+        .avatar-frame-wrap.frame-bronze { padding: 3px; background: linear-gradient(135deg, #d99a5b, #8a5426, #d99a5b); }
+        .avatar-frame-wrap.frame-sapphire { padding: 3px; background: linear-gradient(135deg, #7cc4f5, #2a6fa8, #7cc4f5); box-shadow: 0 0 10px rgba(79,179,240,0.5); }
+        .avatar-frame-wrap.frame-gold { padding: 3px; background: linear-gradient(135deg, #f0c869, #a3781f, #f0c869); box-shadow: 0 0 14px rgba(215,180,93,0.6); animation: frame-gold-pulse 2s ease-in-out infinite; }
+        @keyframes frame-gold-pulse { 0%,100% { box-shadow: 0 0 10px rgba(215,180,93,0.5); } 50% { box-shadow: 0 0 20px rgba(215,180,93,0.85); } }
+        .avatar-frame-wrap.frame-rainbow { padding: 3px; background: conic-gradient(from var(--rb-angle,0deg), #ff5b7a, #ffd35b, #5bff8f, #5bc8ff, #b05bff, #ff5b7a); animation: frame-rainbow-spin 4s linear infinite; }
+        @keyframes frame-rainbow-spin { from { --rb-angle: 0deg; } to { --rb-angle: 360deg; } }
+        .avatar-frame-wrap.frame-pepe { padding: 3px; background: linear-gradient(135deg, #6fd66f, #2f7a2f, #6fd66f); box-shadow: 0 0 16px rgba(80,220,80,0.6); position: relative; }
+        .avatar-frame-wrap.frame-pepe::before, .avatar-frame-wrap.frame-pepe::after { content:'🐸'; position:absolute; font-size:13px; filter:drop-shadow(0 1px 2px rgba(0,0,0,0.6)); }
+        .avatar-frame-wrap.frame-pepe::before { top:-7px; left:-7px; }
+        .avatar-frame-wrap.frame-pepe::after { bottom:-7px; right:-7px; }
         .profile-name { font-weight: 800; font-size: 15px; }
         .profile-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 
@@ -184,6 +198,11 @@
         .pg-pin-btn.active { background: var(--gold); color: #000; }
         .pg-upgrade-btn { width: 100%; margin-top: 4px; font-size: 8.5px; padding: 3px 2px; background: var(--gold); color: #000; border: none; border-radius: 5px; font-weight: 800; cursor: pointer; }
         .pg-sell-btn { width: 100%; margin-top: 4px; font-size: 8.5px; padding: 3px 2px; background: transparent; color: var(--text-muted); border: 1px solid var(--border); border-radius: 5px; font-weight: 700; cursor: pointer; }
+        .pg-market-btn { width: 100%; margin-top: 4px; font-size: 8.5px; padding: 3px 2px; background: transparent; color: var(--sapphire); border: 1px solid rgba(79,179,240,0.4); border-radius: 5px; font-weight: 700; cursor: pointer; }
+        .pg-market-btn:hover { background: rgba(79,179,240,0.1); }
+        .pg-card.listed { opacity: 0.75; }
+        .pg-listed-badge { position: absolute; top: 6px; left: 6px; right: 30px; font-size: 8px; font-weight: 800;
+            background: rgba(79,179,240,0.2); color: var(--sapphire); padding: 2px 6px; border-radius: 6px; text-align: center; z-index: 2; }
         .pg-sell-btn:hover { border-color: var(--red); color: var(--red); }
 
         .pg-detail-overlay { position: fixed; inset: 0; background: rgba(5,5,8,0.85); z-index: 200;
@@ -264,6 +283,15 @@
         .profile-header.bg-glow { box-shadow: 0 0 24px rgba(215,180,93,0.35), inset 0 0 30px rgba(255,255,255,0.06); }
         @keyframes bgHueShift { 0%,100% { background-position: 0 0, 0% 50%; } 50% { background-position: 0 0, 100% 50%; } }
         .bg-swatch { width: 44px; height: 44px; min-width: 44px; border-radius: 12px; cursor: pointer; position: relative; border: 2px solid transparent; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 900; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.7); transition: transform 0.15s var(--ease), border-color 0.2s; background-size: 250% 250%; }
+
+        .frames-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 4px 0; }
+        .frame-card { background: var(--bg-panel-light); border: 1px solid var(--border); border-radius: 14px; padding: 10px 6px; text-align: center; }
+        .frame-card .fc-preview { width: 50px; height: 50px; margin: 0 auto 6px; border-radius: 50%; }
+        .frame-card .fc-name { font-size: 10px; font-weight: 700; margin-bottom: 4px; }
+        .frame-card .fc-btn { width: 100%; padding: 5px 2px; border: none; border-radius: 7px; font-size: 9.5px; font-weight: 800; cursor: pointer; }
+        .frame-card .fc-btn.buy { background: var(--gold); color: #000; }
+        .frame-card .fc-btn.equip { background: var(--bg-panel); color: var(--text); border: 1px solid var(--border); }
+        .frame-card .fc-btn.equipped { background: var(--green); color: #000; }
         .bg-swatch.bg-anim { animation: bgHueShift 4s ease-in-out infinite; }
         .bg-swatch:active { transform: scale(0.9); }
         .bg-swatch.selected { border-color: var(--gold); box-shadow: 0 0 10px rgba(215,180,93,0.5); }
@@ -339,6 +367,14 @@
         .arena-pointer { position: absolute; top: -4px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-top: 20px solid var(--gold); z-index: 20; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.6)); }
         .arena-avatars { position: absolute; inset: 0; z-index: 15; pointer-events: none; }
         .arena-avatar { position: absolute; width: 30px; height: 30px; border-radius: 50%; border: 2px solid #fff; background-size: cover; background-position: center; transform: translate(-50%, -50%); box-shadow: 0 2px 6px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 900; color: #fff; }
+        /* Упрощённые рамки для мелких аватарок в Арене — сплошное кольцо
+           вместо градиента/анимации (много кружков одновременно, важна лёгкость) */
+        .arena-avatar.frame-silver { box-shadow: 0 0 0 3px #b8bcc4, 0 2px 6px rgba(0,0,0,0.5); }
+        .arena-avatar.frame-bronze { box-shadow: 0 0 0 3px #b5763a, 0 2px 6px rgba(0,0,0,0.5); }
+        .arena-avatar.frame-sapphire { box-shadow: 0 0 0 3px #4fb3f0, 0 0 8px rgba(79,179,240,0.5); }
+        .arena-avatar.frame-gold { box-shadow: 0 0 0 3px #d7b45d, 0 0 8px rgba(215,180,93,0.6); }
+        .arena-avatar.frame-rainbow { box-shadow: 0 0 0 3px #b05bff, 0 0 8px rgba(176,91,255,0.5); }
+        .arena-avatar.frame-pepe { box-shadow: 0 0 0 3px #4caf50, 0 0 10px rgba(76,175,80,0.6); }
         .arena-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 12px; font-weight: 900; color: var(--gold); z-index: 10; text-align: center; }
         .arena-status { font-size: 11px; color: var(--text-muted); text-align: center; }
         .arena-player-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 8px; background: var(--bg-panel-light); border-radius: 6px; }
@@ -1164,13 +1200,18 @@
         <!-- PROFILE -->
         <div class="game-view" id="view-profile">
             <div class="profile-header">
-                <div class="profile-avatar" id="profile-avatar">👤</div>
+                <div class="avatar-frame-wrap" id="avatar-frame-wrap"><div class="profile-avatar" id="profile-avatar">👤</div></div>
                 <div>
                     <div class="profile-name" id="profile-name-text">Игрок <span id="profile-pinned-gift"></span></div>
                     <div class="profile-sub" id="profile-sub">Уровень 1 · 0 подарков</div>
                 </div>
             </div>
             <div style="display:flex; gap:8px; padding:10px 10px 0; overflow-x:auto;" id="profile-bg-shop"></div>
+
+            <div class="panel" style="margin: 10px 10px 0;">
+                <div class="panel-title">🖼 Рамки профиля</div>
+                <div class="frames-grid" id="frames-grid"></div>
+            </div>
 
             <div class="panel" style="margin: 10px 10px 0;">
                 <div class="panel-title">🎁 Мои подарки</div>
@@ -1710,6 +1751,7 @@
             const fab = document.getElementById('daily-bonus-fab'); if (fab) fab.style.visibility = (id === 'crypto') ? 'hidden' : 'visible';
             if(id === 'profile' && window.ProfileStats) window.ProfileStats.render();
             if(id === 'profile' && window.ProfileBg) window.ProfileBg.render();
+            if(id === 'profile' && window.Frames) window.Frames.load();
             if(id === 'profile' && window.Referrals) window.Referrals.init();
             if(id === 'profile' && window.ProfileGifts) window.ProfileGifts.ensureLoaded();
             if(id === 'market' && window.Showcase) window.Showcase.ensureLoaded();
@@ -1735,6 +1777,64 @@
     // Статистика собирается централизованно в App.logOperation() (вызывается из
     // chgBal/win) — здесь только чтение и отрисовка накопленных данных.
     // Фоны профиля — косметика, хранится локально (как закреплённый подарок).
+    // РАМКИ ПРОФИЛЯ — покупные, надеваются, видны в собственном профиле
+    // (подключение к аватаркам других игроков в Арене — отдельный шаг)
+    window.Frames = {
+        list: [],
+        async load() {
+            if (!window.Multiplayer || !window.ME) return;
+            const { data, error } = await sb.rpc('get_my_frames', { p_telegram_id: window.ME.id });
+            if (error || !data) return;
+            this.list = data;
+            this.render();
+            this.applyEquipped();
+        },
+        render() {
+            const el = document.getElementById('frames-grid'); if (!el) return;
+            el.innerHTML = this.list.map(f => {
+                const previewStyle = `background:${this.previewGradient(f.css_class)};`;
+                let btn;
+                if (f.equipped) btn = `<button class="fc-btn equipped" disabled>✓ Надета</button>`;
+                else if (f.owned) btn = `<button class="fc-btn equip" onclick="Frames.equip('${f.id}')">Надеть</button>`;
+                else btn = `<button class="fc-btn buy" onclick="Frames.buy('${f.id}')">Купить ${f.price.toLocaleString()}⭐</button>`;
+                return `<div class="frame-card">
+                    <div class="fc-preview" style="${previewStyle}"></div>
+                    <div class="fc-name">${f.name}</div>
+                    ${btn}
+                </div>`;
+            }).join('');
+        },
+        previewGradient(cssClass) {
+            const map = {
+                'frame-silver': 'linear-gradient(135deg, #e8eaef, #9a9fac)',
+                'frame-bronze': 'linear-gradient(135deg, #d99a5b, #8a5426)',
+                'frame-sapphire': 'linear-gradient(135deg, #7cc4f5, #2a6fa8)',
+                'frame-gold': 'linear-gradient(135deg, #f0c869, #a3781f)',
+                'frame-rainbow': 'conic-gradient(#ff5b7a, #ffd35b, #5bff8f, #5bc8ff, #b05bff, #ff5b7a)',
+                'frame-pepe': 'linear-gradient(135deg, #6fd66f, #2f7a2f)',
+            };
+            return map[cssClass] || 'var(--bg-panel)';
+        },
+        async buy(frameId) {
+            const { data, error } = await sb.rpc('buy_frame', { p_telegram_id: window.ME.id, p_frame_id: frameId });
+            if (error || !data || !data[0].success) return window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
+            window.App.balance = data[0].new_balance; window.App.updBalUI();
+            window.App.toast(data[0].message, 'success');
+            this.load();
+        },
+        async equip(frameId) {
+            const { data, error } = await sb.rpc('equip_frame', { p_telegram_id: window.ME.id, p_frame_id: frameId });
+            if (error || !data || !data[0].success) return window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
+            this.load();
+        },
+        applyEquipped() {
+            const wrap = document.getElementById('avatar-frame-wrap'); if (!wrap) return;
+            wrap.className = 'avatar-frame-wrap';
+            const eq = this.list.find(f => f.equipped);
+            if (eq) wrap.classList.add(eq.css_class);
+        },
+    };
+
     window.ProfileBg = {
         catalog: [
             { id: 'default', name: 'Обычный', price: 0, css: 'var(--bg-panel)' },
@@ -3599,7 +3699,7 @@
     };
 
     window.ArenaUI = {
-        currentState: null, currentBets: [], joining: false,
+        currentState: null, currentBets: [], joining: false, _framesCache: {}, _framesSig: null,
         mod(act) { if (this.joining) return; let v = Math.floor(Number(document.getElementById('arena-bet').value)) || 0; if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById('arena-bet').value = Math.max(0, Math.min(v, window.App.balance)); },
         set(v) { if (!this.joining) document.getElementById('arena-bet').value = v; },
         async join() {
@@ -3653,9 +3753,23 @@
             this.renderWheel();
             this.renderPlayersList();
         },
+        async loadFramesFor(bets) {
+            const ids = [...new Set(bets.map(b => b.telegram_id).filter(Boolean))];
+            const sig = ids.slice().sort().join(',');
+            if (sig === this._framesSig) return; // состав игроков не менялся — не дёргаем сервер зря
+            this._framesSig = sig;
+            if (!ids.length) { this._framesCache = {}; return; }
+            const { data, error } = await sb.rpc('get_frames_for_users', { p_telegram_ids: ids });
+            if (error || !data) return;
+            const cache = {};
+            data.forEach(row => { cache[row.telegram_id] = row.css_class; });
+            this._framesCache = cache;
+            this.renderWheel(); // перерисовываем с уже подтянутыми рамками
+        },
         renderWheel() {
             const wheel = document.getElementById('arena-wheel'); const avatars = document.getElementById('arena-avatars');
             if (!this.currentBets.length) { wheel.style.background = 'conic-gradient(#2a2e3a 0deg 360deg)'; avatars.innerHTML = ''; return; }
+            this.loadFramesFor(this.currentBets); // тихо обновит и перерисует, если состав игроков сменился
             let pot = this.currentBets.reduce((a,b) => a + Number(b.amount), 0);
             let acc = 0; let stops = []; avatars.innerHTML = '';
             const R = 95; const CENTER = 110;
@@ -3665,6 +3779,8 @@
                 let midDeg = startDeg + segDeg / 2; let rad = (midDeg - 90) * Math.PI / 180;
                 let x = CENTER + R * Math.cos(rad); let y = CENTER + R * Math.sin(rad);
                 let av = document.createElement('div'); av.className = 'arena-avatar';
+                const frameClass = this._framesCache[b.telegram_id];
+                if (frameClass) av.classList.add(frameClass);
                 av.style.left = x + 'px'; av.style.top = y + 'px'; av.style.borderColor = b.color;
                 if (b.avatar_url) { av.style.backgroundImage = `url(${b.avatar_url})`; }
                 else { av.innerText = (b.username || '?')[0].toUpperCase(); av.style.background = b.color; }
@@ -4528,6 +4644,9 @@
             const modal = document.getElementById('pg-detail-modal');
             if (modal) modal.classList.remove('active');
         },
+        promptSellMarket(inventoryId, fullName) {
+            if (window.MarketUI) window.MarketUI.promptSell(inventoryId, fullName);
+        },
         async sell(inventoryId, btn) {
             if (!window.Multiplayer) return window.App.toast('Продажа работает только в мультиплеере', 'error');
             if (!confirm('Продать этот гифт? Действие нельзя отменить.')) return;
@@ -4700,16 +4819,19 @@
                     ? `<div class="pg-pattern-overlay">${Array(6).fill(`<span>${item.pattern_symbol}</span>`).join('')}</div>` : '';
                 const domId = 'inv-' + item.inventory_id;
                 const sellPrice = Math.floor(item.price_stars * 0.5);
+                const fullName = item.gift_name + (hasModel ? ' — ' + item.model_name : '');
                 return `
-                <div class="pg-card ${this.pinned.includes(item.inventory_id) ? 'pinned' : ''}" ${cardStyle} onclick="ProfileGifts.openDetail(${item.inventory_id})">
+                <div class="pg-card ${this.pinned.includes(item.inventory_id) ? 'pinned' : ''} ${item.listed ? 'listed' : ''}" ${cardStyle} onclick="ProfileGifts.openDetail(${item.inventory_id})">
                     <button class="pg-pin-btn ${this.pinned.includes(item.inventory_id) ? 'active' : ''}" onclick="event.stopPropagation(); ProfileGifts.togglePin(${item.inventory_id})" title="Закрепить">📌</button>
+                    ${item.listed ? '<div class="pg-listed-badge">🏪 На продаже</div>' : ''}
                     ${patternOverlay}
                     <div class="pg-card-anim placeholder" id="pg-anim-${domId}" data-variant="${hasModel ? item.model_anim_file : ''}">🎁</div>
                     <div class="pg-card-name">${item.gift_name}${hasModel ? `<div class="pg-card-model">${item.model_name}</div>` : ''}</div>
-                    ${hasModel
+                    ${item.listed ? '' : (hasModel
                         ? `<button class="pg-upgrade-btn" disabled title="Уже улучшена">✓ Улучшено</button>`
-                        : `<button class="pg-upgrade-btn" onclick="event.stopPropagation(); ProfileGifts.upgrade(${item.inventory_id}, '${item.catalog_id}', this)" title="Стоит 20% от цены гифта — выпадет случайная модель/фон/узор, только один раз для этой копии">⬆ Улучшить (${Math.ceil(item.price_stars * 0.2).toLocaleString()}⭐)</button>`}
-                    <button class="pg-sell-btn" onclick="event.stopPropagation(); ProfileGifts.sell(${item.inventory_id}, this)" title="Продать за 50% от цены гифта">💰 Продать (${sellPrice.toLocaleString()}⭐)</button>
+                        : `<button class="pg-upgrade-btn" onclick="event.stopPropagation(); ProfileGifts.upgrade(${item.inventory_id}, '${item.catalog_id}', this)" title="Стоит 20% от цены гифта — выпадет случайная модель/фон/узор, только один раз для этой копии">⬆ Улучшить (${Math.ceil(item.price_stars * 0.2).toLocaleString()}⭐)</button>`)}
+                    ${item.listed ? '' : `<button class="pg-sell-btn" onclick="event.stopPropagation(); ProfileGifts.sell(${item.inventory_id}, this)" title="Продать за 50% от цены гифта в банк">💰 В банк (${sellPrice.toLocaleString()}⭐)</button>`}
+                    ${item.listed ? '' : `<button class="pg-market-btn" onclick="event.stopPropagation(); ProfileGifts.promptSellMarket(${item.inventory_id}, '${fullName.replace(/'/g,"")}')" title="Выставить на продажу другим игрокам">🏪 На рынок</button>`}
                 </div>`;
             }).join('');
 
@@ -4749,13 +4871,13 @@
             if (tab === 'shop') { if (window.Showcase) window.Showcase.ensureLoaded(); return; }
             this.render();
         },
-        promptSell(nftId, giftName, giftEmoji) {
+        promptSell(inventoryId, giftName) {
             if (!window.Multiplayer) return window.App.toast('Маркетплейс работает только в мультиплеере', 'error');
-            let price = prompt(`За сколько звёзд продать "${giftEmoji} ${giftName}"?`);
+            let price = prompt(`За сколько звёзд продать "${giftName}" другому игроку?`);
             if (price === null) return;
             price = Math.floor(Number(price));
             if (!price || isNaN(price) || price <= 0) return window.App.toast('Неверная цена', 'error');
-            window.Multiplayer.listNft(nftId, price);
+            window.Multiplayer.listNft(inventoryId, price);
         },
         async buy(listingId) {
             if (!window.Multiplayer) return;
@@ -4768,7 +4890,10 @@
         },
         // Вызывается из multiplayer-client.js при обновлении списка лотов
         setListings(all) {
-            this.allListings = all.filter(l => l.status === 'active');
+            const newSig = JSON.stringify(all.map(l => l.listing_id + ':' + l.price));
+            if (newSig === this._lastSig) return; // ничего не изменилось — не дёргаем DOM зря
+            this._lastSig = newSig;
+            this.allListings = all;
             this.myListings = this.allListings.filter(l => window.ME && l.seller_telegram_id === window.ME.id);
             this.render();
         },
@@ -4780,18 +4905,18 @@
             let myId = window.ME && window.ME.id;
             el.innerHTML = list.map(l => {
                 let isMine = l.seller_telegram_id === myId;
-                let color = `var(--r-${l.tier})`;
                 let btn = isMine
-                    ? `<button class="market-card-btn cancel" onclick="MarketUI.cancel(${l.id})">Снять</button>`
-                    : `<button class="market-card-btn" onclick="MarketUI.buy(${l.id})">Купить</button>`;
-                return `<div class="market-card" style="--card-color:${color}">
-                    <div class="market-card-bg" style="background:${l.backdrop_grad}"></div>
-                    <div class="market-card-emoji" style="filter:${l.model_filter||'none'}">${l.gift_emoji}${l.pattern_sym ? ' ' + l.pattern_sym : ''}</div>
+                    ? `<button class="market-card-btn cancel" onclick="MarketUI.cancel(${l.listing_id})">Снять</button>`
+                    : `<button class="market-card-btn" onclick="MarketUI.buy(${l.listing_id})">Купить</button>`;
+                const hasModel = !!l.model_name;
+                const bg = hasModel && l.backdrop_hex ? `background:linear-gradient(155deg, ${l.backdrop_hex}55 0%, var(--bg-panel) 130%);` : '';
+                return `<div class="market-card" style="${bg}">
+                    <div class="market-card-emoji">🎁${l.pattern_symbol ? ' ' + l.pattern_symbol : ''}</div>
                     <div class="market-card-info">
                         <div class="market-card-title">${l.gift_name}</div>
-                        <div class="market-card-sub">${l.model} · ${l.backdrop} · продавец: ${l.seller_username || 'Игрок'}</div>
+                        <div class="market-card-sub">${hasModel ? l.model_name + ' · ' + (l.backdrop_name || '') : 'без апгрейда'} · продавец: ${l.seller_username || 'Игрок'}</div>
                     </div>
-                    <div class="market-card-price">${l.price}</div>
+                    <div class="market-card-price">${l.price.toLocaleString()}⭐</div>
                     ${btn}
                 </div>`;
             }).join('');
@@ -4804,6 +4929,6 @@
 <!-- МУЛЬТИПЛЕЕР: общий раунд Ракеты, Рулетки, Арены, промокоды, Дурак, маркетплейс -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="multiplayer-client.js?v=145"></script>
+<script src="multiplayer-client.js?v=146"></script>
 </body>
 </html>
