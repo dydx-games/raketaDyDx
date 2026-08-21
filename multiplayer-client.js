@@ -555,8 +555,28 @@ window.Multiplayer = {
         this.refreshMarketShop();
         return true;
     },
-    async scratchCardPlay(bet) {
-        const { data, error } = await sb.rpc('scratch_card_play', { p_telegram_id: ME.id, p_bet: bet });
+    async scratchCardStart(bet) {
+        const { data, error } = await sb.rpc('scratch_card_start', { p_telegram_id: ME.id, p_bet: bet });
+        if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return null; }
+        return data[0];
+    },
+    async scratchRevealNext(cardId) {
+        const { data, error } = await sb.rpc('scratch_reveal_next', { p_telegram_id: ME.id, p_card_id: cardId });
+        if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return null; }
+        return data[0];
+    },
+    async balloonStart(bet) {
+        const { data, error } = await sb.rpc('balloon_start', { p_telegram_id: ME.id, p_bet: bet });
+        if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return null; }
+        return data[0];
+    },
+    async balloonCashout(roundId) {
+        const { data, error } = await sb.rpc('balloon_cashout', { p_telegram_id: ME.id, p_round_id: roundId });
+        if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return null; }
+        return data[0];
+    },
+    async digPlay(tool, bet) {
+        const { data, error } = await sb.rpc('dig_play', { p_telegram_id: ME.id, p_tool: tool, p_bet: bet });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return null; }
         return data[0];
     },
