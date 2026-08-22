@@ -156,6 +156,7 @@ window.Multiplayer = {
                 if (st.crash)    this.onCrashUpdate(st.crash);
                 if (st.arena)    await this.onArenaUpdate(st.arena);
                 if (st.roulette) this.onRouletteUpdate(st.roulette);
+                this.pollBalloonState(); // отдельно — шарик появился позже общей функции get_game_state
                 return;
             }
             // функции нет — больше не пытаемся, работаем по-старому
@@ -168,6 +169,40 @@ window.Multiplayer = {
         if (as) await this.onArenaUpdate(as);
         const { data: rsArr } = await sb.rpc('get_roulette_state'); const rs = rsArr && rsArr[0];
         if (rs) this.onRouletteUpdate(rs);
+        this.pollBalloonState();
+    },
+    lastBalloonSig: null,
+    async pollBalloonState() {
+        const { data, error } = await sb.rpc('get_balloon_state');
+        if (error || !data || !data[0]) return;
+        const state = data[0];
+        this.balloonRoundKey = state.round_key;
+        const B = window.Balloon; if (!B) return;
+        B.renderFeed();
+        let sig = `${state.status}|${state.start_at}|${state.next_round_at}`;
+        if (sig === this.lastBalloonSig) return;
+        this.lastBalloonSig = sig;
+        if (state.status === 'waiting') B.syncWaiting(state.next_round_at);
+        else if (state.status === 'flying') B.syncFlying(state.start_at);
+        else if (state.status === 'popped') B.syncPopped(state.target_multiplier);
+    },
+    async renderBalloonFeed() {
+        if (!this.balloonRoundKey) return;
+        const { data } = await sb.rpc('get_balloon_bets', { p_round_key: this.balloonRoundKey });
+        if (window.Balloon) window.Balloon.renderFeedData(data || []);
+    },
+    async placeBalloonBet(amount) {
+        const { data, error } = await sb.rpc('balloon_place_bet', { p_telegram_id: ME.id, p_username: ME.username, p_amount: amount });
+        if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка ставки', 'error'); return false; }
+        window.App.balance = data[0].new_balance; window.App.updBalUI();
+        return true;
+    },
+    async balloonCashOut() {
+        if (!this.balloonRoundKey) return null;
+        const { data, error } = await sb.rpc('balloon_cash_out', { p_telegram_id: ME.id, p_round_key: this.balloonRoundKey });
+        if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Не удалось забрать', 'error'); return null; }
+        window.App.balance = data[0].new_balance; window.App.updBalUI();
+        return data[0];
     },
 
     // ================= КРАШ (РАКЕТА) =================
@@ -202,6 +237,10 @@ window.Multiplayer = {
     async forceRefreshCrash() {
         // Раунд двигать не нужно — этим занят сервер. Просто перечитываем состояние.
         this.lastCrashSig = null;
+        await this.pollGameState();
+    },
+    async forceRefreshBalloon() {
+        this.lastBalloonSig = null;
         await this.pollGameState();
     },
     onCrashBet(bet) { window.App && window.App.toast(`${bet.username || 'Игрок'}: ставка ${bet.amount}`, ''); this.renderCrashFeed(); },
@@ -561,26 +600,6 @@ window.Multiplayer = {
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return null; }
         return data[0];
     },
-    async balloonStart(bet) {
-        const { data, error } = await sb.rpc('balloon_start', { p_telegram_id: ME.id, p_bet: bet });
-        if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return null; }
-        return data[0];
-    },
-    async balloonCashout(roundId) {
-        const { data, error } = await sb.rpc('balloon_cashout', { p_telegram_id: ME.id, p_round_id: roundId });
-        if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return null; }
-        return data[0];
-    },
-    async balloonPeek(roundId) {
-        const { data, error } = await sb.rpc('balloon_peek', { p_telegram_id: ME.id, p_round_id: roundId });
-        if (error || !data) return null;
-        return data[0];
-    },
-    async digPlay(tool, bet) {
-        const { data, error } = await sb.rpc('dig_play', { p_telegram_id: ME.id, p_tool: tool, p_bet: bet });
-        if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return null; }
-        return data[0];
-    },
     async slotsSpin(bet) {
         const { data, error } = await sb.rpc('slots_spin', { p_telegram_id: ME.id, p_bet: bet });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return null; }
@@ -658,6 +677,11 @@ window.Multiplayer = {
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return; }
         window.App.toast(data[0].message, 'success');
         this.refreshMarketShop(); this.refreshMarketListings();
+    },
+    async getPublicProfile(telegramId) {
+        const { data, error } = await sb.rpc('get_public_profile', { p_telegram_id: telegramId });
+        if (error || !data || !data.length) return null;
+        return data[0];
     },
     async buyNft(listingId) {
         const { data, error } = await sb.rpc('buy_nft', { p_telegram_id: ME.id, p_username: ME.username, p_listing_id: listingId });

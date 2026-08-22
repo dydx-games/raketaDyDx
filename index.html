@@ -134,7 +134,18 @@
         .live-bet-row { display: flex; justify-content: space-between; padding: 4px 8px; background: var(--bg-panel-light); border-radius: 6px; }
 
         /* МАРКЕТПЛЕЙС */
-        .market-card { display: flex; align-items: center; gap: 10px; background: var(--bg-panel); border-radius: 10px; padding: 10px; position: relative; overflow: hidden; border: 1px solid #1f222b; }
+        .market-card { display: flex; align-items: center; gap: 10px; background: var(--bg-panel); border-radius: 10px; padding: 10px; position: relative; overflow: hidden; border: 1px solid #1f222b; cursor: pointer; }
+        .market-card-anim { width: 44px; height: 44px; min-width: 44px; border-radius: 10px; background: #0a0b0f; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .market-card-detail { font-size: 9.5px; color: var(--text-muted); margin-top: 1px; }
+        .market-card-detail b { color: var(--text); font-weight: 700; }
+        .mc-rarity { color: var(--gold); font-weight: 800; }
+
+        .seller-profile-overlay { position: fixed; inset: 0; background: rgba(5,5,8,0.8); z-index: 210;
+            display: none; align-items: center; justify-content: center; }
+        .seller-profile-overlay.active { display: flex; }
+        .seller-profile-card { position: relative; background: var(--bg-panel); border: 1px solid var(--border);
+            border-radius: 18px; padding: 28px 24px 22px; max-width: 260px; width: 90%; }
+        .seller-profile-card .profile-avatar { width: 60px; height: 60px; font-size: 28px; }
         .tycoon-card { display: flex; align-items: center; gap: 10px; background: var(--bg-panel); border-radius: 10px; padding: 10px; border: 1px solid #1f222b; }
         .tycoon-card-emoji { font-size: 26px; width: 40px; text-align: center; flex-shrink: 0; }
         .tycoon-card-info { flex: 1; min-width: 0; }
@@ -459,7 +470,8 @@
         .game-view.active { display: flex; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .panel { margin: 10px 10px 0; background-color: var(--bg-panel); border-radius: var(--border-radius); padding: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.25); transition: transform 0.2s var(--ease); }
+        .panel { margin: 10px 10px 0; background-color: var(--bg-panel); border-radius: var(--border-radius); padding: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.25); transition: transform 0.2s var(--ease); position: relative; background-image:
+            repeating-linear-gradient(135deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 22px); }
         .panel-title { font-weight: 800; color: var(--text-muted); font-size: 10px; text-transform: uppercase; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;}
 
         .bet-row { display: flex; flex-direction: row; flex-wrap: nowrap; gap: 6px; margin-bottom: 8px; width: 100%; }
@@ -549,17 +561,25 @@
         #scratch-grid.jackpot-flash { animation: slots-jackpot-flash 0.35s ease 3; }
 
         .balloon-stage { position: relative; height: 340px; overflow: hidden; padding: 0; }
-        .balloon-bg-layer { position: absolute; inset: 0; opacity: 0; transition: opacity 0.6s ease; }
+        .balloon-bg-layer { position: absolute; inset: 0; opacity: 0; transition: opacity 0.6s ease; background-size: cover; background-position: center; }
         .balloon-bg-layer.active { opacity: 1; }
-        .bg-ground { background: linear-gradient(180deg, #2a2418 0%, #4a3d22 55%, #6b5a2e 100%); }
-        .bg-ground .hill { position:absolute; bottom:0; width:60%; height:70px; border-radius:50% 50% 0 0; background:#3a3018; }
-        .bg-ground .hill.h1 { left:-10%; }
-        .bg-ground .hill.h2 { right:-15%; height:50px; background:#4a3d1e; }
-        .bg-sky { background: linear-gradient(180deg, #1e3a5f 0%, #2f5a8a 45%, #4a7ab0 100%); }
-        .bg-sky .cloud { position:absolute; background:rgba(255,255,255,0.5); border-radius:50px; filter:blur(1px); }
-        .bg-space { background: radial-gradient(ellipse at 50% 30%, #1a1235 0%, #0a0618 60%, #050309 100%); }
-        .bg-space .star { position:absolute; background:#fff; border-radius:50%; }
-        .bg-space .planet { position:absolute; border-radius:50%; }
+        /* Если положишь файлы assets/balloon-ground.jpg / -sky.jpg / -space.jpg —
+           подхватятся автоматически (первый слой в background), а пока их нет —
+           браузер просто показывает градиент под ними, ничего не ломается. */
+        .bg-ground { background: url('assets/balloon-ground.jpg') center/cover, linear-gradient(180deg, #2a2418 0%, #4a3d22 45%, #7a6535 78%, #8a7540 100%); }
+        .bg-ground .hill { position:absolute; bottom:0; width:65%; height:80px; border-radius:50% 50% 0 0; background:linear-gradient(180deg, #3a3018, #241d0f); }
+        .bg-ground .hill.h1 { left:-12%; }
+        .bg-ground .hill.h2 { right:-18%; height:56px; background:linear-gradient(180deg, #4a3d1e, #2c2411); }
+        .bg-ground .hill.h3 { left:30%; width:45%; height:38px; background:linear-gradient(180deg, #5a4a26, #362c15); opacity:0.85; }
+        .bg-ground::after { content:''; position:absolute; inset:0; background:
+            repeating-linear-gradient(90deg, rgba(255,255,255,0.02) 0px, transparent 2px, transparent 40px); }
+        .bg-sky { background: url('assets/balloon-sky.jpg') center/cover, linear-gradient(180deg, #16294a 0%, #2f5a8a 45%, #6ba3d6 85%, #9cc9ec 100%); }
+        .bg-sky .cloud { position:absolute; background:rgba(255,255,255,0.55); border-radius:50px; filter:blur(1px); box-shadow: 20px 4px 0 -2px rgba(255,255,255,0.4), -18px 6px 0 -4px rgba(255,255,255,0.35); }
+        .bg-space { background: url('assets/balloon-space.jpg') center/cover, radial-gradient(ellipse at 50% 25%, #241a45 0%, #140d2e 45%, #08051a 75%, #030208 100%); }
+        .bg-space .star { position:absolute; background:#fff; border-radius:50%; animation: star-twinkle 2.4s ease-in-out infinite; }
+        @keyframes star-twinkle { 0%,100% { opacity:0.4; } 50% { opacity:1; } }
+        .bg-space .planet { position:absolute; border-radius:50%; box-shadow: inset -8px -6px 14px rgba(0,0,0,0.5); }
+        .bg-space .nebula { position:absolute; width:140px; height:70px; border-radius:50%; background: radial-gradient(ellipse, rgba(140,90,220,0.18), transparent 70%); filter: blur(6px); }
         .balloon-sky::before { content:''; position:absolute; inset:0; opacity:.5; background-image:
             radial-gradient(1.5px 1.5px at 20% 30%, rgba(255,255,255,.5), transparent),
             radial-gradient(1.5px 1.5px at 70% 20%, rgba(255,255,255,.4), transparent),
@@ -595,6 +615,38 @@
         .balloon-history .pill { flex-shrink:0; font-size:10px; font-weight:800; padding:4px 8px; border-radius:999px; }
         .balloon-history .pill.win { background: rgba(52,211,153,0.15); color: var(--green); }
         .balloon-history .pill.lose { background: rgba(244,87,106,0.15); color: var(--red); }
+
+        .balloon-status-badge { position:absolute; top:20px; right:16px; font-size:11px; font-weight:800;
+            color:var(--text-muted); background:rgba(0,0,0,0.4); padding:4px 9px; border-radius:999px; z-index:3; }
+        .live-feed-title { font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:6px; }
+        .live-bet-row { display:flex; justify-content:space-between; font-size:11px; padding:5px 0; border-bottom:1px solid var(--border); }
+        .live-bet-row:last-child { border-bottom:none; }
+
+        /* 9 стадий фона: 3 земля / 3 небо / 3 космос — постепенно меняем
+           яркость/масштаб декоративных элементов внутри каждого слоя, не
+           просто три плоских картинки. Всё очень плавно через transition. */
+        .bg-ground { filter: brightness(1) saturate(1); transition: filter 1.2s ease; }
+        .balloon-stage.stage-2 .bg-ground { filter: brightness(1.12) saturate(1.05); }
+        .balloon-stage.stage-3 .bg-ground { filter: brightness(1.25) saturate(0.9); }
+        .bg-ground .hill { transition: transform 1.2s ease, opacity 1.2s ease; }
+        .balloon-stage.stage-2 .bg-ground .hill { transform: scale(0.85) translateY(6px); }
+        .balloon-stage.stage-3 .bg-ground .hill { transform: scale(0.68) translateY(14px); opacity: 0.7; }
+        .bg-ground .hill.h4 { position:absolute; bottom:0; left:55%; width:35%; height:30px; border-radius:50% 50% 0 0; background:linear-gradient(180deg,#4a3d1e,#241d0f); opacity:0.7; }
+
+        .bg-sky { filter: brightness(1) hue-rotate(0deg); transition: filter 1.2s ease; }
+        .balloon-stage.stage-5 .bg-sky { filter: brightness(0.9) hue-rotate(-8deg); }
+        .balloon-stage.stage-6 .bg-sky { filter: brightness(0.72) hue-rotate(-18deg) saturate(1.2); }
+        .bg-sky .cloud { transition: transform 1.2s ease, opacity 1.2s ease; }
+        .balloon-stage.stage-5 .bg-sky .cloud { transform: scale(0.7) translateY(-10px); opacity: 0.7; }
+        .balloon-stage.stage-6 .bg-sky .cloud { transform: scale(0.4) translateY(-24px); opacity: 0.35; }
+
+        .bg-space .star, .bg-space .planet, .bg-space .nebula { transition: opacity 1.2s ease, transform 1.2s ease; }
+        .balloon-stage.stage-7 .bg-space .star { opacity: 0.5; }
+        .balloon-stage.stage-8 .bg-space .star { opacity: 0.8; }
+        .balloon-stage.stage-9 .bg-space .star { opacity: 1; transform: scale(1.3); }
+        .balloon-stage.stage-7 .bg-space .planet, .balloon-stage.stage-7 .bg-space .nebula { opacity: 0.5; transform: scale(0.8); }
+        .balloon-stage.stage-9 .bg-space .planet, .balloon-stage.stage-9 .bg-space .nebula { transform: scale(1.25); }
+        .nebula.n2 { width:100px; height:55px; }
 
         .dig-lanes { display: flex; gap: 6px; justify-content: center; padding: 10px 4px; }
         .dig-lane { flex: 1; max-width: 62px; display: flex; flex-direction: column; gap: 4px; }
@@ -920,14 +972,18 @@
         <div class="game-view" id="view-balloon">
             <div class="panel balloon-stage" id="balloon-stage" style="margin-bottom:0;">
                 <div class="balloon-bg-layer bg-ground active" id="bg-ground">
-                    <div class="hill h1"></div><div class="hill h2"></div>
+                    <div class="hill h1"></div><div class="hill h2"></div><div class="hill h3"></div>
+                    <div class="hill h4"></div>
                 </div>
                 <div class="balloon-bg-layer bg-sky" id="bg-sky">
-                    <div class="cloud" style="width:70px;height:24px;top:20%;left:10%;"></div>
-                    <div class="cloud" style="width:50px;height:18px;top:40%;left:60%;"></div>
-                    <div class="cloud" style="width:60px;height:20px;top:65%;left:25%;"></div>
+                    <div class="cloud c1" style="width:70px;height:24px;top:20%;left:10%;"></div>
+                    <div class="cloud c2" style="width:50px;height:18px;top:40%;left:60%;"></div>
+                    <div class="cloud c3" style="width:60px;height:20px;top:65%;left:25%;"></div>
+                    <div class="cloud c1" style="width:40px;height:15px;top:15%;left:70%;"></div>
                 </div>
                 <div class="balloon-bg-layer bg-space" id="bg-space">
+                    <div class="nebula" style="top:55%;left:5%;"></div>
+                    <div class="nebula n2" style="top:20%;left:60%;"></div>
                     <div class="planet" style="width:44px;height:44px;top:15%;right:12%;background:radial-gradient(circle at 35% 35%, #c98a4a, #6b4420);"></div>
                     <div class="star" style="width:2px;height:2px;top:10%;left:15%;"></div>
                     <div class="star" style="width:1.5px;height:1.5px;top:25%;left:70%;"></div>
@@ -935,6 +991,9 @@
                     <div class="star" style="width:1.5px;height:1.5px;top:70%;left:80%;"></div>
                     <div class="star" style="width:2px;height:2px;top:35%;left:45%;"></div>
                     <div class="star" style="width:1.5px;height:1.5px;top:80%;left:35%;"></div>
+                    <div class="star" style="width:2px;height:2px;top:60%;left:60%;"></div>
+                    <div class="star" style="width:1.5px;height:1.5px;top:15%;left:40%;"></div>
+                    <div class="star" style="width:2px;height:2px;top:45%;left:85%;"></div>
                 </div>
                 <div class="balloon-wrap" id="balloon-wrap">
                     <div class="balloon-body" id="balloon-body">
@@ -944,9 +1003,14 @@
                 </div>
                 <div class="balloon-mult" id="balloon-mult">1.00x</div>
                 <div class="balloon-pop-msg" id="balloon-pop-msg"></div>
+                <div class="balloon-status-badge" id="balloon-status-badge"></div>
             </div>
             <div class="panel" style="margin-bottom:20px; padding-top:6px;">
                 <div class="balloon-history" id="balloon-history"></div>
+            </div>
+            <div class="panel" style="margin-bottom:20px;">
+                <div class="live-feed-title">👥 Ставки этого раунда</div>
+                <div id="balloon-live-feed"></div>
             </div>
             <div class="panel" style="margin-bottom:20px;">
                 <div class="bet-row">
@@ -1302,8 +1366,8 @@
                     <button class="btn-small" onclick="MarketUI.showTab('all', this)">Все лоты</button>
                     <button class="btn-small" onclick="MarketUI.showTab('mine', this)">Мои лоты</button>
                 </div>
-                <div id="market-list" style="display:flex; flex-direction:column; gap:8px;"></div>
-                <div id="shop-panel" style="display:none;">
+                <div id="market-list" style="display:none; flex-direction:column; gap:8px;"></div>
+                <div id="shop-panel">
                     <div style="font-size:9px; color:var(--text-muted); text-align:center; margin-bottom:8px;">
                         ⚠️ Все подарки — виртуальные, только внутри игры. Вывод в реальные Telegram-подарки, деньги или что-либо ещё невозможен.
                     </div>
@@ -2940,25 +3004,34 @@
 
     // ВОЗДУШНЫЙ ШАР
     window.Balloon = {
-        pl: false, lk: false, roundId: null, startTime: 0, raf: null, peekInterval: null, currentBet: 0,
-        GROWTH: 0.1612, // та же константа, что в SQL — mult(t) = e^(GROWTH*t)
-        MIN_SIZE: 100, MAX_SIZE: 210,
-        history: [],
-        init() { this.renderHistory(); },
-        mod(act) { if(this.pl) return; let v = Math.floor(Number(document.getElementById('balloon-bet').value)) || 0; if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById('balloon-bet').value = Math.max(0, Math.min(v, window.App.balance)); },
-        currentMult() {
-            const elapsed = (Date.now() - this.startTime) / 1000;
-            return Math.exp(this.GROWTH * elapsed);
+        state: 0, mult: 1, target: 1, startTime: 0, anim: null, timer: null, history: [], bet: {v:100, pl:false, o:false}, locked: false,
+        GROWTH: 0.1612,
+        // Пороги 9 стадий: 3 земля / 3 небо / 3 космос. Космос начинается с 500x.
+        THRESHOLDS: [3, 8, 25, 70, 180, 500, 650, 820, 1000],
+        init() {
+            let bh = LS.g('dydx_balloon_h', []); this.history = Array.isArray(bh) ? bh.filter(x=>typeof x==='number'&&!isNaN(x)) : [];
+            this.renderHistory();
+            if (!window.Multiplayer) {
+                document.getElementById('balloon-status-badge').innerText = 'Только в мультиплеере';
+            }
         },
-        // Прогресс к пределу x1000 по логарифмической шкале (0..1) — используется
-        // и для размера шарика, и для переключения фона земля->небо->космос
-        progress(mult) {
-            return Math.max(0, Math.min(1, Math.log(mult) / Math.log(1000)));
+        mod(act) { if(this.bet.pl) return; let v = Math.floor(Number(document.getElementById('balloon-bet').value)) || 0; if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById('balloon-bet').value = Math.max(0, Math.min(v, window.App.balance)); },
+
+        getStage(mult) {
+            for (let i = 0; i < this.THRESHOLDS.length; i++) if (mult < this.THRESHOLDS[i]) return i + 1;
+            return 9;
         },
         updateVisual(mult) {
-            const t = this.progress(mult);
+            const stage = this.getStage(mult);
+            const stageEl = document.getElementById('balloon-stage');
+            stageEl.className = 'panel balloon-stage stage-' + stage;
+
+            document.getElementById('bg-ground').classList.toggle('active', stage <= 3);
+            document.getElementById('bg-sky').classList.toggle('active', stage >= 4 && stage <= 6);
+            document.getElementById('bg-space').classList.toggle('active', stage >= 7);
+
             const sizeT = Math.min(1, Math.log(Math.max(1, mult)) / Math.log(10));
-            const size = this.MIN_SIZE + (this.MAX_SIZE - this.MIN_SIZE) * sizeT;
+            const size = 100 + (210 - 100) * sizeT;
             const body = document.getElementById('balloon-body');
             body.style.width = size + 'px';
             body.style.height = (size * 1.18) + 'px';
@@ -2969,22 +3042,9 @@
             multEl.innerText = mult.toFixed(2) + 'x';
             multEl.classList.toggle('rising', mult > 2);
 
-            // Три стадии фона: земля (t<0.33) -> небо (0.33-0.66) -> космос (t>0.66)
-            document.getElementById('bg-ground').classList.toggle('active', t < 0.4);
-            document.getElementById('bg-sky').classList.toggle('active', t >= 0.25 && t < 0.75);
-            document.getElementById('bg-space').classList.toggle('active', t >= 0.6);
-
-            // Шарик реально поднимается по экрану по мере роста
+            const progressT = Math.max(0, Math.min(1, Math.log(mult) / Math.log(1000)));
             const wrap = document.getElementById('balloon-wrap');
-            wrap.style.bottom = (30 + t * 180) + 'px';
-
-            // Сумма звёзд, которую заберёшь ПРЯМО СЕЙЧАС — на самой кнопке,
-            // а не голый множитель
-            const btn = document.getElementById('balloon-btn');
-            if (btn && this.pl) {
-                const amount = Math.floor(this.currentBet * mult);
-                btn.innerText = `🎈 ЗАБРАТЬ ${amount.toLocaleString()}⭐ (x${mult.toFixed(2)})`;
-            }
+            wrap.style.bottom = (30 + progressT * 180) + 'px';
         },
         renderHistory() {
             const el = document.getElementById('balloon-history'); if (!el) return;
@@ -2993,116 +3053,105 @@
         pushHistory(mult) {
             this.history.unshift(mult);
             if (this.history.length > 10) this.history.pop();
+            LS.s('dydx_balloon_h', this.history);
             this.renderHistory();
         },
-        async action() {
-            if (this.lk) return;
-            if (!this.pl) return this.start();
-            return this.cashout();
+        renderFeed() { if (window.Multiplayer) window.Multiplayer.renderBalloonFeed(); },
+        renderFeedData(bets) {
+            const el = document.getElementById('balloon-live-feed'); if (!el) return;
+            el.innerHTML = bets.map(b => `<div class="live-bet-row">
+                <span>${b.username || 'Игрок'}</span><span>${b.amount}</span>
+                <span style="color:${b.cashed_out_multiplier ? 'var(--green)' : 'var(--text-muted)'}">${b.cashed_out_multiplier ? Number(b.cashed_out_multiplier).toFixed(2)+'x' : '...'}</span>
+            </div>`).join('');
         },
-        async start() {
-            const bet = Math.floor(Number(document.getElementById('balloon-bet').value));
-            if (!bet || isNaN(bet) || bet <= 0) return window.App.toast('Неверная ставка', 'error');
-            if (bet > window.App.balance) return window.App.toast('Недостаточно звёзд', 'error');
-            if (!window.Multiplayer) return window.App.toast('Игра работает только в мультиплеере', 'error');
 
-            this.lk = true;
-            const result = await window.Multiplayer.balloonStart(bet);
-            this.lk = false;
-            if (!result) return;
-
-            window.App.balance = result.new_balance;
-            window.App.updBalUI();
-            window.Stats.addBet();
-
-            this.pl = true;
-            this.currentBet = bet;
-            this.roundId = result.round_id;
-            this.startTime = Date.now();
-
+        // ---- СИНХРОНИЗАЦИЯ С СЕРВЕРНЫМ ОБЩИМ РАУНДОМ (как у Ракеты) ----
+        syncWaiting(nextRoundAt) {
+            this.state = 0; this.bet.pl = false; this.bet.o = false;
+            if (this.anim) cancelAnimationFrame(this.anim); if (this.timer) clearTimeout(this.timer);
             const wrap = document.getElementById('balloon-wrap');
-            wrap.classList.remove('popped'); wrap.classList.add('floating');
-            wrap.style.opacity = '1';
+            wrap.classList.remove('floating', 'popped'); wrap.style.opacity = '1';
             document.getElementById('balloon-pop-msg').classList.remove('show');
-            document.getElementById('bg-ground').classList.add('active');
-            document.getElementById('bg-sky').classList.remove('active');
-            document.getElementById('bg-space').classList.remove('active');
             this.updateVisual(1);
-
-            const btn = document.getElementById('balloon-btn');
-            btn.className = 'main-btn btn-gold';
-
+            document.getElementById('balloon-status-badge').innerText = 'Ожидание ставок...';
+            this.updBtns();
+            const msLeft = new Date(nextRoundAt).getTime() - (Date.now() + (window.Multiplayer.clockOffsetMs || 0));
+            this.timer = setTimeout(() => window.Multiplayer.forceRefreshBalloon && window.Multiplayer.forceRefreshBalloon(), Math.max(200, msLeft + 200));
+        },
+        syncFlying(startAt) {
+            this.state = 1;
+            const wrap = document.getElementById('balloon-wrap');
+            wrap.classList.add('floating');
+            document.getElementById('balloon-status-badge').innerText = 'В полёте!';
+            this.startTime = new Date(startAt).getTime() - (window.Multiplayer.clockOffsetMs || 0);
             const tick = () => {
-                if (!this.pl) return;
-                this.updateVisual(this.currentMult());
-                this.raf = requestAnimationFrame(tick);
+                if (this.state !== 1) return;
+                const elapsed = (Date.now() + (window.Multiplayer.clockOffsetMs || 0) - this.startTime) / 1000;
+                this.mult = Math.exp(this.GROWTH * Math.max(0, elapsed));
+                this.updateVisual(this.mult);
+                this.updBtns();
+                this.anim = requestAnimationFrame(tick);
             };
-            this.raf = requestAnimationFrame(tick);
-
-            // Тихая проверка раз в секунду — не лопнул ли уже шарик на сервере.
-            // Раньше без этого шарик мог визуально "лететь вечно", даже если
-            // на самом деле уже лопнул несколько секунд назад — просто клиент
-            // об этом не знал, пока сам не попробует забрать.
-            if (this.peekInterval) clearInterval(this.peekInterval);
-            this.peekInterval = setInterval(async () => {
-                if (!this.pl) return;
-                const peek = await window.Multiplayer.balloonPeek(this.roundId);
-                if (peek && peek.popped) {
-                    await this.handlePopped(peek.current_mult);
-                }
-            }, 1000);
+            this.anim = requestAnimationFrame(tick);
         },
-        async handlePopped(atMult) {
-            if (!this.pl) return;
-            this.pl = false;
-            if (this.raf) cancelAnimationFrame(this.raf);
-            if (this.peekInterval) clearInterval(this.peekInterval);
-
+        syncPopped(targetMultiplier) {
+            this.state = 2;
+            if (this.anim) cancelAnimationFrame(this.anim);
             const wrap = document.getElementById('balloon-wrap');
-            wrap.classList.remove('floating');
-            wrap.classList.add('popped');
+            wrap.classList.remove('floating'); wrap.classList.add('popped');
             this.spawnPopParticles();
-
             const msg = document.getElementById('balloon-pop-msg');
-            msg.innerText = `Шарик лопнул на x${atMult.toFixed(2)}!`;
+            msg.innerText = `Шарик лопнул на x${Number(targetMultiplier).toFixed(2)}!`;
             msg.classList.add('show');
-            window.App.toast('Шарик лопнул!', 'error');
-            if (window.App.haptic) window.App.haptic('heavy');
-            this.pushHistory(atMult);
-
-            const btn = document.getElementById('balloon-btn');
-            btn.className = 'main-btn btn-green'; btn.innerText = '🎈 НАДУТЬ ШАРИК';
-
+            document.getElementById('balloon-status-badge').innerText = 'Лопнул!';
+            window.App.haptic && window.App.haptic('heavy');
+            this.pushHistory(Number(targetMultiplier));
+            if (this.bet.pl && !this.bet.o) window.App.toast('Не успели забрать — шарик лопнул', 'error');
             setTimeout(() => { wrap.style.opacity = '0'; }, 900);
+            this.updBtns();
         },
-        async cashout() {
-            if (!this.pl || this.lk) return;
-            this.lk = true;
-            const result = await window.Multiplayer.balloonCashout(this.roundId);
-            this.lk = false;
-            if (this.raf) cancelAnimationFrame(this.raf);
-            if (this.peekInterval) clearInterval(this.peekInterval);
-            this.pl = false;
 
-            const wrap = document.getElementById('balloon-wrap');
-            wrap.classList.remove('floating');
-            const btn = document.getElementById('balloon-btn');
-            btn.className = 'main-btn btn-green'; btn.innerText = '🎈 НАДУТЬ ШАРИК';
-
-            if (!result) return;
-
-            window.App.balance = result.new_balance;
-            window.App.updBalUI();
-
-            if (result.popped) {
-                await this.handlePopped(result.cashout_mult);
-            } else {
-                window.App.toast(`Забрано! x${result.cashout_mult.toFixed(2)} = +${result.win_amount.toLocaleString()}⭐`, 'success');
-                if (window.Sound) window.Sound.coin();
-                this.pushHistory(result.cashout_mult);
-                setTimeout(() => { wrap.style.opacity = '0'; }, 400);
+        async action() {
+            if (this.locked) return;
+            if (this.state === 0) {
+                if (this.bet.pl) return window.App.toast('Ставка уже сделана — дождитесь раунда', '');
+                let val = Math.floor(Number(document.getElementById('balloon-bet').value));
+                if (!val || isNaN(val) || val <= 0) return window.App.toast('Неверная ставка', 'error');
+                if (val > window.App.balance) return window.App.toast('Недостаточно звёзд', 'error');
+                if (!window.Multiplayer) return window.App.toast('Игра работает только в мультиплеере', 'error');
+                this.locked = true;
+                const ok = await window.Multiplayer.placeBalloonBet(val);
+                this.locked = false;
+                if (ok) { this.bet.v = val; this.bet.pl = true; this.bet.o = false; window.Stats.addBet(); window.App.toast('Ставка принята', 'success'); }
+                this.updBtns();
+            } else if (this.state === 1) {
+                if (this.bet.pl && !this.bet.o && !this.locked) {
+                    this.locked = true;
+                    const result = await window.Multiplayer.balloonCashOut();
+                    if (result && result.success) {
+                        this.bet.o = true;
+                        window.App.toast(`Забрано! x${result.cashout_mult.toFixed(2)} = +${result.win_amount.toLocaleString()}⭐`, 'success');
+                        if (window.Sound) window.Sound.coin();
+                        window.Levels.addWin(result.win_amount);
+                        window.Tasks.chk('win', result.win_amount);
+                    }
+                    this.locked = false; this.updBtns();
+                }
             }
-            window.Tasks.chk('win', result.win_amount || 0);
+        },
+        updBtns() {
+            const btn = document.getElementById('balloon-btn'); const inp = document.getElementById('balloon-bet');
+            inp.disabled = this.bet.pl;
+            if (this.state === 0) {
+                btn.className = 'main-btn btn-green'; btn.innerText = this.bet.pl ? 'СТАВКА ПРИНЯТА' : '🎈 СТАВКА';
+                if (this.bet.pl) btn.className = 'main-btn btn-disabled';
+            } else if (this.state === 1) {
+                if (this.bet.pl && !this.bet.o) { btn.className = 'main-btn btn-gold'; btn.innerText = `🎈 ЗАБРАТЬ ${Math.floor(this.bet.v*this.mult).toLocaleString()}⭐ (x${this.mult.toFixed(2)})`; }
+                else if (this.bet.o) { btn.className = 'main-btn btn-disabled'; btn.innerText = 'ЗАБРАНО'; }
+                else { btn.className = 'main-btn btn-disabled'; btn.innerText = 'ЖДИТЕ СЛЕДУЮЩИЙ РАУНД'; }
+            } else {
+                btn.className = 'main-btn btn-disabled'; btn.innerText = (this.bet.pl && !this.bet.o) ? 'ПРОИГРЫШ' : 'ЖДИТЕ';
+            }
         },
         spawnPopParticles() {
             const stage = document.getElementById('balloon-stage');
@@ -4700,6 +4749,7 @@
                         ${patternTile}
                         <div class="pg-detail-anim-wrap"><div class="pg-detail-anim" id="pg-detail-anim"></div></div>
                         <div class="pg-detail-title">${item.gift_name}</div>
+                        ${hasModel && item.mint_number ? `<div class="pg-detail-sub">Экземпляр #${item.mint_number}</div>` : ''}
                     </div>
                     <div class="pg-detail-body">
                         ${row('Владелец', (window.App && window.App.username) || 'Вы')}
@@ -4980,25 +5030,71 @@
             let list = this.tab === 'mine' ? this.myListings : this.allListings;
             if (!list.length) { el.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:11px; padding:10px 0;">${this.tab === 'mine' ? 'У вас нет активных лотов' : 'Пока никто ничего не продаёт'}</div>`; return; }
             let myId = window.ME && window.ME.id;
+
+            if (this.io) this.io.disconnect();
+            Object.values(this.cardInstances || {}).forEach(inst => { try { inst.destroy(); } catch(e) {} });
+            this.cardInstances = {};
+
             el.innerHTML = list.map(l => {
                 let isMine = l.seller_telegram_id === myId;
                 let btn = isMine
-                    ? `<button class="market-card-btn cancel" onclick="MarketUI.cancel(${l.listing_id})">Снять</button>`
-                    : `<button class="market-card-btn" onclick="MarketUI.buy(${l.listing_id})">Купить</button>`;
+                    ? `<button class="market-card-btn cancel" onclick="event.stopPropagation(); MarketUI.cancel(${l.listing_id})">Снять</button>`
+                    : `<button class="market-card-btn" onclick="event.stopPropagation(); MarketUI.buy(${l.listing_id})">Купить</button>`;
                 const hasModel = !!l.model_name;
                 const bg = hasModel && l.backdrop_hex ? `background:linear-gradient(155deg, ${l.backdrop_hex}55 0%, var(--bg-panel) 130%);` : '';
-                return `<div class="market-card" style="${bg}">
-                    <div class="market-card-emoji">🎁${l.pattern_symbol ? ' ' + l.pattern_symbol : ''}</div>
+                return `<div class="market-card" style="${bg}" onclick="MarketUI.openSellerProfile('${l.seller_telegram_id}')">
+                    <div class="market-card-anim placeholder" id="market-anim-${l.listing_id}" data-catalog="${l.catalog_id}" data-variant="${hasModel ? l.model_anim_file : ''}">🎁</div>
                     <div class="market-card-info">
                         <div class="market-card-title">${l.gift_name}</div>
-                        <div class="market-card-sub">${hasModel ? l.model_name + ' · ' + (l.backdrop_name || '') : 'без апгрейда'} · продавец: ${l.seller_username || 'Игрок'}</div>
+                        ${hasModel ? `
+                            <div class="market-card-detail">Модель: <b>${l.model_name}</b> <span class="mc-rarity">${l.model_rarity}%</span></div>
+                            <div class="market-card-detail">Фон: <b>${l.backdrop_name || '—'}</b></div>
+                            <div class="market-card-detail">Узор: <b>${l.pattern_name || 'без узора'}</b></div>
+                        ` : `<div class="market-card-detail">Без апгрейда</div>`}
+                        <div class="market-card-sub">Продавец: ${l.seller_username || 'Игрок'}</div>
                     </div>
                     <div class="market-card-price">${l.price.toLocaleString()}⭐</div>
                     ${btn}
                 </div>`;
             }).join('');
-        }
+
+            // Ленивая загрузка анимаций лотов — так же, как в витрине и в профиле,
+            // не грузим сразу все разом
+            this.io = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    const el2 = entry.target; const catalogId = el2.dataset.catalog; const variant = el2.dataset.variant || undefined;
+                    const cacheKey = 'market::' + el2.id;
+                    if (entry.isIntersecting) window.Showcase.playCard(catalogId, el2, variant, cacheKey);
+                });
+            }, { rootMargin: '80px 0px', threshold: 0.15 });
+            list.forEach(l => { const el2 = document.getElementById('market-anim-' + l.listing_id); if (el2) this.io.observe(el2); });
+        },
+        async openSellerProfile(telegramId) {
+            if (!window.Multiplayer) return;
+            const profile = await window.Multiplayer.getPublicProfile(telegramId);
+            if (!profile) return window.App.toast('Профиль недоступен', 'error');
+
+            let modal = document.getElementById('seller-profile-modal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'seller-profile-modal';
+                modal.className = 'seller-profile-overlay';
+                modal.onclick = (e) => { if (e.target === modal) modal.classList.remove('active'); };
+                document.body.appendChild(modal);
+            }
+            modal.innerHTML = `
+                <div class="seller-profile-card">
+                    <button class="pg-detail-close" onclick="document.getElementById('seller-profile-modal').classList.remove('active')">✕</button>
+                    <div class="avatar-frame-wrap ${profile.frame_css_class || ''}" style="margin:0 auto 12px;">
+                        <div class="profile-avatar">${(profile.username || '?')[0].toUpperCase()}</div>
+                    </div>
+                    <div style="text-align:center; font-weight:800; font-size:15px;">${profile.username || 'Игрок'}</div>
+                    <div style="text-align:center; color:var(--text-muted); font-size:12px; margin-top:4px;">🎁 Гифтов в коллекции: ${profile.gifts_count || 0}</div>
+                </div>`;
+            modal.classList.add('active');
+        },
     };
+
 
     window.onload = () => window.App.init();
 </script>
@@ -5006,6 +5102,6 @@
 <!-- МУЛЬТИПЛЕЕР: общий раунд Ракеты, Рулетки, Арены, промокоды, Дурак, маркетплейс -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="multiplayer-client.js?v=146"></script>
+<script src="multiplayer-client.js?v=148"></script>
 </body>
 </html>
