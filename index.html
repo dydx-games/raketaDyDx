@@ -1677,7 +1677,7 @@
     };
 
     window.App = {
-        balance: 500,
+        balance: 10000,
         // Вибрация через нативный Telegram HapticFeedback — работает по-настоящему
         // на iOS/Android внутри Telegram (обычный navigator.vibrate() там часто
         // не работает вообще). Если API недоступно (открыто не в Telegram) —
@@ -1726,7 +1726,7 @@
             await this.checkGlobalReset();
 
             let bStr = localStorage.getItem('dydx_balance'); this.balance = bStr ? Math.floor(parseFloat(bStr)) : 500;
-            if(isNaN(this.balance) || this.balance < 0) this.balance = 500;
+            if(isNaN(this.balance) || this.balance < 0) this.balance = 10000;
 
             window.Stats.init(); window.Levels.init(); window.Gifts.init(); window.Tasks.init(); window.Roulette.init(); window.Upgrader.init(); window.Tower.init(); window.Mines.init(); window.Shells.init(); window.Dice.init(); window.Plinko.init(); window.Crash.init(); window.HiLo.init(); window.Coin.init(); window.Slots.init(); window.Scratch.init(); window.Balloon.init(); window.ProfileBg.init();
             this.updBalUI();
@@ -1858,7 +1858,7 @@
             localStorage.setItem('dydx_topup_cd', String(Date.now() + this.TOPUP_COOLDOWN_MS));
             document.getElementById('topup-input').value = ''; this.refreshTopUpUI();
         },
-        resetBalance() { this.balance = 500; this.updBalUI(); this.toast('Баланс сброшен', 'success'); this.closeTopUp(); },
+        resetBalance() { this.balance = 10000; this.updBalUI(); this.toast('Баланс сброшен', 'success'); this.closeTopUp(); },
         async acceptTos() {
             const cb = document.getElementById('tos-checkbox'); if (!cb || !cb.checked) return;
             const btn = document.getElementById('tos-accept-btn'); if (btn) btn.disabled = true;
