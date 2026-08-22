@@ -347,6 +347,11 @@
         .bg-swatch { width: 44px; height: 44px; min-width: 44px; border-radius: 12px; cursor: pointer; position: relative; border: 2px solid transparent; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 900; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.7); transition: transform 0.15s var(--ease), border-color 0.2s; background-size: 250% 250%; }
 
         .frames-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 4px 0; }
+        .profile-quicknav { display: flex; gap: 8px; padding: 10px 10px 0; }
+        .profile-quicknav button { flex: 1; background: var(--bg-panel); border: 1px solid var(--border); color: var(--text);
+            border-radius: 10px; padding: 8px 4px; font-size: 11px; font-weight: 700; }
+        .panel-title-row { display: flex; justify-content: space-between; align-items: center; }
+        .panel-collapse-btn { background: none; border: none; color: var(--text-muted); font-size: 11px; font-weight: 700; cursor: pointer; padding: 4px 6px; }
         .frame-card { background: var(--bg-panel-light); border: 1px solid var(--border); border-radius: 14px; padding: 10px 6px; text-align: center; }
         .frame-card .fc-preview { width: 50px; height: 50px; margin: 0 auto 6px; border-radius: 50%; }
         .frame-card .fc-name { font-size: 10px; font-weight: 700; margin-bottom: 4px; }
@@ -354,6 +359,7 @@
         .frame-card .fc-btn.buy { background: var(--gold); color: #000; }
         .frame-card .fc-btn.equip { background: var(--bg-panel); color: var(--text); border: 1px solid var(--border); }
         .frame-card .fc-btn.equipped { background: var(--green); color: #000; }
+        .frame-card .fc-btn.donor-locked { background: transparent; color: var(--text-muted); border: 1px dashed var(--border); cursor: default; }
         .bg-swatch.bg-anim { animation: bgHueShift 4s ease-in-out infinite; }
         .bg-swatch:active { transform: scale(0.9); }
         .bg-swatch.selected { border-color: var(--gold); box-shadow: 0 0 10px rgba(215,180,93,0.5); }
@@ -1321,14 +1327,26 @@
                     <div class="profile-sub" id="profile-sub">Уровень 1 · 0 подарков</div>
                 </div>
             </div>
-            <div style="display:flex; gap:8px; padding:10px 10px 0; overflow-x:auto;" id="profile-bg-shop"></div>
 
-            <div class="panel" style="margin: 10px 10px 0;">
-                <div class="panel-title">🖼 Рамки профиля</div>
+            <div class="profile-quicknav">
+                <button onclick="App.scrollToSection('profile-section-bg')">🎨 Фон</button>
+                <button onclick="App.scrollToSection('profile-section-frames')">🖼 Рамки</button>
+                <button onclick="App.scrollToSection('profile-section-gifts')">🎁 Подарки</button>
+            </div>
+
+            <div id="profile-section-bg" style="padding-top:10px;">
+                <div style="display:flex; gap:8px; padding:0 10px; overflow-x:auto;" id="profile-bg-shop"></div>
+            </div>
+
+            <div class="panel" style="margin: 10px 10px 0;" id="profile-section-frames">
+                <div class="panel-title-row">
+                    <div class="panel-title">🖼 Рамки профиля</div>
+                    <button class="panel-collapse-btn" id="frames-collapse-btn" onclick="Frames.toggleCollapse()">Показать все</button>
+                </div>
                 <div class="frames-grid" id="frames-grid"></div>
             </div>
 
-            <div class="panel" style="margin: 10px 10px 0;">
+            <div class="panel" style="margin: 10px 10px 0;" id="profile-section-gifts">
                 <div class="panel-title">🎁 Мои подарки</div>
                 <div class="profile-gifts-grid" id="profile-gifts-grid"></div>
             </div>
@@ -1675,6 +1693,11 @@
                 else if (type === 'select') hf.selectionChanged();
             } catch (e) {}
         },
+        scrollToSection(id) {
+            const el = document.getElementById(id); if (!el) return;
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            this.haptic('select');
+        },
         // Проверяет у сервера "версию сброса" (app_config.local_reset_version).
         // Если она не совпадает с той, что запомнена локально — это значит,
         // что где-то на сервере кто-то нажал "сбросить всё для всех", и этот
@@ -1895,7 +1918,7 @@
     // РАМКИ ПРОФИЛЯ — покупные, надеваются, видны в собственном профиле
     // (подключение к аватаркам других игроков в Арене — отдельный шаг)
     window.Frames = {
-        list: [],
+        list: [], collapsed: true,
         async load() {
             if (!window.Multiplayer || !window.ME) return;
             const { data, error } = await sb.rpc('get_my_frames', { p_telegram_id: window.ME.id });
@@ -1904,13 +1927,24 @@
             this.render();
             this.applyEquipped();
         },
+        toggleCollapse() {
+            this.collapsed = !this.collapsed;
+            document.getElementById('frames-collapse-btn').innerText = this.collapsed ? 'Показать все' : 'Свернуть';
+            this.render();
+        },
         render() {
             const el = document.getElementById('frames-grid'); if (!el) return;
-            el.innerHTML = this.list.map(f => {
+            const list = this.collapsed ? this.list.filter(f => f.equipped) : this.list;
+            if (this.collapsed && !list.length) {
+                el.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--text-muted); font-size:11px; padding:8px 0;">Рамка не надета — жми "Показать все", чтобы выбрать</div>`;
+                return;
+            }
+            el.innerHTML = list.map(f => {
                 const previewStyle = `background:${this.previewGradient(f.css_class)};`;
                 let btn;
                 if (f.equipped) btn = `<button class="fc-btn equipped" disabled>✓ Надета</button>`;
                 else if (f.owned) btn = `<button class="fc-btn equip" onclick="Frames.equip('${f.id}')">Надеть</button>`;
+                else if (f.tier === 'donor') btn = `<button class="fc-btn donor-locked" disabled>💝 Только за донат</button>`;
                 else btn = `<button class="fc-btn buy" onclick="Frames.buy('${f.id}')">Купить ${f.price.toLocaleString()}⭐</button>`;
                 return `<div class="frame-card">
                     <div class="fc-preview" style="${previewStyle}"></div>
@@ -2498,7 +2532,8 @@
                 }
             }
             let sub = document.getElementById('profile-sub');
-            if (sub) sub.innerText = `Уровень ${window.Levels ? window.Levels.lvl : 1} · ${this.totalOwned()} подарков · ${this.nftCollection.length} улучшенных`;
+            const realGiftsCount = window.ProfileGifts ? window.ProfileGifts.items.length : this.totalOwned();
+            if (sub) sub.innerText = `Уровень ${window.Levels ? window.Levels.lvl : 1} · ${realGiftsCount} подарков`;
             // Настоящие имя и аватар из Telegram — раньше здесь всегда была заглушка "👤".
             let nameEl = document.getElementById('profile-name-text');
             let avEl = document.getElementById('profile-avatar');
