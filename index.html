@@ -352,6 +352,18 @@
             border-radius: 10px; padding: 8px 4px; font-size: 11px; font-weight: 700; }
         .panel-title-row { display: flex; justify-content: space-between; align-items: center; }
         .panel-collapse-btn { background: none; border: none; color: var(--text-muted); font-size: 11px; font-weight: 700; cursor: pointer; padding: 4px 6px; }
+
+        .settings-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+        .settings-row:last-of-type { border-bottom: none; }
+        .switch { position: relative; display: inline-block; width: 42px; height: 24px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .switch-slider { position: absolute; cursor: pointer; inset: 0; background: var(--bg-panel-light); border: 1px solid var(--border); border-radius: 24px; transition: 0.2s; }
+        .switch-slider::before { content: ''; position: absolute; width: 18px; height: 18px; left: 2px; top: 2px; background: var(--text-muted); border-radius: 50%; transition: 0.2s; }
+        .switch input:checked + .switch-slider { background: rgba(52,211,153,0.25); border-color: var(--green); }
+        .switch input:checked + .switch-slider::before { transform: translateX(18px); background: var(--green); }
+        .lang-switch { display: flex; gap: 4px; }
+        .lang-switch button { background: var(--bg-panel-light); border: 1px solid var(--border); color: var(--text-muted); padding: 5px 12px; border-radius: 8px; font-size: 11px; font-weight: 800; }
+        .lang-switch button.active { background: var(--gold); color: #000; border-color: var(--gold); }
         .frame-card { background: var(--bg-panel-light); border: 1px solid var(--border); border-radius: 14px; padding: 10px 6px; text-align: center; }
         .frame-card .fc-preview { width: 50px; height: 50px; margin: 0 auto 6px; border-radius: 50%; }
         .frame-card .fc-name { font-size: 10px; font-weight: 700; margin-bottom: 4px; }
@@ -1081,7 +1093,7 @@
                     <div class="slots-reel" id="slots-reel-3"><div class="slots-reel-strip" id="slots-strip-3"></div></div>
                 </div>
                 <div style="font-size:11px; color:var(--text-muted); line-height:1.6;">
-                    3 🐸 = x2200 (супер редко) · 3 <b style="color:#e8262d;">7</b> = x350 · 3 🍇 = x110 · 3 💎 = x45 · 3 ⭐ = x15 · 3 🍋 = x6 · 3 🍒 = x4<br>
+                    3 🐸 = x1000 (супер редко) · 3 <b style="color:#e8262d;">7</b> = x150 · 3 🍇 = x45 · 3 💎 = x18 · 3 ⭐ = x6 · 3 🍋 = x3.5 · 3 🍒 = x1.5<br>
                     любая пара = 50% ставки назад
                 </div>
             </div>
@@ -1351,6 +1363,30 @@
                 <div class="profile-gifts-grid" id="profile-gifts-grid"></div>
             </div>
 
+            <div class="panel" style="margin: 10px 10px 0;" id="profile-section-settings">
+                <div class="panel-title">⚙️ Настройки</div>
+                <div class="settings-row">
+                    <span>🎬 Анимации гифтов</span>
+                    <label class="switch"><input type="checkbox" id="set-animations" onchange="Settings.toggle('animationsEnabled', this.checked)"><span class="switch-slider"></span></label>
+                </div>
+                <div class="settings-row">
+                    <span>🔊 Звук</span>
+                    <label class="switch"><input type="checkbox" id="set-sound" onchange="Settings.toggle('soundEnabled', this.checked)"><span class="switch-slider"></span></label>
+                </div>
+                <div class="settings-row">
+                    <span>📳 Вибрация</span>
+                    <label class="switch"><input type="checkbox" id="set-vibration" onchange="Settings.toggle('vibrationEnabled', this.checked)"><span class="switch-slider"></span></label>
+                </div>
+                <div class="settings-row">
+                    <span>🌍 Язык</span>
+                    <div class="lang-switch">
+                        <button id="set-lang-ru" onclick="Settings.setLanguage('ru')" class="active">RU</button>
+                        <button id="set-lang-en" onclick="Settings.setLanguage('en')">EN</button>
+                    </div>
+                </div>
+                <div style="font-size:10px; color:var(--text-muted); margin-top:6px;">Английский пока переводит только часть интерфейса — полный перевод в разработке.</div>
+            </div>
+
             <div class="panel" style="margin: 10px 10px 0;">
                 <div class="panel-title">Сводка</div>
                 <div class="crypto-stat-grid" id="profile-summary-grid"></div>
@@ -1587,6 +1623,7 @@
         getCtx() {
             // Браузеры блокируют звук до первого действия пользователя — контекст
             // создаём лениво и "будим", если он оказался приостановлен.
+            if (window.Settings && !window.Settings.data.soundEnabled) return null;
             if (!this.ctx) { try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) { return null; } }
             if (this.ctx.state === 'suspended') this.ctx.resume().catch(()=>{});
             return this.ctx;
@@ -1676,6 +1713,33 @@
         </svg>`;
     };
 
+    window.Settings = {
+        data: { animationsEnabled: true, soundEnabled: true, vibrationEnabled: true, language: 'ru' },
+        init() {
+            const saved = LS.g('dydx_settings', null);
+            if (saved && typeof saved === 'object') this.data = Object.assign(this.data, saved);
+            this.syncUI();
+        },
+        syncUI() {
+            const a = document.getElementById('set-animations'); if (a) a.checked = this.data.animationsEnabled;
+            const s = document.getElementById('set-sound'); if (s) s.checked = this.data.soundEnabled;
+            const v = document.getElementById('set-vibration'); if (v) v.checked = this.data.vibrationEnabled;
+            const ru = document.getElementById('set-lang-ru'); const en = document.getElementById('set-lang-en');
+            if (ru && en) { ru.classList.toggle('active', this.data.language === 'ru'); en.classList.toggle('active', this.data.language === 'en'); }
+        },
+        toggle(key, val) {
+            this.data[key] = val;
+            LS.s('dydx_settings', this.data);
+            if (key === 'animationsEnabled' && window.ProfileGifts) window.ProfileGifts.render();
+        },
+        setLanguage(lang) {
+            this.data.language = lang;
+            LS.s('dydx_settings', this.data);
+            this.syncUI();
+            if (lang === 'en') window.App.toast('Полный перевод пока в разработке — переключатель сохранён на будущее', '');
+        },
+    };
+
     window.App = {
         balance: 10000,
         // Вибрация через нативный Telegram HapticFeedback — работает по-настоящему
@@ -1684,6 +1748,7 @@
         // просто тихо ничего не делает, ошибок не будет.
         haptic(type) {
             try {
+                if (window.Settings && !window.Settings.data.vibrationEnabled) return;
                 const hf = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback;
                 if (!hf) return;
                 if (type === 'win') hf.notificationOccurred('success');
@@ -1728,7 +1793,7 @@
             let bStr = localStorage.getItem('dydx_balance'); this.balance = bStr ? Math.floor(parseFloat(bStr)) : 500;
             if(isNaN(this.balance) || this.balance < 0) this.balance = 10000;
 
-            window.Stats.init(); window.Levels.init(); window.Gifts.init(); window.Tasks.init(); window.Roulette.init(); window.Upgrader.init(); window.Tower.init(); window.Mines.init(); window.Shells.init(); window.Dice.init(); window.Plinko.init(); window.Crash.init(); window.HiLo.init(); window.Coin.init(); window.Slots.init(); window.Scratch.init(); window.Balloon.init(); window.ProfileBg.init();
+            window.Settings.init(); window.Stats.init(); window.Levels.init(); window.Gifts.init(); window.Tasks.init(); window.Roulette.init(); window.Upgrader.init(); window.Tower.init(); window.Mines.init(); window.Shells.init(); window.Dice.init(); window.Plinko.init(); window.Crash.init(); window.HiLo.init(); window.Coin.init(); window.Slots.init(); window.Scratch.init(); window.Balloon.init(); window.ProfileBg.init();
             this.updBalUI();
         },
         updBalUI() {
@@ -1890,6 +1955,7 @@
             if(id === 'profile' && window.ProfileStats) window.ProfileStats.render();
             if(id === 'profile' && window.ProfileBg) window.ProfileBg.render();
             if(id === 'profile' && window.Frames) window.Frames.load();
+            if(id === 'profile' && window.Settings) window.Settings.syncUI();
             if(id === 'profile' && window.Referrals) window.Referrals.init();
             if(id === 'profile' && window.ProfileGifts) window.ProfileGifts.ensureLoaded();
             if(id === 'market' && window.Showcase) window.Showcase.ensureLoaded();
@@ -3172,9 +3238,13 @@
             msg.innerText = `Шарик лопнул на x${Number(targetMultiplier).toFixed(2)}!`;
             msg.classList.add('show');
             document.getElementById('balloon-status-badge').innerText = 'Лопнул!';
-            window.App.haptic && window.App.haptic('heavy');
+            // Вибрация/тост — только если реально смотришь на экран Шарика ПРЯМО
+            // СЕЙЧАС. Раньше это срабатывало от фонового опроса всегда, даже
+            // если ты в это время сидел в другой игре — вибрировало не по делу.
+            const isBalloonScreenActive = document.getElementById('view-balloon') && document.getElementById('view-balloon').style.display !== 'none';
+            if (isBalloonScreenActive) window.App.haptic && window.App.haptic('heavy');
             this.pushHistory(Number(targetMultiplier));
-            if (this.bet.pl && !this.bet.o) window.App.toast('Не успели забрать — шарик лопнул', 'error');
+            if (isBalloonScreenActive && this.bet.pl && !this.bet.o) window.App.toast('Не успели забрать — шарик лопнул', 'error');
             setTimeout(() => { wrap.style.opacity = '0'; }, 900);
             this.updBtns();
         },
@@ -4649,6 +4719,11 @@
         },
 
         async playCard(id, container, variant, forceKey) {
+            if (window.Settings && !window.Settings.data.animationsEnabled) {
+                // Анимации выключены в настройках — просто статичная иконка вместо lottie
+                if (container && !container.dataset.staticShown) { container.innerText = '🎁'; container.dataset.staticShown = '1'; }
+                return;
+            }
             const cacheKey = forceKey || (variant ? `${id}::${variant}` : id);
             let inst = this.cardInstances[cacheKey];
             // Если инстанс уже есть, но его контейнер — старый, отсоединённый от страницы
