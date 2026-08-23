@@ -114,6 +114,10 @@ window.Multiplayer = {
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'crash_bets' }, (p) => this.onCrashCashout(p.new))
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'arena_bets' }, () => this.refreshArenaBets())
             .on('postgres_changes', { event: '*', schema: 'public', table: 'durak_rooms' }, (p) => this.onDurakRoomsChange(p))
+            // Баннер крупных выигрышей — раньше обновлялся раз в 60с (заметная
+            // задержка), теперь мгновенно через Realtime при новой записи,
+            // без единого опроса по таймеру вообще.
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'big_wins_feed' }, () => { if (window.BigWins) window.BigWins.load(); })
             .subscribe();
 
         await this.pollGameState();
