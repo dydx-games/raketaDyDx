@@ -758,11 +758,6 @@
         .upg-gift-stage { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 16px 0; }
         .upg-gift-anim.spinning { animation: gu-spin-pulse 0.5s ease-in-out infinite; }
         @keyframes gu-spin-pulse { 0%,100% { transform: scale(1) rotate(0deg); filter: brightness(1); } 50% { transform: scale(1.08) rotate(4deg); filter: brightness(1.3); } }
-        /* Настоящее НЕПРЕРЫВНОЕ вращение кольца, пока ждём ответ сервера — не
-           фиксированной длительности transform, а бесконечная CSS-анимация,
-           которая крутится сколько угодно долго БЕЗ остановки на середине. */
-        @keyframes gu-wheel-continuous-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .upgrader-wheel.gu-continuous { animation: gu-wheel-continuous-spin 0.9s linear infinite; }
         .upg-gift-arrow.spinning { animation: gu-arrow-pulse 0.5s ease-in-out infinite; color: var(--gold-bright); }
         @keyframes gu-arrow-pulse { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
         .upg-gift-anim.result-win { animation: gu-win-flash 0.5s ease 2; box-shadow: 0 0 20px 4px rgba(52,211,153,0.7); }
@@ -3906,73 +3901,47 @@
             stakeEl.classList.remove('result-win', 'result-lose'); stakeEl.classList.add('spinning');
             targetEl.classList.remove('result-win', 'result-lose'); targetEl.classList.add('spinning');
 
-            // Полностью на requestAnimationFrame (не CSS-анимация + transition) —
-            // Раньше пробовал двухфазную анимацию с "честной физикой замедления" —
-            // не помогло, ощущение рывка осталось. Радикально упрощаю: ОДНА
-            // постоянная скорость от старта до самого конца, вообще без замедления
-            // и без стыка фаз — физически невозможно почувствовать "то медленно,
-            // то быстро", потому что скорость буквально не меняется никогда.
-            // Останавливается коротким мгновенным снапом в самом конце.
-            const CONST_SPEED = 420; // градусов в секунду — одна и та же скорость всегда
-            let currentAngle = 0;
-            let spinning = true;
-            let rafId = null;
-            let lastFrameTime = performance.now();
-            const tick = (now) => {
-                if (!spinning) return;
-                const dt = (now - lastFrameTime) / 1000;
-                lastFrameTime = now;
-                currentAngle += CONST_SPEED * dt;
-                if (wheelEl) wheelEl.style.transform = `rotate(${currentAngle % 360}deg)`;
-                rafId = requestAnimationFrame(tick);
-            };
-            rafId = requestAnimationFrame(tick);
+            // Убрал двухфазную схему целиком — как ни старайся сшить "ждём сервер"
+            // и "докручиваем" без шва, всегда чувствовался стык. Теперь сначала
+            // ЧЕСТНО ждём ответ сервера БЕЗ вращения вообще (только "КРУТИМ..." на
+            // кнопке), а после — играется ОДИН цельный классический спин с
+            // настоящим замедлением (быстрый старт → плавное торможение к финалу),
+            // без единого стыка фаз, потому что фаза буквально одна.
+            if (wheelEl) { wheelEl.style.transition = 'none'; wheelEl.style.transform = 'rotate(0deg)'; }
 
-            const spinDelay = new Promise(r => setTimeout(r, 1000)); // минимум показываем вращение секунду, не сразу мелькает
-            const [{ data, error }] = await Promise.all([
-                sb.rpc('gift_upgrader_play', {
-                    p_telegram_id: window.ME.id,
-                    p_stake_type: this.stakeType,
-                    p_stake_inventory_id: this.stakeType === 'gift' ? this.stakeInventoryId : null,
-                    p_stake_stars: this.stakeType === 'stars' ? this.stakeValue : null,
-                    p_target_catalog_id: this.targetCatalogId,
-                    p_multiplier: this.multiplier,
-                }),
-                spinDelay,
-            ]);
+            const { data, error } = await sb.rpc('gift_upgrader_play', {
+                p_telegram_id: window.ME.id,
+                p_stake_type: this.stakeType,
+                p_stake_inventory_id: this.stakeType === 'gift' ? this.stakeInventoryId : null,
+                p_stake_stars: this.stakeType === 'stars' ? this.stakeValue : null,
+                p_target_catalog_id: this.targetCatalogId,
+                p_multiplier: this.multiplier,
+            });
 
             if (error || !data || !data[0].success) {
-                spinning = false; if (rafId) cancelAnimationFrame(rafId);
                 this.pl = false;
                 stakeEl.classList.remove('spinning'); targetEl.classList.remove('spinning');
-                if (wheelEl) wheelEl.style.transform = 'rotate(0deg)';
                 window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
                 btn.disabled = false; this.updatePlayBtn(); return;
             }
             const result = data[0];
 
-            // Досчитываем нужный угол ЭТОЙ ЖЕ постоянной скоростью — просто
-            // продолжаем крутиться на той же скорости ровно до нужной точки,
-            // никакого отдельного "второго этапа" с другой физикой нет вообще.
+            // Единственная фаза вращения — классический казино-спин: быстрый
+            // старт, плавное торможение к честной зоне (зелёной, если выиграл,
+            // красной, если нет). cubic-bezier(0.08,0.7,0.15,1) даёт заметно
+            // быстрый разгон в начале и долгое мягкое торможение в конце —
+            // именно ощущение "крутящегося колеса", а не рывок.
             if (wheelEl) {
                 const ch = this.MULT_CHANCE[this.multiplier];
                 const td = result.won ? Math.random() * (ch * 3.6) : (ch * 3.6) + Math.random() * (360 - ch * 3.6);
-                const extraSpins = 2; // сколько ПОЛНЫХ дополнительных оборотов сделать перед остановкой
-                const targetTotalAngle = Math.ceil(currentAngle / 360) * 360 + extraSpins * 360 + (360 - td);
-                const remainingDeg = targetTotalAngle - currentAngle;
-                const extraTime = remainingDeg / CONST_SPEED; // секунды — на той же скорости, что и всё до этого
-
-                await new Promise(resolve => {
-                    const finishAt = performance.now() + extraTime * 1000;
-                    const finishTick = (now) => {
-                        if (now >= finishAt) { spinning = false; if (rafId) cancelAnimationFrame(rafId);
-                            wheelEl.style.transform = `rotate(${targetTotalAngle % 360}deg)`; resolve(); return; }
-                        requestAnimationFrame(finishTick);
-                    };
-                    requestAnimationFrame(finishTick);
-                });
-            } else {
-                spinning = false; if (rafId) cancelAnimationFrame(rafId);
+                const extraSpins = 5; // больше оборотов = дольше и убедительнее ощущается разгон в начале
+                const finalDeg = extraSpins * 360 + (360 - td);
+                void wheelEl.offsetHeight; // форсируем применение rotate(0deg) до старта transition
+                wheelEl.style.transition = 'transform 2.6s cubic-bezier(0.08, 0.7, 0.15, 1)';
+                wheelEl.style.transform = `rotate(${finalDeg}deg)`;
+                await new Promise(r => setTimeout(r, 2600));
+                wheelEl.style.transition = 'none';
+                wheelEl.style.transform = `rotate(${finalDeg % 360}deg)`; // нормализуем угол для следующего спина
             }
 
             this.pl = false;
