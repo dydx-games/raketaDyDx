@@ -35,7 +35,6 @@ window.Multiplayer = {
     ME, channel: null, advanceTimer: null,
     roundState: null,          // crash
     arenaState: null, arenaBets: [],
-    rouletteState: null,
     durakRoomsChannel: null, durakRoomChannel: null, myDurakRoomId: null,
     dailyCd: null,
 
@@ -91,7 +90,24 @@ window.Multiplayer = {
         // ВАЖНО: crash_state/arena_state/roulette_state — закрытые таблицы (чтобы никто не подсмотрел
         // исход заранее), поэтому Realtime на них подписаться нельзя — вместо этого опрашиваем
         // "_public" представления, где скрытые поля видны только после завершения раунда.
-        this.advanceTimer = setInterval(() => this.pollGameState(), 500);
+        //
+        // Опрос теперь с ДИНАМИЧЕСКИМ интервалом: обычно раз в 500мс, но пока идёт
+        // реальный полёт (Ракета/Шарик) — раз в 150мс. Раньше при обычном 500мс
+        // экспоненциальный рост множителя успевал "убежать" на 0.3-0.5x выше
+        // настоящей точки краха за один интервал между опросами — на экране было
+        // видно, например, 5.02x, а через долю секунды всплывало "лопнул на 4.61x".
+        // Более частый опрос именно во время полёта резко сужает это окно.
+        this.pollIntervalMs = 500;
+        this.advanceTimer = setInterval(() => this.pollGameState(), this.pollIntervalMs);
+        this.adjustPollRate = () => {
+            const flying = (window.Crash && window.Crash.state === 1) || (window.Balloon && window.Balloon.state === 1);
+            const wanted = flying ? 150 : 500;
+            if (wanted === this.pollIntervalMs) return;
+            this.pollIntervalMs = wanted;
+            clearInterval(this.advanceTimer);
+            this.advanceTimer = setInterval(() => this.pollGameState(), this.pollIntervalMs);
+        };
+        setInterval(() => this.adjustPollRate(), 300); // проверяем раз в 300мс, не нужно чаще
 
         this.channel = sb.channel('game-sync')
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'crash_bets' }, (p) => this.onCrashBet(p.new))
@@ -155,7 +171,6 @@ window.Multiplayer = {
                 if (st.server_now) this.clockOffsetMs = new Date(st.server_now).getTime() - Date.now();
                 if (st.crash)    this.onCrashUpdate(st.crash);
                 if (st.arena)    await this.onArenaUpdate(st.arena);
-                if (st.roulette) this.onRouletteUpdate(st.roulette);
                 this.pollBalloonState(); // отдельно — шарик появился позже общей функции get_game_state
                 return;
             }
@@ -167,8 +182,6 @@ window.Multiplayer = {
         if (cs) this.onCrashUpdate(cs);
         const { data: asArr } = await sb.rpc('get_arena_state'); const as = asArr && asArr[0];
         if (as) await this.onArenaUpdate(as);
-        const { data: rsArr } = await sb.rpc('get_roulette_state'); const rs = rsArr && rsArr[0];
-        if (rs) this.onRouletteUpdate(rs);
         this.pollBalloonState();
     },
     lastBalloonSig: null,
@@ -206,7 +219,7 @@ window.Multiplayer = {
     },
 
     // ================= КРАШ (РАКЕТА) =================
-    lastCrashSig: null, lastArenaSig: null, lastRouletteSig: null,
+    lastCrashSig: null, lastArenaSig: null,
 
     // Ключ текущего раунда Ракеты. round_key появляется после применения
     // 2-ФИКС-СТАВОК.sql; до этого откатываемся на start_at (старое поведение).
@@ -333,37 +346,6 @@ window.Multiplayer = {
     },
 
     // ================= МУЛЬТИПЛЕЕРНАЯ РУЛЕТКА =================
-    onRouletteUpdate(state) {
-        this.rouletteState = state;
-        const R = window.Roulette; if (!R) return;
-        // Список ставок этого раунда — обновляем на каждом опросе (не только при
-        // смене статуса), чтобы новые ставки других игроков появлялись сразу.
-        this.renderRouletteBets(state.join_deadline);
-        let sig = `${state.status}|${state.join_deadline}|${state.winning_color}`;
-        if (sig === this.lastRouletteSig) return;
-        this.lastRouletteSig = sig;
-        if (state.status === 'waiting') R.syncWaiting(state.join_deadline);
-        else if (state.status === 'spinning') R.syncSpinning(state.winning_color);
-        else if (state.status === 'finished') R.syncFinished(state.winning_color);
-    },
-    async renderRouletteBets(roundKey) {
-        if (!roundKey) return;
-        const { data } = await sb.from('roulette_bets').select('*').eq('round_key', roundKey).order('id', { ascending: false }).limit(30);
-        const el = document.getElementById('roulette-bets-list'); if (!el || !data) return;
-        const colorRu = { red: 'красное', black: 'чёрное', green: 'зеро' };
-        el.innerHTML = data.map(b => `<div class="live-bet-row">
-            <span>${b.username || 'Игрок'}</span>
-            <span style="color:${b.color === 'red' ? '#e74c3c' : b.color === 'black' ? '#ccc' : '#2ecc71'}">${colorRu[b.color] || b.color}</span>
-            <span>${b.amount}</span>
-        </div>`).join('');
-    },
-    async rouletteBet(color, amount) {
-        const { data, error } = await sb.rpc('roulette_bet', { p_telegram_id: ME.id, p_username: ME.username, p_color: color, p_amount: amount });
-        if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка ставки', 'error'); return false; }
-        await this.syncBalanceFromServer();
-        return true;
-    },
-
     // ================= ДУРАК =================
     async refreshDurakRoomList() {
         const { data } = await sb.from('durak_rooms').select('id, status, bet, host_username').eq('status', 'waiting').order('created_at', { ascending: false });
@@ -675,6 +657,7 @@ window.Multiplayer = {
         const { data, error } = await sb.rpc('list_nft', { p_telegram_id: ME.id, p_inventory_id: inventoryId, p_price: price, p_username: ME.username });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return; }
         window.App.toast(data[0].message, 'success');
+        window.Tasks && window.Tasks.chk('market_sold');
         this.refreshMarketShop(); this.refreshMarketListings();
     },
     async cancelListing(listingId) {

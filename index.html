@@ -363,6 +363,17 @@
         .settings-row-label { display: flex; align-items: center; gap: 10px; }
         .settings-row-icon { font-size: 17px; }
         .settings-row-hint { font-size: 11px; color: var(--text-muted); line-height: 1.5; padding-bottom: 8px; margin-top: -4px; }
+        .lb-row { display: flex; align-items: center; gap: 10px; padding: 10px 4px; border-bottom: 1px solid var(--border); }
+        .lb-row:last-child { border-bottom: none; }
+        .lb-rank { width: 26px; text-align: center; font-weight: 900; font-size: 13px; color: var(--text-muted); flex-shrink: 0; }
+        .lb-row:nth-child(1) .lb-rank { color: #ffd700; font-size: 16px; }
+        .lb-row:nth-child(2) .lb-rank { color: #c0c0c0; font-size: 15px; }
+        .lb-row:nth-child(3) .lb-rank { color: #cd7f32; font-size: 15px; }
+        .lb-row .avatar-frame-wrap { width: 36px; height: 36px; flex-shrink: 0; }
+        .lb-row .profile-avatar { width: 36px; height: 36px; font-size: 16px; }
+        .lb-name { flex: 1; min-width: 0; font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .lb-balance { font-size: 13px; font-weight: 800; color: var(--gold); flex-shrink: 0; }
+        .lb-row.is-me { background: rgba(215,180,93,0.08); border-radius: 10px; }
         /* Ползунки — плавные, с лёгким пружинящим переходом вместо резкого "щелчка" */
         .switch { position: relative; display: inline-block; width: 46px; height: 27px; flex-shrink: 0; }
         .switch input { opacity: 0; width: 0; height: 0; }
@@ -685,30 +696,13 @@
         .live-bet-row { display:flex; justify-content:space-between; font-size:11px; padding:5px 0; border-bottom:1px solid var(--border); }
         .live-bet-row:last-child { border-bottom:none; }
 
-        /* 9 стадий фона: 3 земля / 3 небо / 3 космос — постепенно меняем
-           яркость/масштаб декоративных элементов внутри каждого слоя, не
-           просто три плоских картинки. Всё очень плавно через transition. */
-        .bg-ground { filter: brightness(1) saturate(1); transition: filter 1.2s ease; }
-        .balloon-stage.stage-2 .bg-ground { filter: brightness(1.12) saturate(1.05); }
-        .balloon-stage.stage-3 .bg-ground { filter: brightness(1.25) saturate(0.9); }
-        .bg-ground .hill { transition: transform 1.2s ease, opacity 1.2s ease; }
-        .balloon-stage.stage-2 .bg-ground .hill { transform: scale(0.85) translateY(6px); }
-        .balloon-stage.stage-3 .bg-ground .hill { transform: scale(0.68) translateY(14px); opacity: 0.7; }
+        /* 21 плавная ступень фона: 7 земля / 7 небо / 7 космос — теперь не
+           дискретные CSS-классы, а непрерывный расчёт прямо в JS (updateVisual),
+           применяется через инлайн-стили. Тут остаются только transition —
+           сама анимация значений считается на лету под текущий множитель. */
+        .bg-ground, .bg-sky { transition: filter 0.3s ease; }
+        .bg-ground .hill, .bg-sky .cloud, .bg-space .star, .bg-space .planet, .bg-space .nebula { transition: transform 0.3s ease, opacity 0.3s ease; }
         .bg-ground .hill.h4 { position:absolute; bottom:0; left:55%; width:35%; height:30px; border-radius:50% 50% 0 0; background:linear-gradient(180deg,#4a3d1e,#241d0f); opacity:0.7; }
-
-        .bg-sky { filter: brightness(1) hue-rotate(0deg); transition: filter 1.2s ease; }
-        .balloon-stage.stage-5 .bg-sky { filter: brightness(0.9) hue-rotate(-8deg); }
-        .balloon-stage.stage-6 .bg-sky { filter: brightness(0.72) hue-rotate(-18deg) saturate(1.2); }
-        .bg-sky .cloud { transition: transform 1.2s ease, opacity 1.2s ease; }
-        .balloon-stage.stage-5 .bg-sky .cloud { transform: scale(0.7) translateY(-10px); opacity: 0.7; }
-        .balloon-stage.stage-6 .bg-sky .cloud { transform: scale(0.4) translateY(-24px); opacity: 0.35; }
-
-        .bg-space .star, .bg-space .planet, .bg-space .nebula { transition: opacity 1.2s ease, transform 1.2s ease; }
-        .balloon-stage.stage-7 .bg-space .star { opacity: 0.5; }
-        .balloon-stage.stage-8 .bg-space .star { opacity: 0.8; }
-        .balloon-stage.stage-9 .bg-space .star { opacity: 1; transform: scale(1.3); }
-        .balloon-stage.stage-7 .bg-space .planet, .balloon-stage.stage-7 .bg-space .nebula { opacity: 0.5; transform: scale(0.8); }
-        .balloon-stage.stage-9 .bg-space .planet, .balloon-stage.stage-9 .bg-space .nebula { transform: scale(1.25); }
         .nebula.n2 { width:100px; height:55px; }
 
         .dig-lanes { display: flex; gap: 6px; justify-content: center; padding: 10px 4px; }
@@ -766,11 +760,25 @@
         .upg-gift-anim { width: 70px; height: 70px; background: var(--bg-panel-light); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 30px; }
         .upg-gift-arrow { font-size: 22px; color: var(--gold); }
 
-        .upgrader-wheel-wrap { display: flex; justify-content: center; align-items: center; height: 160px; margin: 10px 10px 0; background-color: var(--bg-panel); border-radius: var(--border-radius); border: 1px solid #1f222b; position: relative; overflow: hidden; }
-        .upgrader-wheel { width: 130px; height: 130px; border-radius: 50%; background: conic-gradient(var(--green) 0% 50%, var(--red) 50% 100%); position: relative; box-shadow: 0 0 15px rgba(0,0,0,0.5); }
-        .upgrader-wheel::after { content: ''; position: absolute; inset: 12px; background: var(--bg-panel); border-radius: 50%; }
-        .upgrader-indicator { position: absolute; top: 6px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 16px solid var(--gold); z-index: 10; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));}
-        .upgrader-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 20px; font-weight: 900; z-index: 5; color: #fff; }
+        .upgrader-stage { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 10px 10px 0;
+            background: linear-gradient(180deg, var(--bg-panel) 0%, var(--bg-panel-light) 100%); border-radius: var(--border-radius);
+            border: 1px solid #1f222b; padding: 18px 10px; }
+        .upg-side-card { flex: 1; max-width: 100px; text-align: center; }
+        .upg-side-card .upg-side-icon { width: 56px; height: 56px; margin: 0 auto 6px; border-radius: 14px; background: var(--bg-panel-light);
+            display: flex; align-items: center; justify-content: center; font-size: 26px; border: 1px solid var(--border); }
+        .upg-side-card .upg-side-name { font-size: 10px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .upg-side-card .upg-side-sub { font-size: 9px; color: var(--gold); font-weight: 700; margin-top: 1px; }
+        .upgrader-wheel-wrap { flex-shrink: 0; display: flex; justify-content: center; align-items: center; width: 170px; height: 170px; position: relative; }
+        .upgrader-wheel { width: 170px; height: 170px; border-radius: 50%; background: conic-gradient(var(--green) 0% 50%, var(--red) 50% 100%);
+            position: relative; box-shadow: 0 0 24px rgba(52,211,153,0.25), inset 0 0 20px rgba(0,0,0,0.4); }
+        .upgrader-wheel::after { content: ''; position: absolute; inset: 20px; background: var(--bg-panel); border-radius: 50%;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.5); }
+        .upgrader-indicator { position: absolute; top: -2px; left: 50%; transform: translateX(-50%); width: 0; height: 0;
+            border-left: 9px solid transparent; border-right: 9px solid transparent; border-top: 18px solid var(--gold-bright);
+            z-index: 10; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.6)); }
+        .upgrader-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 5; text-align: center; width: 100px; }
+        .upgrader-center .upg-pct { font-size: 26px; font-weight: 900; color: #fff; line-height: 1.1; }
+        .upgrader-center .upg-pct-label { font-size: 8px; color: var(--text-muted); line-height: 1.3; margin-top: 2px; }
 
         .tower-grid { display: flex; flex-direction: column-reverse; gap: 4px; margin: 10px 10px 0; background-color: var(--bg-panel); border-radius: var(--border-radius); padding: 10px; }
         .tower-row { display: flex; gap: 4px; opacity: 0.5; pointer-events: none; transition: 0.3s; }
@@ -791,14 +799,22 @@
 
         .task-list { display: flex; flex-direction: column; max-height: 450px; overflow-y: auto; padding-right: 5px;}
         .task-list::-webkit-scrollbar { width: 4px; } .task-list::-webkit-scrollbar-thumb { background: #2a2e3a; border-radius: 4px; }
-        .task-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #1f222b; }
-        .task-item:last-child { border-bottom: none; }
-        .task-info h4 { font-size: 13px; font-weight: 800; color: var(--text-light); margin-bottom: 2px; }
-        .task-info p { font-size: 10px; color: var(--text-muted); margin-bottom: 4px; }
-        .task-reward { display: inline-block; font-size: 10px; font-weight: 800; color: var(--gold); background: rgba(215, 180, 93, 0.1); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(215, 180, 93, 0.2); }
-        .btn-claim { background: var(--green); color: #fff; border: none; padding: 6px 10px; border-radius: 6px; font-weight: 800; font-size: 11px; cursor: pointer; text-transform: uppercase; transition: 0.2s;}
+        .task-item { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px;
+            background: var(--bg-panel-light); border-radius: 14px; margin-bottom: 8px; border: 1px solid var(--border);
+            transition: border-color 0.2s, opacity 0.2s; }
+        .task-item.done { opacity: 0.55; border-color: rgba(52,211,153,0.35); }
+        .task-item-icon { width: 40px; height: 40px; min-width: 40px; border-radius: 11px; background: rgba(215,180,93,0.1);
+            display: flex; align-items: center; justify-content: center; font-size: 19px; }
+        .task-info { flex: 1; min-width: 0; }
+        .task-info h4 { font-size: 13.5px; font-weight: 800; color: var(--text-light); margin-bottom: 2px; }
+        .task-info p { font-size: 10.5px; color: var(--text-muted); margin-bottom: 5px; }
+        .task-reward { display: inline-block; font-size: 10.5px; font-weight: 800; color: var(--gold); background: rgba(215, 180, 93, 0.12); padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(215, 180, 93, 0.25); }
+        .btn-claim { background: var(--green); color: #000; border: none; padding: 9px 14px; border-radius: 9px; font-weight: 800; font-size: 11px; cursor: pointer; text-transform: uppercase; transition: 0.2s; flex-shrink: 0;}
         .btn-claim:active:not(:disabled) { transform: scale(0.95); }
-        .btn-claim:disabled { background: var(--bg-panel-light); color: var(--text-muted); cursor: not-allowed; filter: none; opacity: 1;}
+        .btn-claim:disabled { background: rgba(52,211,153,0.15); color: var(--green); cursor: not-allowed; filter: none; opacity: 1;}
+        .tasks-progress-bar { height: 6px; background: var(--bg-panel-light); border-radius: 999px; overflow: hidden; margin: 10px 10px 14px; }
+        .tasks-progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-bright)); border-radius: 999px; transition: width 0.4s ease; }
+        .tasks-progress-label { text-align: center; font-size: 11px; color: var(--text-muted); margin: -8px 10px 10px; }
 
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(3px); z-index: 1000; display: none; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.2s; }
         .modal-overlay.active { display: flex; opacity: 1; }
@@ -900,7 +916,7 @@
                 </div>
                 <div class="hub-card" onclick="App.s('mines', null, 'Минное поле')">
                     <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="7" fill="currentColor" fill-opacity="0.14"/><path d="M12 6V3M9.5 3h5M17 6l1.5-1.5M4 10l2-1"/></svg></div>
-                    <div class="hub-card-info"><div class="hub-card-title">Mines</div><div class="hub-card-desc">Находите алмазы, обходите мины</div></div>
+                    <div class="hub-card-info"><div class="hub-card-title">Мины</div><div class="hub-card-desc">Находите алмазы, обходите мины</div></div>
                 </div>
                 <div class="hub-card" onclick="App.s('shells', null, 'Стаканчики')">
                     <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 10c0-3.5 3-6.5 7-6.5s7 3 7 6.5" fill="currentColor" fill-opacity="0.1"/><path d="M4 10h16l-1.3 8.5a2 2 0 0 1-2 1.5H7.3a2 2 0 0 1-2-1.5z" fill="currentColor" fill-opacity="0.16"/></svg></div>
@@ -983,29 +999,6 @@
             </div>
         </div>
 
-        <!-- ROULETTE -->
-        <div class="game-view" id="view-roulette">
-            <div class="history-strip" id="roulette-history"></div>
-            <div class="roulette-board" id="r-board"><div class="r-pointer"></div><div class="roulette-track" id="r-track"></div></div>
-            <div id="r-countdown"></div>
-            <div class="panel" style="margin-bottom: 20px;">
-                <div class="panel-title">Сумма ставки</div>
-                <div class="bet-row">
-                    <div class="input-wrap"><input type="number" id="r-bet" value="100"></div>
-                    <button class="btn-small" onclick="Roulette.mod('half')">1/2</button><button class="btn-small" onclick="Roulette.mod('double')">2x</button><button class="btn-small" onclick="Roulette.mod('max')">MAX</button>
-                </div>
-                <div class="quick-amounts">
-                    <button class="btn-small" onclick="Roulette.set(1)">1</button><button class="btn-small" onclick="Roulette.set(3)">3</button>
-                    <button class="btn-small" onclick="Roulette.set(13)">13</button><button class="btn-small" onclick="Roulette.set(25)">25</button>
-                </div>
-                <div class="roulette-btns">
-                    <button class="r-btn r-btn-red" id="r-btn-red" onclick="Roulette.play('red')">КРАСНОЕ<br><span style="font-size:10px;opacity:0.8">2x</span></button>
-                    <button class="r-btn r-btn-green" id="r-btn-green" onclick="Roulette.play('green')">ЗЕРО<br><span style="font-size:10px;opacity:0.8">36x</span></button>
-                    <button class="r-btn r-btn-black" id="r-btn-black" onclick="Roulette.play('black')">ЧЕРНОЕ<br><span style="font-size:10px;opacity:0.8">2x</span></button>
-                </div>
-                <div id="roulette-bets-list" style="margin-top:10px; display:flex; flex-direction:column; gap:4px; font-size:11px; max-height:150px; overflow-y:auto;"></div>
-            </div>
-        </div>
 
         <!-- HI-LO -->
         <div class="game-view" id="view-hilo">
@@ -1086,6 +1079,14 @@
                     </div>
                 </div>
                 <div class="settings-row-hint">Английский переводит пока только часть интерфейса — полный перевод в разработке, честно об этом предупреждаем.</div>
+            </div>
+        </div>
+
+        <!-- ЛИДЕРБОРД -->
+        <div class="game-view" id="view-leaderboard">
+            <div class="settings-row-hint" style="margin:10px 14px 0; text-align:center;" id="lb-updated">Обновляется каждые 5 минут...</div>
+            <div class="panel" style="margin-bottom:20px;">
+                <div id="lb-list"></div>
             </div>
         </div>
 
@@ -1200,7 +1201,26 @@
             </div>
 
             <div id="upg-stars-mode">
-                <div class="upgrader-wheel-wrap"><div class="upgrader-indicator"></div><div class="upgrader-wheel" id="upg-wheel"></div><div class="upgrader-center" id="upg-center">2.00x</div></div>
+                <div class="upgrader-stage">
+                    <div class="upg-side-card">
+                        <div class="upg-side-icon">⭐</div>
+                        <div class="upg-side-name" id="upg-side-bet-name">Ставка</div>
+                        <div class="upg-side-sub" id="upg-side-bet-amt">100⭐</div>
+                    </div>
+                    <div class="upgrader-wheel-wrap">
+                        <div class="upgrader-indicator"></div>
+                        <div class="upgrader-wheel" id="upg-wheel"></div>
+                        <div class="upgrader-center">
+                            <div class="upg-pct" id="upg-center">49%</div>
+                            <div class="upg-pct-label">шанс успеха</div>
+                        </div>
+                    </div>
+                    <div class="upg-side-card">
+                        <div class="upg-side-icon">🎯</div>
+                        <div class="upg-side-name" id="upg-side-target-name">Цель</div>
+                        <div class="upg-side-sub" id="upg-side-target-amt">x2.00</div>
+                    </div>
+                </div>
                 <div class="panel">
                     <div class="panel-title">Цель (Множитель)</div>
                     <div class="bet-row" id="upg-selectors">
@@ -1209,7 +1229,7 @@
                 </div>
                 <div class="panel" style="margin-bottom: 20px;">
                     <div class="bet-row">
-                        <div class="input-wrap"><input type="number" id="upg-bet" value="100"></div>
+                        <div class="input-wrap"><input type="number" id="upg-bet" value="100" oninput="Upgrader.updSideBet()"></div>
                         <button class="btn-small" onclick="Upgrader.mod('half')">1/2</button><button class="btn-small" onclick="Upgrader.mod('double')">2x</button><button class="btn-small" onclick="Upgrader.mod('max')">MAX</button>
                     </div>
                     <div class="quick-amounts">
@@ -1252,7 +1272,13 @@
                 <div class="panel" style="margin-bottom:20px;">
                     <div class="upg-gift-stage" id="gu-stage">
                         <div class="upg-gift-anim" id="gu-anim-stake"></div>
-                        <div class="upg-gift-arrow">→</div>
+                        <div class="upgrader-wheel-wrap" style="width:110px; height:110px;">
+                            <div class="upgrader-indicator" style="border-left-width:6px; border-right-width:6px; border-top-width:12px;"></div>
+                            <div class="upgrader-wheel" id="gu-wheel" style="width:110px; height:110px;"></div>
+                            <div class="upgrader-center" style="width:70px;">
+                                <div class="upg-pct" id="gu-pct" style="font-size:17px;">46%</div>
+                            </div>
+                        </div>
                         <div class="upg-gift-anim" id="gu-anim-target"></div>
                     </div>
                     <button class="main-btn btn-gold" id="gu-play-btn" onclick="GiftUpgrader.play()" disabled>Выбери гифт и цель</button>
@@ -1491,6 +1517,11 @@
                 <div class="profile-gifts-grid" id="profile-gifts-grid"></div>
             </div>
 
+            <div class="settings-nav-row" onclick="App.s('leaderboard', null, 'Топ игроков')">
+                <span>🏆 Топ игроков</span>
+                <span class="settings-nav-arrow">›</span>
+            </div>
+
             <div class="settings-nav-row" onclick="App.s('settings', null, 'Настройки')">
                 <span>⚙️ Настройки</span>
                 <span class="settings-nav-arrow">›</span>
@@ -1570,6 +1601,8 @@
 
         <!-- TASKS -->
         <div class="game-view" id="view-tasks">
+            <div class="tasks-progress-bar"><div class="tasks-progress-bar-fill" id="tasks-progress-fill" style="width:0%;"></div></div>
+            <div class="tasks-progress-label" id="tasks-progress-label">Выполнено 0 из 0</div>
             <div class="panel" style="margin-bottom:20px;">
                 <div class="panel-title">Задания</div>
                 <div class="task-list" id="task-list-container"></div>
@@ -1757,15 +1790,32 @@
         coin() {
             const ctx = this.getCtx(); if (!ctx) return;
             const t0 = ctx.currentTime;
+            // Мягкий фильтр на выходе — срезает самые острые верха у чистой синусоиды,
+            // звук становится теплее, "бархатнее", а не звонко-стеклянным
+            const master = ctx.createBiquadFilter(); master.type = 'lowpass'; master.frequency.value = 4200; master.Q.value = 0.5;
+            master.connect(ctx.destination);
             [2093, 2637, 3136].forEach((freq, i) => {
                 const osc = ctx.createOscillator(); osc.type = 'sine'; osc.frequency.value = freq;
                 const gain = ctx.createGain();
                 gain.gain.setValueAtTime(0.001, t0);
                 gain.gain.linearRampToValueAtTime(0.32 - i*0.06, t0 + 0.008);
                 gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.4);
-                osc.connect(gain); gain.connect(ctx.destination);
+                osc.connect(gain); gain.connect(master);
                 osc.start(t0); osc.stop(t0 + 0.4);
             });
+        },
+        // Лёгкий короткий "тик" — для обычных нажатий на кнопки-модификаторы
+        // ставки (1/2, 2x, MAX и т.п.), раньше таких мелких тапов вообще не было
+        click() {
+            const ctx = this.getCtx(); if (!ctx) return;
+            const t0 = ctx.currentTime;
+            const osc = ctx.createOscillator(); osc.type = 'sine'; osc.frequency.setValueAtTime(920, t0); osc.frequency.exponentialRampToValueAtTime(600, t0+0.05);
+            const gain = ctx.createGain();
+            gain.gain.setValueAtTime(0.001, t0);
+            gain.gain.linearRampToValueAtTime(0.14, t0 + 0.005);
+            gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.06);
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.start(t0); osc.stop(t0 + 0.06);
         },
         // Короткий шершавый шорох для стирания скретч-карты — белый шум,
         // пропущенный через полосовой фильтр (без фильтра шум звучит как
@@ -1789,6 +1839,8 @@
         task() {
             const ctx = this.getCtx(); if (!ctx) return;
             const t0 = ctx.currentTime;
+            const master = ctx.createBiquadFilter(); master.type = 'lowpass'; master.frequency.value = 4000; master.Q.value = 0.5;
+            master.connect(ctx.destination);
             [1568, 2093, 2637, 3136].forEach((freq, i) => {
                 const t1 = t0 + i*0.07;
                 const osc = ctx.createOscillator(); osc.type = 'sine'; osc.frequency.value = freq;
@@ -1796,7 +1848,7 @@
                 gain.gain.setValueAtTime(0.001, t1);
                 gain.gain.linearRampToValueAtTime(0.3, t1 + 0.008);
                 gain.gain.exponentialRampToValueAtTime(0.001, t1 + 0.3);
-                osc.connect(gain); gain.connect(ctx.destination);
+                osc.connect(gain); gain.connect(master);
                 osc.start(t1); osc.stop(t1 + 0.3);
             });
         }
@@ -1822,6 +1874,40 @@
         </svg>`;
     };
 
+    window.Leaderboard = {
+        async load() {
+            if (!window.Multiplayer) return;
+            const { data, error } = await sb.rpc('get_leaderboard');
+            const list = document.getElementById('lb-list'); if (!list) return;
+            if (error || !data || !data.length) { list.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:12px; padding:14px 0;">Пока нет данных</div>`; return; }
+
+            const updEl = document.getElementById('lb-updated');
+            if (updEl && data[0].updated_at) {
+                const mins = Math.max(0, Math.floor((Date.now() - new Date(data[0].updated_at).getTime()) / 60000));
+                updEl.innerText = mins <= 0 ? 'Обновлено только что' : `Обновлено ${mins} мин. назад · обновляется раз в 5 минут`;
+            }
+
+            list.innerHTML = data.map(p => {
+                const isMe = window.ME && p.telegram_id === window.ME.id;
+                const initial = (p.username || '?')[0].toUpperCase();
+                const avatarInner = p.avatar_url
+                    ? `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.parentElement.innerText='${initial}'">`
+                    : initial;
+                return `<div class="lb-row ${isMe ? 'is-me' : ''}">
+                    <div class="lb-rank">${p.rank}</div>
+                    <div class="avatar-frame-wrap" id="lb-frame-${p.rank}"><div class="profile-avatar">${avatarInner}</div></div>
+                    <div class="lb-name">${p.username || 'Игрок'}${isMe ? ' (ты)' : ''}</div>
+                    <div class="lb-balance">${Number(p.balance).toLocaleString()}⭐</div>
+                </div>`;
+            }).join('');
+
+            data.forEach(p => {
+                const wrap = document.getElementById('lb-frame-' + p.rank);
+                if (wrap && window.Frames) window.Frames.decorateWrap(wrap, p.frame_css_class, 'lb' + p.rank);
+            });
+        },
+    };
+
     window.BigWins = {
         list: [],
         async load() {
@@ -1834,19 +1920,25 @@
         render() {
             const track = document.getElementById('bigwin-track'); if (!track) return;
             if (!this.list.length) { track.innerHTML = `<div class="bigwin-banner-empty">Пока никто не выигрывал 1000+⭐ — стань первым!</div>`; return; }
-            track.innerHTML = this.list.map(w => {
+            track.innerHTML = this.list.map((w, idx) => {
                 const initial = (w.username || '?')[0].toUpperCase();
                 const avatarInner = w.avatar_url
                     ? `<img src="${w.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.parentElement.innerText='${initial}'">`
                     : initial;
                 return `<div class="bigwin-card">
-                    <div class="avatar-frame-wrap ${w.frame_css_class || ''}"><div class="profile-avatar">${avatarInner}</div></div>
+                    <div class="avatar-frame-wrap" id="bigwin-frame-${idx}"><div class="profile-avatar">${avatarInner}</div></div>
                     <div class="bigwin-card-info">
                         <div class="bigwin-card-name">${w.username || 'Игрок'}</div>
                         <div class="bigwin-card-detail">+<b>${Number(w.amount).toLocaleString()}⭐</b> · ${w.game_name}</div>
                     </div>
                 </div>`;
             }).join('');
+            // Декор рамки (звёзды/текст по кругу/жабы) — вставляем ПОСЛЕ рендера,
+            // раньше карточки получали только голый CSS-класс без декора
+            this.list.forEach((w, idx) => {
+                const wrap = document.getElementById('bigwin-frame-' + idx);
+                if (wrap && window.Frames) window.Frames.decorateWrap(wrap, w.frame_css_class, 'bw' + idx);
+            });
         },
     };
 
@@ -1937,7 +2029,7 @@
             let bStr = localStorage.getItem('dydx_balance'); this.balance = bStr ? Math.floor(parseFloat(bStr)) : 500;
             if(isNaN(this.balance) || this.balance < 0) this.balance = 10000;
 
-            window.Settings.init(); window.Stats.init(); window.Levels.init(); window.Gifts.init(); window.Tasks.init(); window.Roulette.init(); window.Upgrader.init(); window.Tower.init(); window.Mines.init(); window.Shells.init(); window.Dice.init(); window.Plinko.init(); window.Crash.init(); window.HiLo.init(); window.Coin.init(); window.Slots.init(); window.Scratch.init(); window.Balloon.init(); window.ProfileBg.init();
+            window.Settings.init(); window.Stats.init(); window.Levels.init(); window.Gifts.init(); window.Tasks.init(); window.Upgrader.init(); window.Tower.init(); window.Mines.init(); window.Shells.init(); window.Dice.init(); window.Plinko.init(); window.Crash.init(); window.HiLo.init(); window.Coin.init(); window.Slots.init(); window.Scratch.init(); window.Balloon.init(); window.ProfileBg.init();
             window.BigWins.load();
             setInterval(() => window.BigWins.load(), 60000);
             this.updBalUI();
@@ -2082,9 +2174,8 @@
         },
         clearCache() { localStorage.clear(); location.reload(); },
         s(id, el, title) {
-            if (id === 'roulette') return this.toast('Рулетка временно закрыта — чиним найденный баг', 'error');
             if(window.Crash && window.Crash.state === 1 && window.Crash.bet.pl && !window.Crash.bet.o) return this.toast('Нельзя выйти во время полета!', 'error');
-            if(window.Tower.pl || window.Mines.pl || window.Shells.pl || window.Dice.pl || window.Plinko.pl || window.Upgrader.pl || window.Roulette.pl || window.HiLo.pl || window.Coin.pl || window.Gifts.pl || window.Gifts.upgrading) return this.toast('Завершите игру!', 'error');
+            if(window.Tower.pl || window.Mines.pl || window.Shells.pl || window.Dice.pl || window.Plinko.pl || window.Upgrader.pl || window.HiLo.pl || window.Coin.pl || window.Gifts.pl || window.Gifts.upgrading) return this.toast('Завершите игру!', 'error');
 
             document.querySelectorAll('.game-view').forEach(v => v.classList.remove('active')); document.getElementById(`view-${id}`).classList.add('active');
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -2096,12 +2187,12 @@
             if(id === 'crash') setTimeout(() => window.Crash.posM(), 50);
             if(id === 'tycoon' && window.Multiplayer) window.Multiplayer.refreshTycoon();
             if(id === 'crypto' && window.Multiplayer) window.Multiplayer.refreshCrypto();
-            if(id === 'roulette' && window.Roulette) setTimeout(() => window.Roulette.resync(), 50);
             const fab = document.getElementById('daily-bonus-fab'); if (fab) fab.style.visibility = (id === 'crypto') ? 'hidden' : 'visible';
             if(id === 'profile' && window.ProfileStats) window.ProfileStats.render();
             if(id === 'profile' && window.ProfileBg) window.ProfileBg.render();
             if(id === 'profile' && window.Frames) window.Frames.load();
             if(id === 'settings' && window.Settings) window.Settings.syncUI();
+            if(id === 'leaderboard' && window.Leaderboard) window.Leaderboard.load();
             if(id === 'profile' && window.Referrals) window.Referrals.init();
             if(id === 'profile' && window.ProfileGifts) window.ProfileGifts.ensureLoaded();
             if(id === 'market' && window.Showcase) window.Showcase.ensureLoaded();
@@ -2138,6 +2229,7 @@
             this.list = data;
             this.render();
             this.applyEquipped();
+            if (data.some(f => f.tier === 'donor' && f.owned)) window.Tasks && window.Tasks.chk('donor');
         },
         toggleCollapse() {
             this.collapsed = !this.collapsed;
@@ -2183,6 +2275,7 @@
             if (error || !data || !data[0].success) return window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
             window.App.balance = data[0].new_balance; window.App.updBalUI();
             window.App.toast(data[0].message, 'success');
+            window.Tasks && window.Tasks.chk('frame_buy');
             this.load();
         },
         async equip(frameId) {
@@ -2192,38 +2285,46 @@
         },
         applyEquipped() {
             const wrap = document.getElementById('avatar-frame-wrap'); if (!wrap) return;
-            // Убираем только декоративные элементы прошлой рамки, сам #profile-avatar не трогаем
-            wrap.querySelectorAll('.fw-orbit, .fw-pepe-model').forEach(el => el.remove());
-            wrap.className = 'avatar-frame-wrap';
             const eq = this.list.find(f => f.equipped);
-            if (!eq) return;
-            wrap.classList.add(eq.css_class);
+            this.decorateWrap(wrap, eq ? eq.css_class : null);
+        },
+        // Общая функция — вставляет декоративные элементы конкретной рамки в
+        // ЛЮБОЙ .avatar-frame-wrap на странице (раньше это работало только для
+        // одного фиксированного #avatar-frame-wrap в профиле, из-за чего в
+        // баннере выигрышей и карточке продавца рамки были "пустые", только
+        // с голым цветным ободком без декора).
+        decorateWrap(wrap, cssClass, uidSuffix) {
+            if (!wrap) return;
+            wrap.querySelectorAll('.fw-orbit, .fw-pepe-model, .fw-rich-text').forEach(el => el.remove());
+            wrap.className = 'avatar-frame-wrap';
+            if (!cssClass) return;
+            wrap.classList.add(cssClass);
+            const uid = 'p' + (uidSuffix || Math.random().toString(36).slice(2));
 
-            if (eq.css_class === 'frame-gold') {
+            if (cssClass === 'frame-gold') {
                 wrap.insertAdjacentHTML('beforeend', `<div class="fw-orbit"><span>⭐</span><span>⭐</span><span>⭐</span></div>`);
-            } else if (eq.css_class === 'frame-rainbow') {
+            } else if (cssClass === 'frame-rainbow') {
                 wrap.insertAdjacentHTML('beforeend', `<div class="fw-orbit"><span>✨</span><span>✨</span><span>✨</span><span>✨</span></div>`);
-            } else if (eq.css_class === 'frame-emerald') {
+            } else if (cssClass === 'frame-emerald') {
                 wrap.insertAdjacentHTML('beforeend', `<div class="fw-orbit"><span>💚</span><span>💚</span><span>💚</span></div>`);
-            } else if (eq.css_class === 'frame-pepe') {
+            } else if (cssClass === 'frame-pepe') {
                 // Настоящие анимации моделей Plush Pepe (заморожены на первом кадре),
                 // не эмодзи — Toading, Pumpkin и Christmas по кругу рамки
                 wrap.insertAdjacentHTML('beforeend', `
-                    <div class="fw-pepe-model" id="fw-pepe-1"></div>
-                    <div class="fw-pepe-model" id="fw-pepe-2"></div>
-                    <div class="fw-pepe-model" id="fw-pepe-3"></div>`);
-                this.loadPepeFrameModels();
-            } else if (eq.css_class === 'frame-donor-star') {
+                    <div class="fw-pepe-model" id="fw-pepe-1-${uid}"></div>
+                    <div class="fw-pepe-model" id="fw-pepe-2-${uid}"></div>
+                    <div class="fw-pepe-model" id="fw-pepe-3-${uid}"></div>`);
+                this.loadPepeFrameModels(uid);
+            } else if (cssClass === 'frame-donor-star') {
                 const star = `<svg viewBox="0 0 24 24" fill="#ffe07a"><path d="M12 2 L14.2 9.8 L22 12 L14.2 14.2 L12 22 L9.8 14.2 L2 12 L9.8 9.8 Z"/></svg>`;
                 wrap.insertAdjacentHTML('beforeend', `<div class="fw-orbit">${star}${star}${star}${star}</div>`);
-            } else if (eq.css_class === 'frame-donor-rich') {
-                const uid = 'richPath' + Math.random().toString(36).slice(2);
+            } else if (cssClass === 'frame-donor-rich') {
                 wrap.insertAdjacentHTML('beforeend', `
                     <div class="fw-rich-text"><svg viewBox="0 0 100 100">
-                        <defs><path id="${uid}" d="M 50,50 m -43,0 a 43,43 0 1,1 86,0 a 43,43 0 1,1 -86,0"/></defs>
-                        <text><textPath href="#${uid}">★ БОГАЧ ★ БОГАЧ ★ БОГАЧ </textPath></text>
+                        <defs><path id="richPath-${uid}" d="M 50,50 m -43,0 a 43,43 0 1,1 86,0 a 43,43 0 1,1 -86,0"/></defs>
+                        <text><textPath href="#richPath-${uid}">★ БОГАЧ ★ БОГАЧ ★ БОГАЧ </textPath></text>
                     </svg></div>`);
-            } else if (eq.css_class === 'frame-donor-royal') {
+            } else if (cssClass === 'frame-donor-royal') {
                 wrap.insertAdjacentHTML('beforeend', `<div class="fw-orbit"><span>✨</span><span>✨</span></div>`);
             }
         },
@@ -2238,9 +2339,9 @@
                 inst.goToAndStop(0, true);
             } catch (e) {}
         },
-        loadPepeFrameModels() {
+        loadPepeFrameModels(uid) {
             const files = ['model_toading.json', 'model_pumpkin.json', 'model_christmas.json'];
-            ['fw-pepe-1', 'fw-pepe-2', 'fw-pepe-3'].forEach((id, i) => {
+            [`fw-pepe-1-${uid}`, `fw-pepe-2-${uid}`, `fw-pepe-3-${uid}`].forEach((id, i) => {
                 const el = document.getElementById(id);
                 if (el) this.loadPepeModel(el, files[i]);
             });
@@ -2392,19 +2493,30 @@
     };
 
     window.Tasks = {
-        st: { welcome:false, daily:false, rich:false, knyaz:false, ludo:false, rocketman:false, sniper:false, sapper:false, lucky:false, psychic:false, fearless:false, coinflip:false, marathon:false, unlucky:false, diamond:false, risk:false, madminer:false },
+        st: { welcome:false, daily:false, rich:false, knyaz:false, ludo:false, rocketman:false, sniper:false, sapper:false, psychic:false, fearless:false, coinflip:false, marathon:false, unlucky:false, diamond:false, risk:false, madminer:false, frame_buy:false, collector:false, slots_jackpot:false, scratch_win:false, balloon_win:false, gift_upgraded:false, market_sold:false, gift_upgrader_win:false, big_winner:false, donor:false },
         lastD: 0,
         list: [
-            { id: 'channel_sub', t: '📢 Подписка на канал', d: 'Подпишись на @dydxgamenews', r: 200, a: true, channel: true },
-            { id: 'welcome', t: 'Приветственный бонус', d: 'За первый вход', r: 50, a: false }, { id: 'daily', t: 'Ежедневная награда', d: 'Заходи каждый день', r: 100, a: false },
-            { id: 'marathon', t: 'Марафонец', d: 'Сделай 100 ставок', r: 300, a: true }, { id: 'unlucky', t: 'Невезучий', d: 'Слови краш на 1.00x', r: 50, a: true },
-            { id: 'diamond', t: 'Алмазный магнат', d: 'Открой 15 алмазов за раунд', r: 500, a: true }, { id: 'risk', t: 'Абсолютный риск', d: 'Выиграй 50x в Апгрейдере', r: 1500, a: true },
-            { id: 'madminer', t: 'Безумный Шахтер', d: 'Выиграй с 24 минами', r: 3000, a: true }, { id: 'rich', t: 'Богач', d: 'Выиграй > 250 за раз', r: 200, a: true },
-            { id: 'knyaz', t: 'Из грязи в князи', d: 'Накопи 2.500', r: 1000, a: true }, { id: 'ludo', t: 'Лудоман', d: 'Сделай 50 любых ставок', r: 100, a: true },
-            { id: 'rocketman', t: 'Ракетостроитель', d: 'Сыграй в Ракету 10 раз', r: 100, a: true }, { id: 'sniper', t: 'Снайпер', d: 'Поймай 10x в Ракете', r: 150, a: true },
-            { id: 'sapper', t: 'Сапер', d: 'Победа в Минах (>=5)', r: 100, a: true }, { id: 'lucky', t: 'Счастливчик', d: 'Угадай Зеро в Рулетке', r: 200, a: true },
-            { id: 'psychic', t: 'Экстрасенс', d: 'Сделай 5 шагов в Hi-Lo', r: 150, a: true }, { id: 'fearless', t: 'Бесстрашный', d: 'Пройди Башню (Сложно)', r: 500, a: true },
-            { id: 'coinflip', t: 'Орёл и Решка', d: 'Стрик из 3 побед', r: 150, a: true }
+            { id: 'channel_sub', i:'📢', t: '📢 Подписка на канал', d: 'Подпишись на @dydxgamenews', r: 200, a: true, channel: true },
+            { id: 'welcome', i:'👋', t: 'Приветственный бонус', d: 'За первый вход', r: 50, a: false }, { id: 'daily', i:'📅', t: 'Ежедневная награда', d: 'Заходи каждый день', r: 100, a: false },
+            { id: 'marathon', i:'🏃', t: 'Марафонец', d: 'Сделай 100 ставок', r: 300, a: true }, { id: 'unlucky', i:'💥', t: 'Невезучий', d: 'Слови краш на 1.00x', r: 50, a: true },
+            { id: 'diamond', i:'💎', t: 'Алмазный магнат', d: 'Открой 15 алмазов за раунд', r: 500, a: true }, { id: 'risk', i:'🎲', t: 'Абсолютный риск', d: 'Выиграй 50x в Апгрейдере', r: 1500, a: true },
+            { id: 'madminer', i:'💣', t: 'Безумный Шахтер', d: 'Выиграй с 24 минами', r: 3000, a: true }, { id: 'rich', i:'💰', t: 'Богач', d: 'Выиграй > 250 за раз', r: 200, a: true },
+            { id: 'knyaz', i:'👑', t: 'Из грязи в князи', d: 'Накопи 2.500', r: 1000, a: true }, { id: 'ludo', i:'🎰', t: 'Лудоман', d: 'Сделай 50 любых ставок', r: 100, a: true },
+            { id: 'rocketman', i:'🚀', t: 'Ракетостроитель', d: 'Сыграй в Ракету 10 раз', r: 100, a: true }, { id: 'sniper', i:'🎯', t: 'Снайпер', d: 'Поймай 10x в Ракете', r: 150, a: true },
+            { id: 'sapper', i:'🧨', t: 'Сапер', d: 'Победа в Минах (>=5)', r: 100, a: true },
+            { id: 'psychic', i:'🔮', t: 'Экстрасенс', d: 'Сделай 5 шагов в Hi-Lo', r: 150, a: true }, { id: 'fearless', i:'🗼', t: 'Бесстрашный', d: 'Пройди Башню (Сложно)', r: 500, a: true },
+            { id: 'coinflip', i:'🪙', t: 'Орёл и Решка', d: 'Стрик из 3 побед', r: 150, a: true },
+            // ---- 10 новых заданий под свежие фичи ----
+            { id: 'frame_buy', i:'🖼', t: 'Модник', d: 'Купи любую рамку профиля', r: 200, a: true },
+            { id: 'collector', i:'🗃️', t: 'Коллекционер вещей', d: 'Собери 3 разных типа гифтов', r: 150, a: true },
+            { id: 'slots_jackpot', i:'🐸', t: 'Поймал жабу', d: 'Джекпот в Слотах (🐸🐸🐸)', r: 1000, a: true },
+            { id: 'scratch_win', i:'🎫', t: 'Везучая карта', d: 'Выиграй в Скретч-карте', r: 100, a: true },
+            { id: 'balloon_win', i:'🎈', t: 'Воздухоплаватель', d: 'Забери выигрыш в Шарике выше x2', r: 100, a: true },
+            { id: 'gift_upgraded', i:'⬆️', t: 'Коллекционер', d: 'Улучши любой гифт', r: 200, a: true },
+            { id: 'market_sold', i:'🏪', t: 'Торговец', d: 'Выставь гифт на продажу другому игроку', r: 250, a: true },
+            { id: 'gift_upgrader_win', i:'⚙️', t: 'Рискнул и выиграл', d: 'Выиграй в Апгрейдере гифтов', r: 500, a: true },
+            { id: 'big_winner', i:'🏆', t: 'Крупная рыба', d: 'Выиграй 1000+⭐ за раз в любой игре', r: 300, a: true },
+            { id: 'donor', i:'💝', t: 'Меценат', d: 'Поддержи проект настоящим донатом', r: 500, a: true },
         ],
         init() {
             let s = LS.g('dydx_tasks', {}); this.st = Object.assign(this.st, s); let d = localStorage.getItem('dydx_tasks_time'); if(d) this.lastD = parseInt(d);
@@ -2419,30 +2531,50 @@
             if(t==='win'&&v>=250&&!this.st.rich) this.claim('rich'); if(t==='balance'&&window.App.balance>=2500&&!this.st.knyaz) this.claim('knyaz');
             if(t==='bets') { if(v>=50&&!this.st.ludo) this.claim('ludo'); if(v>=100&&!this.st.marathon) this.claim('marathon'); }
             if(t==='crash'&&v>=10&&!this.st.rocketman) this.claim('rocketman'); if(t==='sniper'&&v>=10&&!this.st.sniper) this.claim('sniper');
-            if(t==='sapper'&&v>=5&&!this.st.sapper) this.claim('sapper'); if(t==='lucky'&&!this.st.lucky) this.claim('lucky');
+            if(t==='sapper'&&v>=5&&!this.st.sapper) this.claim('sapper');
             if(t==='psychic'&&v>=5&&!this.st.psychic) this.claim('psychic'); if(t==='fearless'&&!this.st.fearless) this.claim('fearless');
             if(t==='coinflip'&&v>=3&&!this.st.coinflip) this.claim('coinflip'); if(t==='unlucky'&&!this.st.unlucky) this.claim('unlucky');
             if(t==='diamond'&&v>=15&&!this.st.diamond) this.claim('diamond'); if(t==='risk'&&!this.st.risk) this.claim('risk'); if(t==='madminer'&&!this.st.madminer) this.claim('madminer');
+            if(t==='frame_buy'&&!this.st.frame_buy) this.claim('frame_buy');
+            if(t==='collector'&&v>=3&&!this.st.collector) this.claim('collector');
+            if(t==='slots_jackpot'&&!this.st.slots_jackpot) this.claim('slots_jackpot');
+            if(t==='scratch_win'&&!this.st.scratch_win) this.claim('scratch_win');
+            if(t==='balloon_win'&&v>=2&&!this.st.balloon_win) this.claim('balloon_win');
+            if(t==='gift_upgraded'&&!this.st.gift_upgraded) this.claim('gift_upgraded');
+            if(t==='market_sold'&&!this.st.market_sold) this.claim('market_sold');
+            if(t==='gift_upgrader_win'&&!this.st.gift_upgrader_win) this.claim('gift_upgrader_win');
+            if(t==='big_winner'&&v>=1000&&!this.st.big_winner) this.claim('big_winner');
+            if(t==='donor'&&!this.st.donor) this.claim('donor');
             this.rnd();
         },
         rnd() {
             const c = document.getElementById('task-list-container'); c.innerHTML = '';
+            const doneCount = this.list.filter(t => this.st[t.id]).length;
+            const bar = document.getElementById('tasks-progress-fill'); const lbl = document.getElementById('tasks-progress-label');
+            if (bar) bar.style.width = (doneCount / this.list.length * 100).toFixed(0) + '%';
+            if (lbl) lbl.innerText = `Выполнено ${doneCount} из ${this.list.length}`;
+
             this.list.forEach(t => {
                 let d = this.st[t.id];
                 if (t.channel) {
                     // Особый случай: у этого задания две кнопки — открыть канал (просто ссылка,
                     // ничего не проверяет) и "Забрать" (реально спрашивает Telegram, подписаны ли вы,
                     // а не просто верит нажатию — см. window.Tasks.claimChannel()).
-                    c.innerHTML += `<div class="task-item">
-                        <div class="task-info"><h4>${t.t}</h4><p>${t.d}</p><span class="task-reward">+${t.r}</span></div>
+                    c.innerHTML += `<div class="task-item ${d ? 'done' : ''}">
+                        <div class="task-item-icon">${t.i || '📋'}</div>
+                        <div class="task-info"><h4>${t.t}</h4><p>${t.d}</p><span class="task-reward">+${t.r}⭐</span></div>
                         <div style="display:flex; gap:6px;">
                             <button class="btn-claim" style="flex:0 0 auto; padding:0 12px;" onclick="window.Tasks.openChannel()" title="Открыть канал">🔗</button>
-                            <button class="btn-claim" id="task-btn-channel_sub" ${d ? 'disabled' : ''} onclick="window.Tasks.claimChannel()">${d ? 'Выполнено' : 'Забрать'}</button>
+                            <button class="btn-claim" id="task-btn-channel_sub" ${d ? 'disabled' : ''} onclick="window.Tasks.claimChannel()">${d ? '✓' : 'Забрать'}</button>
                         </div>
                     </div>`;
                     return;
                 }
-                c.innerHTML += `<div class="task-item"><div class="task-info"><h4>${t.t}</h4><p>${t.d}</p><span class="task-reward">+${t.r}</span></div><button class="btn-claim" ${d?'disabled':''} onclick="${!t.a ? `window.Tasks.claim('${t.id}')` : ''}">${d ? 'Выполнено' : (t.a ? 'В процессе' : 'Забрать')}</button></div>`;
+                c.innerHTML += `<div class="task-item ${d ? 'done' : ''}">
+                    <div class="task-item-icon">${t.i || '📋'}</div>
+                    <div class="task-info"><h4>${t.t}</h4><p>${t.d}</p><span class="task-reward">+${t.r}⭐</span></div>
+                    <button class="btn-claim" ${d?'disabled':''} onclick="${!t.a ? `window.Tasks.claim('${t.id}')` : ''}">${d ? '✓' : (t.a ? 'В процессе' : 'Забрать')}</button>
+                </div>`;
             });
         },
         openChannel() {
@@ -3052,139 +3184,10 @@
     };
 
     // 2: РУЛЕТКА
-    window.Roulette = {
-        pl: false, tmr: null, h: [], tC: [], iW: 64, sq: [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26], lk: false,
-        mpMode: false, myBetColor: null,
-        init() {
-            let ch = LS.g('dydx_roulette_h', []); this.h = Array.isArray(ch) ? ch.filter(x=>typeof x==='string') : []; this.rndH(); this.rTr(true);
-            if (window.Multiplayer) { this.mpMode = true; }
-        },
-        mod(act) { if(this.pl) return; let v = Math.floor(Number(document.getElementById('r-bet').value)) || 0; if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById('r-bet').value = Math.max(0, Math.min(v, window.App.balance)); },
-        set(v) { if(!this.pl) document.getElementById('r-bet').value=v; },
-        gC(n) { if (n === 0) return 'green'; const r = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]; return r.includes(n) ? 'red' : 'black'; },
-        rTr(i=false) {
-            const t = document.getElementById('r-track'); t.style.transition = 'none'; t.style.transform = 'translate3d(0px,0,0)'; t.innerHTML = ''; this.tC = [];
-            for(let j=0; j<150; j++) { let n = this.sq[j % 37]; let c = this.gC(n); let el = document.createElement('div'); el.className = `r-item r-${c}`; el.innerText = n; t.appendChild(el); this.tC.push({n, c}); }
-            if(!i) void t.offsetWidth;
-        },
-        play(bc) {
-            if (this.mpMode) return this.mpPlay(bc);
-            if(this.pl || this.lk) return;
-            let bet = Math.floor(Number(document.getElementById('r-bet').value));
-            if(!bet || isNaN(bet) || bet<=0) return window.App.toast('Неверная ставка','error'); if(bet>window.App.balance) return window.App.toast('Недостаточно звёзд','error');
-
-            this.pl=true; this.lk=true; window.App.chgBal(-bet, 'Рулетка'); window.Stats.addBet(); this.rTr();
-            document.getElementById('r-btn-red').disabled = true; document.getElementById('r-btn-green').disabled = true; document.getElementById('r-btn-black').disabled = true;
-
-            let ti = 110 + Math.floor(Math.random()*37);
-            let wc = this.tC[ti].c; let bC = (document.getElementById('r-board').clientWidth || 400) / 2;
-            let fX = -((ti*this.iW)+(this.iW/2) - bC + ((Math.random()*54)-27));
-
-            const t = document.getElementById('r-track'); t.style.transition = 'transform 4s cubic-bezier(0.1,0,0.1,1)'; t.style.transform = `translate3d(${fX}px,0,0)`;
-
-            this.timer = setTimeout(() => {
-                try {
-                    if(bc===wc){ let win = Math.floor(bet*(wc==='green'?36:2)); window.App.win(win, 'Рулетка'); if(wc==='green') window.Tasks.chk('lucky'); }else{ window.App.toast('Мимо','error'); }
-                    this.h.unshift(wc); if(this.h.length > 20) this.h.pop(); LS.s('dydx_roulette_h', this.h); this.rndH();
-                    document.getElementById('r-btn-red').disabled = false; document.getElementById('r-btn-green').disabled = false; document.getElementById('r-btn-black').disabled = false;
-                } catch(e) {}
-                this.pl=false; this.lk=false;
-            }, 4200);
-        },
-        // ---- МУЛЬТИПЛЕЕР: общий раунд на всех, ставка через сервер ----
-        async mpPlay(bc) {
-            if (this.pl || this.lk) return window.App.toast('Дождитесь следующего раунда', '');
-            let bet = Math.floor(Number(document.getElementById('r-bet').value));
-            if(!bet || isNaN(bet) || bet<=0) return window.App.toast('Неверная ставка','error');
-            if(bet>window.App.balance) return window.App.toast('Недостаточно звёзд','error');
-            let ok = await window.Multiplayer.rouletteBet(bc, bet);
-            if (ok) { this.pl = true; this.myBetColor = bc; window.Stats.addBet(); window.App.toast('Ставка принята', 'success'); }
-        },
-        syncWaiting(deadlineIso) {
-            this.pl = false; this.lk = false; this.myBetColor = null;
-            this._spinTi = undefined; this._lastWinningColor = null; // сброс для resync() — новый раунд, старая позиция неактуальна
-            document.getElementById('r-btn-red').disabled = false; document.getElementById('r-btn-green').disabled = false; document.getElementById('r-btn-black').disabled = false;
-            this.rTr();
-            if (this.cdTimer) clearInterval(this.cdTimer);
-            let target = deadlineIso ? new Date(deadlineIso).getTime() : Date.now();
-            const cdEl = document.getElementById('r-countdown');
-            if (cdEl) cdEl.className = '';
-            this.cdTimer = setInterval(() => {
-                let mpNow = (window.Multiplayer ? window.Multiplayer.serverNow() : Date.now());
-                let rem = Math.max(0, Math.ceil((target - mpNow)/1000));
-                if (cdEl) cdEl.innerText = `Ставки закрываются через ${rem}с`;
-                if (rem <= 0) clearInterval(this.cdTimer);
-            }, 250);
-        },
-        syncSpinning(winningColor) {
-            this.lk = true;
-            document.getElementById('r-btn-red').disabled = true; document.getElementById('r-btn-green').disabled = true; document.getElementById('r-btn-black').disabled = true;
-            const cdEl = document.getElementById('r-countdown');
-            if (cdEl) { cdEl.className = 'spin'; cdEl.innerText = 'Крутим барабан...'; }
-            this._lastWinningColor = winningColor; // нужно для resync() ниже
-            // Дорожка колеса (this.tC) строится в rTr(), который раньше вызывался
-            // ТОЛЬКО из syncWaiting(). Если приложение открылось/обновилось прямо
-            // во время вращения — syncWaiting ни разу не вызывался, this.tC пуст,
-            // и поиск ячейки нужного цвета ниже проваливался в случайный фолбэк,
-            // никак не связанный с настоящим исходом. Отсюда и был баг
-            // "выпало одно, а колесо показало другое". Строим дорожку здесь же,
-            // если она ещё не готова.
-            if (!this.tC || this.tC.length < 150) this.rTr();
-            this._applySpinTransform(winningColor, true);
-        },
-        // ⚠ ГЛАВНЫЙ ФИКС: если вкладка Рулетки скрыта (display:none, пользователь
-        // на другой вкладке), у элемента r-board clientWidth = 0 — код откатывался
-        // на дефолтные 400px, и все дальнейшие расчёты позиции сдвигались: цвет
-        // выбирался правильно, а колесо визуально останавливалось на СОСЕДНЕЙ
-        // ячейке с другим цветом. Именно это давало "выпало чёрное, а показало
-        // красное" — не рассинхрон случайности, а ошибка геометрии.
-        // resync() вызывается при каждом переходе на вкладку Рулетки (App.s) и
-        // пересчитывает позицию УЖЕ РЕАЛЬНОЙ шириной экрана, без анимации —
-        // колесо мгновенно "допрыгивает" туда, где должно было стоять всё время.
-        resync() {
-            if (this._lastWinningColor && (this.lk || this._spinTi !== undefined)) {
-                this._applySpinTransform(this._lastWinningColor, false);
-            }
-        },
-        _applySpinTransform(winningColor, animate) {
-            if (!this.tC || this.tC.length < 150) this.rTr();
-            // Ищем в дорожке слот именно того цвета, который сервер уже выбрал победителем
-            // (winningColor приходит сразу, как только раунд перешёл в spinning — на этом
-            // этапе ставки уже закрыты, так что подглядеть исход заранее нельзя).
-            let candidates = [];
-            for (let j = 110; j < this.tC.length; j++) { if (this.tC[j].c === winningColor) candidates.push(j); }
-            // Если позиция уже была выбрана этим же раундом (например, resync() после
-            // syncSpinning()) — переиспользуем тот же индекс, чтобы колесо не "прыгало"
-            // на другую (пусть и того же цвета) ячейку при каждом заходе на вкладку.
-            let ti = (this._spinTi !== undefined && this.tC[this._spinTi] && this.tC[this._spinTi].c === winningColor)
-                ? this._spinTi
-                : (candidates.length ? candidates[Math.floor(Math.random() * candidates.length)] : (110 + Math.floor(Math.random() * 37)));
-            let boardEl = document.getElementById('r-board');
-            let bC = (boardEl && boardEl.clientWidth > 0 ? boardEl.clientWidth : 400) / 2;
-            let fX = -((ti*this.iW)+(this.iW/2) - bC);
-            const t = document.getElementById('r-track');
-            t.style.transition = animate ? 'transform 4s cubic-bezier(0.1,0,0.1,1)' : 'none';
-            t.style.transform = `translate3d(${fX}px,0,0)`;
-            this._spinTi = ti;
-        },
-        syncFinished(winningColor) {
-            const cdEl = document.getElementById('r-countdown');
-            if (cdEl) { cdEl.className = ''; cdEl.innerText = `Выпало: ${winningColor === 'green' ? 'зеро' : winningColor === 'red' ? 'красное' : 'чёрное'}`; }
-            this.h.unshift(winningColor); if(this.h.length > 20) this.h.pop(); LS.s('dydx_roulette_h', this.h); this.rndH();
-            if (this.myBetColor) {
-                if (this.myBetColor === winningColor) window.App.toast(`Выигрыш! Выпало ${winningColor}`, 'success');
-                else window.App.toast(`Мимо — выпало ${winningColor}`, 'error');
-            }
-            window.Multiplayer.getBalance().then(bal => { if (bal !== null) { window.App.balance = bal; window.App.updBalUI(); } });
-        },
-        rndH() { const c = document.getElementById('roulette-history'); c.innerHTML=''; this.h.forEach(color => { let e = document.createElement('div'); e.className = `history-item`; e.innerHTML = `<span class="h-circ hc-${color}"></span>`; c.appendChild(e); }); }
-    };
-
-    // 3: HI-LO
     window.HiLo = {
         pl: false, b: 0, m: 1, cV: 0, s: 0, rTmr: null, lk: false, fC: 0, sA: ['♠', '♥', '♦', '♣'], cA: { 2:'2', 3:'3', 4:'4', 5:'5', 6:'6', 7:'7', 8:'8', 9:'9', 10:'10', 11:'J', 12:'Q', 13:'K', 14:'A' },
         init() { this.fC = this.dC(); this.rUI(); },
-        mod(act) { if(this.pl) return; let v = Math.floor(Number(document.getElementById('hilo-bet').value)) || 0; if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById('hilo-bet').value = Math.max(0, Math.min(v, window.App.balance)); },
+        mod(act) { if(this.pl) return; window.Sound && window.Sound.click(); let v = Math.floor(Number(document.getElementById('hilo-bet').value)) || 0; if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById('hilo-bet').value = Math.max(0, Math.min(v, window.App.balance)); },
         set(v) { if(!this.pl) document.getElementById('hilo-bet').value=v; },
         dC() { return Math.floor(Math.random() * 13) + 2; }, gS() { return this.sA[Math.floor(Math.random()*4)]; },
         rUI() {
@@ -3237,7 +3240,7 @@
     window.Coin = {
         pl: false, b: 0, s: 0, m: 1, lk: false,
         init() { this.rUI(); },
-        mod(act) { if(this.pl) return; let v = Math.floor(Number(document.getElementById('coin-bet').value)) || 0; if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById('coin-bet').value = Math.max(0, Math.min(v, window.App.balance)); },
+        mod(act) { if(this.pl) return; window.Sound && window.Sound.click(); let v = Math.floor(Number(document.getElementById('coin-bet').value)) || 0; if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById('coin-bet').value = Math.max(0, Math.min(v, window.App.balance)); },
         set(v) { if(!this.pl) document.getElementById('coin-bet').value=v; },
         rUI() {
             let c = document.getElementById('coin-obj'); c.innerText = '?'; c.style.background = 'radial-gradient(circle at 30% 30%, var(--gold-bright), #D35400)'; c.style.transform = 'rotateY(0deg)';
@@ -3287,7 +3290,7 @@
         state: 0, mult: 1, target: 1, startTime: 0, anim: null, timer: null, history: [], bet: {v:100, pl:false, o:false}, locked: false,
         GROWTH: 0.1612,
         // Пороги 9 стадий: 3 земля / 3 небо / 3 космос. Космос начинается с 500x.
-        THRESHOLDS: [3, 8, 25, 70, 180, 500, 650, 820, 1000],
+        THRESHOLDS: [1.5, 2.2, 3.2, 4.7, 6.9, 10.2, 15.0, 24.8, 40.9, 67.4, 111.3, 183.6, 303.0, 500.0, 552.0, 609.5, 673.0, 743.0, 820.3, 905.7, 1000.0],
         init() {
             let bh = LS.g('dydx_balloon_h', []); this.history = Array.isArray(bh) ? bh.filter(x=>typeof x==='number'&&!isNaN(x)) : [];
             this.renderHistory();
@@ -3299,16 +3302,46 @@
 
         getStage(mult) {
             for (let i = 0; i < this.THRESHOLDS.length; i++) if (mult < this.THRESHOLDS[i]) return i + 1;
-            return 9;
+            return 21;
+        },
+        // Прогресс ВНУТРИ своей фазы (0..1) — 7 порогов землы/неба/космоса дают
+        // плавную непрерывную анимацию яркости/масштаба вместо резких скачков
+        // между дискретными классами. Тем самым "стыков" даже больше 7 на
+        // глаз — переход гладкий на всём протяжении фазы, а не только в 7 точках.
+        phaseProgress(mult) {
+            const stage = this.getStage(mult);
+            let phase, phaseStart, phaseEnd;
+            if (stage <= 7) { phase = 'ground'; phaseStart = 1; phaseEnd = 15.0; }
+            else if (stage <= 14) { phase = 'sky'; phaseStart = 15.0; phaseEnd = 500.0; }
+            else { phase = 'space'; phaseStart = 500.0; phaseEnd = 1000.0; }
+            const logProgress = (Math.log(Math.max(mult, phaseStart)) - Math.log(phaseStart)) / (Math.log(phaseEnd) - Math.log(phaseStart));
+            return { phase, t: Math.max(0, Math.min(1, logProgress)) };
         },
         updateVisual(mult) {
-            const stage = this.getStage(mult);
+            const { phase, t } = this.phaseProgress(mult);
             const stageEl = document.getElementById('balloon-stage');
-            stageEl.className = 'panel balloon-stage stage-' + stage;
+            stageEl.className = 'panel balloon-stage phase-' + phase;
+            stageEl.style.setProperty('--phase-t', t.toFixed(3));
 
-            document.getElementById('bg-ground').classList.toggle('active', stage <= 3);
-            document.getElementById('bg-sky').classList.toggle('active', stage >= 4 && stage <= 6);
-            document.getElementById('bg-space').classList.toggle('active', stage >= 7);
+            document.getElementById('bg-ground').classList.toggle('active', phase === 'ground');
+            document.getElementById('bg-sky').classList.toggle('active', phase === 'sky');
+            document.getElementById('bg-space').classList.toggle('active', phase === 'space');
+
+            // Непрерывная яркость/масштаб декоративных элементов по прогрессу
+            // внутри фазы — без скачков на границах "ступеней"
+            const groundEl = document.getElementById('bg-ground');
+            const skyEl = document.getElementById('bg-sky');
+            const spaceEl = document.getElementById('bg-space');
+            if (phase === 'ground') {
+                groundEl.style.filter = `brightness(${1 + t * 0.25}) saturate(${1 - t * 0.1})`;
+                groundEl.querySelectorAll('.hill').forEach(h => { h.style.transform = `scale(${1 - t * 0.32}) translateY(${t * 14}px)`; h.style.opacity = 1 - t * 0.3; });
+            } else if (phase === 'sky') {
+                skyEl.style.filter = `brightness(${1 - t * 0.28}) hue-rotate(${-t * 18}deg) saturate(${1 + t * 0.2})`;
+                skyEl.querySelectorAll('.cloud').forEach(c => { c.style.transform = `scale(${1 - t * 0.6}) translateY(${-t * 24}px)`; c.style.opacity = 1 - t * 0.65; });
+            } else if (phase === 'space') {
+                spaceEl.querySelectorAll('.star').forEach(s => { s.style.opacity = 0.4 + t * 0.6; s.style.transform = `scale(${1 + t * 0.3})`; });
+                spaceEl.querySelectorAll('.planet, .nebula').forEach(p => { p.style.opacity = 0.5 + t * 0.5; p.style.transform = `scale(${0.8 + t * 0.45})`; });
+            }
 
             const sizeT = Math.min(1, Math.log(Math.max(1, mult)) / Math.log(10));
             const size = 100 + (210 - 100) * sizeT;
@@ -3418,6 +3451,8 @@
                         if (window.Sound) window.Sound.coin();
                         window.Levels.addWin(result.win_amount);
                         window.Multiplayer.logBigWin(result.win_amount, 'Воздушный шар');
+                        window.Tasks.chk('balloon_win', result.cashout_mult);
+                        window.Tasks.chk('big_winner', result.win_amount);
                         window.Tasks.chk('win', result.win_amount);
                     }
                     this.locked = false; this.updBtns();
@@ -3462,7 +3497,7 @@
         pl: false, lk: false, cardId: null, tapsLeft: 10, revealedCount: 0,
         emojiMap: { cherry:'🍒', lemon:'🍋', orange:'🍊', plum:'🍑', star:'⭐', diamond:'💎', grape:'🍇', clover:'🍀', seven: null, pepe:'🐸' },
         init() {},
-        mod(act) { if(this.pl) return; let v = Math.floor(Number(document.getElementById('scratch-bet').value)) || 0; if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById('scratch-bet').value = Math.max(0, Math.min(v, window.App.balance)); },
+        mod(act) { if(this.pl) return; window.Sound && window.Sound.click(); let v = Math.floor(Number(document.getElementById('scratch-bet').value)) || 0; if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById('scratch-bet').value = Math.max(0, Math.min(v, window.App.balance)); },
         set(v) { if(!this.pl) document.getElementById('scratch-bet').value=v; },
 
         // Кэш настоящей анимации Plush Pepe (грузим один раз, freeze на первом
@@ -3584,6 +3619,8 @@
                 if (window.Sound) window.Sound.coin();
                 window.Levels.addWin(result.win_amount);
                 window.Multiplayer.logBigWin(result.win_amount, 'Скретч-карта');
+                window.Tasks && window.Tasks.chk('scratch_win');
+                window.Tasks && window.Tasks.chk('big_winner', result.win_amount);
             } else {
                 window.App.toast('Не повезло', 'error');
             }
@@ -3606,7 +3643,7 @@
     window.Slots = {
         pl: false, lk: false, lastBet: 100,
         init() {},
-        mod(act) { if(this.pl) return; let v = Math.floor(Number(document.getElementById('slots-bet').value)) || 0; if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById('slots-bet').value = Math.max(0, Math.min(v, window.App.balance)); },
+        mod(act) { if(this.pl) return; window.Sound && window.Sound.click(); let v = Math.floor(Number(document.getElementById('slots-bet').value)) || 0; if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById('slots-bet').value = Math.max(0, Math.min(v, window.App.balance)); },
         set(v) { if(!this.pl) document.getElementById('slots-bet').value=v; },
         emojiFor(sym) {
             const map = { cherry:'🍒', lemon:'🍋', star:'⭐', diamond:'💎', grape:'🍇', pepe:'🐸' };
@@ -3701,11 +3738,14 @@
                 if (window.Sound) window.Sound.coin();
                 window.Levels.addWin(result.win_amount);
                 window.Multiplayer.logBigWin(result.win_amount, 'Слоты');
+                window.Tasks && window.Tasks.chk('slots_jackpot');
+                window.Tasks && window.Tasks.chk('big_winner', result.win_amount);
             } else if (result.win_amount > bet) {
                 window.App.toast(`Выигрыш! +${result.win_amount.toLocaleString()}⭐`, 'success');
                 if (window.Sound) window.Sound.coin();
                 window.Levels.addWin(result.win_amount);
                 window.Multiplayer.logBigWin(result.win_amount, 'Слоты');
+                window.Tasks && window.Tasks.chk('big_winner', result.win_amount);
             } else if (result.win_amount > 0) {
                 window.App.toast(`Частичный возврат: +${result.win_amount.toLocaleString()}⭐`, 'success');
             } else {
@@ -3755,7 +3795,11 @@
             this.multiplier = m;
             document.querySelectorAll('#view-upgrader #upg-gifts-mode .panel:nth-child(2) .btn-small').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            document.getElementById('gu-chance').innerText = this.MULT_CHANCE[m] + '%';
+            const ch = this.MULT_CHANCE[m];
+            document.getElementById('gu-chance').innerText = ch + '%';
+            const pctEl = document.getElementById('gu-pct'); if (pctEl) pctEl.innerText = ch.toFixed(1) + '%';
+            const wheelEl = document.getElementById('gu-wheel');
+            if (wheelEl) wheelEl.style.background = `conic-gradient(var(--green) 0% ${ch}%, var(--red) ${ch}% 100%)`;
             this.onStakeChange();
         },
         async onStakeChange() {
@@ -3853,6 +3897,7 @@
                 if (window.Sound) window.Sound.coin();
                 window.App.haptic && window.App.haptic('win');
                 if (this.targetPrice >= 1000) window.Multiplayer.logBigWin(this.targetPrice, 'Апгрейдер гифтов');
+                window.Tasks && window.Tasks.chk('gift_upgrader_win');
             } else {
                 stakeEl.classList.add('result-lose'); targetEl.classList.add('result-lose');
                 window.App.toast('Не повезло — ставка сгорела', 'error');
@@ -3876,10 +3921,11 @@
             document.getElementById('upg-gifts-mode').style.display = mode === 'gifts' ? '' : 'none';
             if (mode === 'gifts' && window.GiftUpgrader) window.GiftUpgrader.renderStakePicker();
         },
-        mod(act) { if(this.pl) return; let v = Math.floor(Number(document.getElementById('upg-bet').value)) || 0; if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById('upg-bet').value = Math.max(0, Math.min(v, window.App.balance)); },
-        set(v) { if(!this.pl) document.getElementById('upg-bet').value=v; },
+        mod(act) { if(this.pl) return; window.Sound && window.Sound.click(); let v = Math.floor(Number(document.getElementById('upg-bet').value)) || 0; if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById('upg-bet').value = Math.max(0, Math.min(v, window.App.balance)); this.updSideBet(); },
+        set(v) { if(!this.pl) { document.getElementById('upg-bet').value=v; this.updSideBet(); } },
         setTarget(m, btn) { this.sT(m, btn); },
-        sT(m, btn) { if(this.pl) return; this.t = m; this.ch = (0.98/m)*100; document.getElementById('upg-chance').innerText = this.ch.toFixed(0)+'%'; document.getElementById('upg-center').innerText = m.toFixed(2)+'x'; if(btn) {document.querySelectorAll('#upg-selectors .btn-small').forEach(b => b.classList.remove('active')); btn.classList.add('active');} document.getElementById('upg-wheel').style.background = `conic-gradient(var(--green) 0% ${this.ch}%, var(--red) ${this.ch}% 100%)`; document.getElementById('upg-wheel').style.transform = `rotate(0deg)`; },
+        sT(m, btn) { if(this.pl) return; this.t = m; this.ch = (0.98/m)*100; document.getElementById('upg-chance').innerText = this.ch.toFixed(0)+'%'; document.getElementById('upg-center').innerText = this.ch.toFixed(1)+'%'; document.getElementById('upg-side-target-amt').innerText = 'x'+m.toFixed(2); if(btn) {document.querySelectorAll('#upg-selectors .btn-small').forEach(b => b.classList.remove('active')); btn.classList.add('active');} document.getElementById('upg-wheel').style.background = `conic-gradient(var(--green) 0% ${this.ch}%, var(--red) ${this.ch}% 100%)`; document.getElementById('upg-wheel').style.transform = `rotate(0deg)`; this.updSideBet(); },
+        updSideBet() { const bet = Math.floor(Number(document.getElementById('upg-bet').value)) || 0; const el = document.getElementById('upg-side-bet-amt'); if (el) el.innerText = bet.toLocaleString()+'⭐'; },
         play() {
             if(this.pl || this.lk) return; let bet = Math.floor(Number(document.getElementById('upg-bet').value));
             if(!bet || isNaN(bet) || bet<=0) return window.App.toast('Неверная ставка', 'error'); if(bet>window.App.balance) return window.App.toast('Недостаточно звёзд', 'error');
@@ -3899,7 +3945,7 @@
     window.Tower = {
         d: 1, pl: false, r: 0, m: 1, b: 0, g: [], lk: false,
         init() { this.sD(1, document.querySelector('#twr-selectors .btn-small')); this.dG(); },
-        mod(act) { if(this.pl) return; let v = Math.floor(Number(document.getElementById('tower-bet').value)) || 0; if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById('tower-bet').value = Math.max(0, Math.min(v, window.App.balance)); },
+        mod(act) { if(this.pl) return; window.Sound && window.Sound.click(); let v = Math.floor(Number(document.getElementById('tower-bet').value)) || 0; if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById('tower-bet').value = Math.max(0, Math.min(v, window.App.balance)); },
         set(v) { if(!this.pl) document.getElementById('tower-bet').value=v; },
         setDiff(m, btn) { this.sD(m, btn); },
         sD(m, btn) { if(this.pl) return; this.d = m; if(btn){document.querySelectorAll('#twr-selectors .btn-small').forEach(b=>b.classList.remove('active')); btn.classList.add('active');} },
@@ -3944,7 +3990,7 @@
     window.Mines = {
         pl: false, b: 0, c: 3, m: 1, o: 0, g: [], lk: false,
         init() { this.dG(); },
-        mod(act) { if(this.pl) return; let v = Math.floor(Number(document.getElementById('mines-bet').value)) || 0; if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById('mines-bet').value = Math.max(0, Math.min(v, window.App.balance)); },
+        mod(act) { if(this.pl) return; window.Sound && window.Sound.click(); let v = Math.floor(Number(document.getElementById('mines-bet').value)) || 0; if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById('mines-bet').value = Math.max(0, Math.min(v, window.App.balance)); },
         setCount(c) { if(!this.pl) document.getElementById('mines-count').value = c; },
         set(v) { if(!this.pl) document.getElementById('mines-bet').value=v; },
         dG() { const gr = document.getElementById('mines-grid'); gr.innerHTML=''; for(let i=0; i<25; i++){ let cl = document.createElement('div'); cl.className='mines-cell'; cl.onclick=()=>this.cC(i,cl); gr.appendChild(cl); } },
@@ -3954,6 +4000,18 @@
                 this.b = Math.floor(Number(document.getElementById('mines-bet').value)); this.c = parseInt(document.getElementById('mines-count').value);
                 if(!this.b || isNaN(this.b) || this.b<=0) return window.App.toast('Неверная ставка', 'error'); if(this.b>window.App.balance) return window.App.toast('Недостаточно звёзд', 'error');
                 if(isNaN(this.c) || this.c<1 || this.c>24) { this.c=3; document.getElementById('mines-count').value=3; }
+
+                // ЭКСПЛОЙТ (найден и починен): при маленьком числе мин даже ПЕРВЫЙ
+                // безопасный клик даёт множитель, который на большой ставке уже сам
+                // по себе превышает потолок MAX_WIN — раунд завершается мгновенно с
+                // максимальной выплатой, без реального риска. Блокируем такие ставки
+                // заранее, до старта раунда.
+                const firstClickChance = (25 - this.c) / 25;
+                const firstClickMult = 0.98 / firstClickChance;
+                if (this.b * firstClickMult >= MAX_WIN) {
+                    const maxSafeBet = Math.floor(MAX_WIN / firstClickMult) - 1;
+                    return window.App.toast(`Слишком крупная ставка для ${this.c} мин(ы) — максимум ${Math.max(1, maxSafeBet)}⭐`, 'error');
+                }
 
                 window.App.chgBal(-this.b, 'Мины'); window.Stats.addBet(); this.pl=true; this.o=0; this.m=1; this.g=Array(25).fill(0); let mt=this.c;
                 while(mt>0){ let x=Math.floor(Math.random()*25); if(this.g[x]===0){this.g[x]=1; mt--;} }
@@ -3988,7 +4046,7 @@
         pl: false, lk: false, b: 0, cups: 3, mult: 2.91,
         cupSvg: `<svg viewBox="0 0 60 60" width="52" height="52"><path d="M10 14 L50 14 L44 52 L16 52 Z" fill="var(--red)" stroke="#7f1d1d" stroke-width="2"/><ellipse cx="30" cy="14" rx="20" ry="5" fill="var(--red)" stroke="#7f1d1d" stroke-width="2"/></svg>`,
         init() { this.renderBoard(); },
-        mod(act) { if(this.pl) return; let v = Math.floor(Number(document.getElementById('shells-bet').value)) || 0; if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById('shells-bet').value = Math.max(0, Math.min(v, window.App.balance)); },
+        mod(act) { if(this.pl) return; window.Sound && window.Sound.click(); let v = Math.floor(Number(document.getElementById('shells-bet').value)) || 0; if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById('shells-bet').value = Math.max(0, Math.min(v, window.App.balance)); },
         set(v) { if(!this.pl) document.getElementById('shells-bet').value=v; },
         setCups(n) {
             if (this.pl) return;
@@ -4135,7 +4193,7 @@
                 else { fill.style.left = this.target + '%'; fill.style.width = (100 - this.target) + '%'; }
             }
         },
-        mod(act) { if(this.pl) return; let v = Math.floor(Number(document.getElementById('dice-bet').value)) || 0; if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById('dice-bet').value = Math.max(0, Math.min(v, window.App.balance)); },
+        mod(act) { if(this.pl) return; window.Sound && window.Sound.click(); let v = Math.floor(Number(document.getElementById('dice-bet').value)) || 0; if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById('dice-bet').value = Math.max(0, Math.min(v, window.App.balance)); },
         set(v) { if(!this.pl) document.getElementById('dice-bet').value = v; },
         play() {
             if (this.pl) return;
@@ -5155,6 +5213,8 @@
         setState(data) {
             this.items = data.my_items || [];
             this.render();
+            const uniqueCatalogs = new Set(this.items.map(i => i.catalog_id)).size;
+            if (uniqueCatalogs >= 3) window.Tasks && window.Tasks.chk('collector', uniqueCatalogs);
         },
         togglePin(invId) {
             const idx = this.pinned.indexOf(invId);
@@ -5369,6 +5429,7 @@
             await this.spinSimple(nameEl, patternCandidates, result.pattern_name || 'Гладкий', null, null, symbolEl, result.pattern_symbol);
 
             document.getElementById('spin-done-btn').style.display = '';
+            window.Tasks && window.Tasks.chk('gift_upgraded');
         },
         getSorted() {
             // Закреплённые — всегда первыми (в порядке закрепления), остальные — как пришли с сервера
@@ -5534,13 +5595,15 @@
             modal.innerHTML = `
                 <div class="seller-profile-card">
                     <button class="pg-detail-close" onclick="document.getElementById('seller-profile-modal').classList.remove('active')">✕</button>
-                    <div class="avatar-frame-wrap ${profile.frame_css_class || ''}" style="margin:0 auto 12px;">
+                    <div class="avatar-frame-wrap" id="seller-profile-frame" style="margin:0 auto 12px;">
                         <div class="profile-avatar">${(profile.username || '?')[0].toUpperCase()}</div>
                     </div>
                     <div style="text-align:center; font-weight:800; font-size:15px;">${profile.username || 'Игрок'}</div>
                     <div style="text-align:center; color:var(--text-muted); font-size:12px; margin-top:4px;">🎁 Гифтов в коллекции: ${profile.gifts_count || 0}</div>
                 </div>`;
             modal.classList.add('active');
+            const frameWrap = document.getElementById('seller-profile-frame');
+            if (frameWrap && window.Frames) window.Frames.decorateWrap(frameWrap, profile.frame_css_class, 'seller');
         },
     };
 
@@ -5551,6 +5614,6 @@
 <!-- МУЛЬТИПЛЕЕР: общий раунд Ракеты, Рулетки, Арены, промокоды, Дурак, маркетплейс -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="multiplayer-client.js?v=149"></script>
+<script src="multiplayer-client.js?v=150"></script>
 </body>
 </html>
