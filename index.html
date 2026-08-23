@@ -3720,9 +3720,15 @@
             if (!items.length) { el.innerHTML = `<div style="font-size:11px; color:var(--text-muted); padding:8px;">Нет гифтов для ставки</div>`; return; }
             el.innerHTML = items.map(i => `
                 <div class="upg-gift-item ${this.stakeInventoryId === i.inventory_id ? 'selected' : ''}" onclick="GiftUpgrader.pickStakeGift(${i.inventory_id}, ${i.price_stars})">
-                    <div class="upg-gift-item-anim">🎁</div>
+                    <div class="upg-gift-item-anim placeholder" id="gu-stake-anim-${i.inventory_id}">🎁</div>
                     <div class="upg-gift-item-price">${i.price_stars.toLocaleString()}⭐</div>
                 </div>`).join('');
+            // Списки тут короткие и сразу видны — грузим анимации сразу, без
+            // ленивой IntersectionObserver-логики (она нужна только для больших витрин)
+            items.forEach(i => {
+                const el2 = document.getElementById('gu-stake-anim-' + i.inventory_id);
+                if (el2 && window.Showcase) window.Showcase.playCard(i.catalog_id, el2, i.model_anim_file || undefined, 'gu-stake::' + i.inventory_id);
+            });
         },
         setStakeType(type) {
             this.stakeType = type;
@@ -3756,9 +3762,13 @@
             if (error || !data || !data.length) { el.innerHTML = `<div style="font-size:11px; color:var(--text-muted); padding:8px;">Нет подходящих целей под эту ставку×множитель</div>`; return; }
             el.innerHTML = data.map(g => `
                 <div class="upg-gift-item ${this.targetCatalogId === g.id ? 'selected' : ''}" onclick="GiftUpgrader.pickTarget('${g.id}', ${g.price_stars}, this)">
-                    <div class="upg-gift-item-anim">🎁</div>
+                    <div class="upg-gift-item-anim placeholder" id="gu-target-anim-${g.id}">🎁</div>
                     <div class="upg-gift-item-price">${g.price_stars.toLocaleString()}⭐</div>
                 </div>`).join('');
+            data.forEach(g => {
+                const el2 = document.getElementById('gu-target-anim-' + g.id);
+                if (el2 && window.Showcase) window.Showcase.playCard(g.id, el2, undefined, 'gu-target::' + g.id);
+            });
         },
         pickTarget(catalogId, price, el) {
             this.targetCatalogId = catalogId; this.targetPrice = price;
@@ -3771,6 +3781,23 @@
             const ready = this.stakeValue > 0 && this.targetCatalogId && (this.stakeType === 'gift' ? this.stakeInventoryId : true);
             btn.disabled = !ready;
             btn.innerText = ready ? `⚙️ АПГРЕЙД (${this.MULT_CHANCE[this.multiplier]}%)` : 'Выбери гифт и цель';
+            this.updateStagePreview();
+        },
+        updateStagePreview() {
+            const stakeEl = document.getElementById('gu-anim-stake');
+            const targetEl = document.getElementById('gu-anim-target');
+            if (!stakeEl || !targetEl) return;
+            stakeEl.innerHTML = ''; stakeEl.classList.add('placeholder');
+            targetEl.innerHTML = ''; targetEl.classList.add('placeholder');
+            if (this.stakeType === 'gift' && this.stakeInventoryId && window.ProfileGifts) {
+                const item = window.ProfileGifts.items.find(i => i.inventory_id === this.stakeInventoryId);
+                if (item && window.Showcase) window.Showcase.playCard(item.catalog_id, stakeEl, item.model_anim_file || undefined, 'gu-stage-stake::' + item.inventory_id);
+            } else if (this.stakeType === 'stars') {
+                stakeEl.innerHTML = '⭐'; stakeEl.classList.remove('placeholder');
+            }
+            if (this.targetCatalogId && window.Showcase) {
+                window.Showcase.playCard(this.targetCatalogId, targetEl, undefined, 'gu-stage-target::' + this.targetCatalogId);
+            }
         },
         async play() {
             if (this.pl) return;
