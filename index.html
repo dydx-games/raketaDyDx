@@ -1262,7 +1262,7 @@
                     <div id="upg-stake-gift-picker" class="upg-gift-scroll"></div>
                     <div id="upg-stake-stars-input" style="display:none;">
                         <div class="bet-row">
-                            <div class="input-wrap"><input type="number" inputmode="decimal" id="gu-stars-amount" value="100" oninput="GiftUpgrader.onStakeChange()"></div>
+                            <div class="input-wrap"><input type="number" inputmode="decimal" id="gu-stars-amount" value="500" oninput="GiftUpgrader.onStakeChange()"></div>
                         </div>
                     </div>
                 </div>
@@ -3797,8 +3797,15 @@
         stakeType: 'gift', stakeInventoryId: null, stakeValue: 0, multiplier: 2, targetCatalogId: null, targetPrice: 0,
         pl: false,
         MULT_CHANCE: { 2: 46, 3: 30.67, 5: 18.4, 10: 9.2, 20: 4.6 },
-        renderStakePicker() {
+        async renderStakePicker() {
             const el = document.getElementById('upg-stake-gift-picker'); if (!el) return;
+            // Раньше данные о гифтах подгружались только при заходе в маркетплейс —
+            // если открыть Апгрейдер гифтов первым делом, список был пуст, хотя
+            // гифты реально есть. Теперь подтягиваем сами, если ещё не загружено.
+            if ((!window.ProfileGifts || !window.ProfileGifts.items.length) && window.Multiplayer) {
+                el.innerHTML = `<div style="font-size:11px; color:var(--text-muted); padding:8px;">Загрузка...</div>`;
+                await window.Multiplayer.refreshMarketShop();
+            }
             const items = (window.ProfileGifts ? window.ProfileGifts.items : []).filter(i => !i.listed);
             if (!items.length) { el.innerHTML = `<div style="font-size:11px; color:var(--text-muted); padding:8px;">Нет гифтов для ставки</div>`; return; }
             el.innerHTML = items.map(i => `
@@ -3899,11 +3906,27 @@
             stakeEl.classList.remove('result-win', 'result-lose'); stakeEl.classList.add('spinning');
             targetEl.classList.remove('result-win', 'result-lose'); targetEl.classList.add('spinning');
 
-            // Фаза 1: НАСТОЯЩЕЕ непрерывное вращение (CSS keyframes, не JS-таймер
-            // с фиксированной длительностью) — крутится ровно столько, сколько
-            // реально отвечает сервер, без остановки и рестарта на стыке фаз.
-            const spinStartTime = Date.now();
-            if (wheelEl) { wheelEl.style.transition = 'none'; wheelEl.classList.add('gu-continuous'); }
+            // Полностью на requestAnimationFrame (не CSS-анимация + transition) —
+            // Раньше пробовал двухфазную анимацию с "честной физикой замедления" —
+            // не помогло, ощущение рывка осталось. Радикально упрощаю: ОДНА
+            // постоянная скорость от старта до самого конца, вообще без замедления
+            // и без стыка фаз — физически невозможно почувствовать "то медленно,
+            // то быстро", потому что скорость буквально не меняется никогда.
+            // Останавливается коротким мгновенным снапом в самом конце.
+            const CONST_SPEED = 420; // градусов в секунду — одна и та же скорость всегда
+            let currentAngle = 0;
+            let spinning = true;
+            let rafId = null;
+            let lastFrameTime = performance.now();
+            const tick = (now) => {
+                if (!spinning) return;
+                const dt = (now - lastFrameTime) / 1000;
+                lastFrameTime = now;
+                currentAngle += CONST_SPEED * dt;
+                if (wheelEl) wheelEl.style.transform = `rotate(${currentAngle % 360}deg)`;
+                rafId = requestAnimationFrame(tick);
+            };
+            rafId = requestAnimationFrame(tick);
 
             const spinDelay = new Promise(r => setTimeout(r, 1000)); // минимум показываем вращение секунду, не сразу мелькает
             const [{ data, error }] = await Promise.all([
@@ -3917,41 +3940,43 @@
                 }),
                 spinDelay,
             ]);
-            this.pl = false;
-            stakeEl.classList.remove('spinning'); targetEl.classList.remove('spinning');
 
             if (error || !data || !data[0].success) {
-                if (wheelEl) { wheelEl.classList.remove('gu-continuous'); wheelEl.style.transform = 'rotate(0deg)'; }
+                spinning = false; if (rafId) cancelAnimationFrame(rafId);
+                this.pl = false;
+                stakeEl.classList.remove('spinning'); targetEl.classList.remove('spinning');
+                if (wheelEl) wheelEl.style.transform = 'rotate(0deg)';
                 window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
                 btn.disabled = false; this.updatePlayBtn(); return;
             }
             const result = data[0];
 
-            // Фаза 2: докручиваем кольцо до ЧЕСТНОЙ зоны — зелёной, если реально
-            // выиграл, красной, если проиграл. Результат уже известен от сервера,
-            // это чисто визуальное подтверждение, не решает исход.
-            //
-            // Ключевой момент фикса: снимаем бесконечную CSS-анимацию ровно в
-            // текущей точке (по прошедшему времени вычисляем, на каком градусе
-            // она сейчас находится) и продолжаем ИМЕННО ОТТУДА — без остановки
-            // и без скачка на "0" перед стартом второй фазы.
+            // Досчитываем нужный угол ЭТОЙ ЖЕ постоянной скоростью — просто
+            // продолжаем крутиться на той же скорости ровно до нужной точки,
+            // никакого отдельного "второго этапа" с другой физикой нет вообще.
             if (wheelEl) {
-                const elapsedMs = Date.now() - spinStartTime;
-                const currentAngle = (elapsedMs / 900 * 360) % 360; // 900мс — длительность одного оборота в CSS-анимации выше
-                wheelEl.classList.remove('gu-continuous');
-                wheelEl.style.transition = 'none';
-                wheelEl.style.transform = `rotate(${currentAngle}deg)`;
-                void wheelEl.offsetHeight; // форсируем применение стиля до следующего transition
-
                 const ch = this.MULT_CHANCE[this.multiplier];
                 const td = result.won ? Math.random() * (ch * 3.6) : (ch * 3.6) + Math.random() * (360 - ch * 3.6);
-                const finalDeg = currentAngle + (3 * 360) + (360 - td);
-                wheelEl.style.transition = 'transform 1.6s cubic-bezier(0.15, 0.85, 0.3, 1)';
-                wheelEl.style.transform = `rotate(${finalDeg}deg)`;
-                await new Promise(r => setTimeout(r, 1600));
-                wheelEl.style.transition = 'none';
-                wheelEl.style.transform = `rotate(${finalDeg % 360}deg)`; // нормализуем угол, чтобы следующий спин не копил градусы до бесконечности
+                const extraSpins = 2; // сколько ПОЛНЫХ дополнительных оборотов сделать перед остановкой
+                const targetTotalAngle = Math.ceil(currentAngle / 360) * 360 + extraSpins * 360 + (360 - td);
+                const remainingDeg = targetTotalAngle - currentAngle;
+                const extraTime = remainingDeg / CONST_SPEED; // секунды — на той же скорости, что и всё до этого
+
+                await new Promise(resolve => {
+                    const finishAt = performance.now() + extraTime * 1000;
+                    const finishTick = (now) => {
+                        if (now >= finishAt) { spinning = false; if (rafId) cancelAnimationFrame(rafId);
+                            wheelEl.style.transform = `rotate(${targetTotalAngle % 360}deg)`; resolve(); return; }
+                        requestAnimationFrame(finishTick);
+                    };
+                    requestAnimationFrame(finishTick);
+                });
+            } else {
+                spinning = false; if (rafId) cancelAnimationFrame(rafId);
             }
+
+            this.pl = false;
+            stakeEl.classList.remove('spinning'); targetEl.classList.remove('spinning');
 
             window.App.balance = result.new_balance; window.App.updBalUI();
 
@@ -5160,7 +5185,7 @@
             });
         },
 
-        async playCard(id, container, variant, forceKey) {
+        async playCard(id, container, variant, forceKey, autoplay) {
             const animsOff = window.Settings && !window.Settings.data.animationsEnabled;
             const cacheKey = forceKey || (variant ? `${id}::${variant}` : id);
             let inst = this.cardInstances[cacheKey];
@@ -5173,11 +5198,14 @@
                 inst = null; delete this.cardInstances[cacheKey];
             }
             if (inst) {
-                // Анимации выключены в настройках — гифт остаётся видимым (та же
-                // настоящая картинка), просто замирает на первом кадре, а не
-                // пропадает и не заменяется эмодзи-заглушкой.
-                if (animsOff) { try { inst.goToAndStop(0, true); } catch (e) {} return; }
-                if (!inst._playedOnce) inst.play();
+                // По умолчанию гифты ВЕЗДЕ заморожены на первом кадре — играют
+                // только там, где явно попросили autoplay (открытая карточка
+                // гифта). Раньше анимации грузились и проигрывались сразу
+                // ВЕЗДЕ (витрина, списки, апгрейдер) — это и тормозило: десятки
+                // тяжёлых lottie-анимаций разом.
+                if (animsOff || !autoplay) { try { inst.goToAndStop(0, true); } catch (e) {} return; }
+                inst.loop = true;
+                if (!inst._playedOnce || autoplay) inst.play();
                 return;
             }
             const g = this.catalog.find(x => x.id === id); if (!g) return;
@@ -5190,12 +5218,12 @@
                     this.animCache[path] = data;
                 }
                 container.classList.remove('placeholder'); container.innerText = '';
-                const stillVisible = container.getBoundingClientRect().top < window.innerHeight && container.getBoundingClientRect().bottom > 0;
-                inst = lottie.loadAnimation({ container, renderer: 'svg', loop: false, autoplay: (stillVisible && !animsOff), animationData: data });
+                const shouldPlay = autoplay && !animsOff;
+                inst = lottie.loadAnimation({ container, renderer: 'svg', loop: shouldPlay, autoplay: shouldPlay, animationData: data });
                 inst._playedOnce = false;
                 inst.addEventListener('complete', () => { inst._playedOnce = true; });
                 this.cardInstances[cacheKey] = inst;
-                if (!stillVisible || animsOff) inst.goToAndStop(0, true);
+                if (!shouldPlay) inst.goToAndStop(0, true);
             } catch (e) { /* не загрузилось — так и останется заглушкой, не критично */ }
         },
 
@@ -5352,7 +5380,7 @@
             const animEl = document.getElementById('pg-detail-anim');
             if (window.Showcase) {
                 const cacheKey = 'detail::' + item.inventory_id;
-                window.Showcase.playCard(item.catalog_id, animEl, hasModel ? item.model_anim_file : undefined, cacheKey);
+                window.Showcase.playCard(item.catalog_id, animEl, hasModel ? item.model_anim_file : undefined, cacheKey, true);
             }
         },
         closeDetail() {
