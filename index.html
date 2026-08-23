@@ -374,6 +374,17 @@
         .lb-name { flex: 1; min-width: 0; font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .lb-balance { font-size: 13px; font-weight: 800; color: var(--gold); flex-shrink: 0; }
         .lb-row.is-me { background: rgba(215,180,93,0.08); border-radius: 10px; }
+        .tx-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 4px; border-bottom: 1px solid var(--border); }
+        .tx-row:last-child { border-bottom: none; }
+        .tx-info { display: flex; align-items: center; gap: 10px; min-width: 0; }
+        .tx-icon { width: 32px; height: 32px; min-width: 32px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 15px; }
+        .tx-icon.plus { background: rgba(52,211,153,0.12); }
+        .tx-icon.minus { background: rgba(244,87,106,0.12); }
+        .tx-desc { font-size: 12.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px; }
+        .tx-date { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+        .tx-amount { font-size: 13px; font-weight: 800; flex-shrink: 0; }
+        .tx-amount.plus { color: var(--green); }
+        .tx-amount.minus { color: var(--red); }
         /* Ползунки — плавные, с лёгким пружинящим переходом вместо резкого "щелчка" */
         .switch { position: relative; display: inline-block; width: 46px; height: 27px; flex-shrink: 0; }
         .switch input { opacity: 0; width: 0; height: 0; }
@@ -1097,6 +1108,13 @@
             </div>
         </div>
 
+        <!-- ИСТОРИЯ ОПЕРАЦИЙ -->
+        <div class="game-view" id="view-history">
+            <div class="panel" style="margin-bottom:20px;">
+                <div id="tx-list"></div>
+            </div>
+        </div>
+
         <!-- ВОЗДУШНЫЙ ШАР -->
         <div class="game-view" id="view-balloon">
             <div class="panel balloon-stage" id="balloon-stage" style="margin-bottom:0;">
@@ -1530,6 +1548,11 @@
                 <span class="settings-nav-arrow">›</span>
             </div>
 
+            <div class="settings-nav-row" onclick="App.s('history', null, 'История операций')">
+                <span>📜 История операций</span>
+                <span class="settings-nav-arrow">›</span>
+            </div>
+
             <div class="settings-nav-row" onclick="App.s('settings', null, 'Настройки')">
                 <span>⚙️ Настройки</span>
                 <span class="settings-nav-arrow">›</span>
@@ -1882,6 +1905,32 @@
         </svg>`;
     };
 
+    window.TxHistory = {
+        KIND_ICON: { purchase_gift: '🎁', purchase_frame: '🖼', check_create: '💵', donation: '💝', big_win: '🏆', sell_gift: '💰', market_sale: '🏪' },
+        KIND_LABEL: { purchase_gift: 'Покупка гифта', purchase_frame: 'Покупка рамки', check_create: 'Создан чек', donation: 'Донат', big_win: 'Крупный выигрыш', sell_gift: 'Продажа в банк', market_sale: 'Продажа на рынке' },
+        async load() {
+            if (!window.Multiplayer || !window.ME) return;
+            const { data, error } = await sb.rpc('get_transaction_history', { p_telegram_id: window.ME.id, p_limit: 30 });
+            const list = document.getElementById('tx-list'); if (!list) return;
+            if (error || !data || !data.length) { list.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:12px; padding:14px 0;">Пока нет операций</div>`; return; }
+            list.innerHTML = data.map(t => {
+                const isPlus = t.amount > 0;
+                const date = new Date(t.created_at);
+                const dateStr = date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }) + ' ' + date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                return `<div class="tx-row">
+                    <div class="tx-info">
+                        <div class="tx-icon ${isPlus ? 'plus' : 'minus'}">${this.KIND_ICON[t.kind] || '📄'}</div>
+                        <div>
+                            <div class="tx-desc">${t.description || this.KIND_LABEL[t.kind] || t.kind}</div>
+                            <div class="tx-date">${dateStr}</div>
+                        </div>
+                    </div>
+                    <div class="tx-amount ${isPlus ? 'plus' : 'minus'}">${isPlus ? '+' : ''}${Number(t.amount).toLocaleString()}⭐</div>
+                </div>`;
+            }).join('');
+        },
+    };
+
     window.Leaderboard = {
         async load() {
             if (!window.Multiplayer) return;
@@ -2223,6 +2272,7 @@
             if(id === 'profile' && window.Frames) window.Frames.load();
             if(id === 'settings' && window.Settings) window.Settings.syncUI();
             if(id === 'leaderboard' && window.Leaderboard) window.Leaderboard.load();
+            if(id === 'history' && window.TxHistory) window.TxHistory.load();
             if(id === 'profile' && window.Referrals) window.Referrals.init();
             if(id === 'profile' && window.ProfileGifts) window.ProfileGifts.ensureLoaded();
             if(id === 'market' && window.Showcase) window.Showcase.ensureLoaded();
