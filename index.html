@@ -396,6 +396,20 @@
         @keyframes taskFadeOut { to { opacity: 0; transform: translateY(-10px) scale(0.97); } }
         .crypto-chart-tooltip { position: absolute; background: rgba(20,22,28,0.95); border: 1px solid #2a2e3a; border-radius: 8px; padding: 5px 8px; font-size: 10px; color: #fff; pointer-events: none; white-space: nowrap; z-index: 5; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
         .hub-category { font-size: 13px; font-weight: 800; letter-spacing: 0.5px; margin: 26px 12px 12px; text-transform: uppercase; }
+
+        .bigwin-banner { margin: 10px 10px 0; background: linear-gradient(135deg, rgba(215,180,93,0.16), rgba(215,180,93,0.03));
+            border: 1px solid rgba(215,180,93,0.35); border-radius: var(--border-radius); padding: 12px 0 12px 14px; overflow: hidden; }
+        .bigwin-banner-label { font-size: 12px; font-weight: 800; color: var(--gold); margin-bottom: 8px; padding-right: 14px; }
+        .bigwin-banner-track { display: flex; gap: 10px; overflow-x: auto; padding-right: 14px; scroll-snap-type: x proximity; }
+        .bigwin-card { flex-shrink: 0; scroll-snap-align: start; display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.25);
+            border: 1px solid rgba(215,180,93,0.25); border-radius: 12px; padding: 8px 12px; min-width: 190px; }
+        .bigwin-card .avatar-frame-wrap { width: 32px; height: 32px; flex-shrink: 0; }
+        .bigwin-card .profile-avatar { width: 32px; height: 32px; font-size: 15px; }
+        .bigwin-card-info { min-width: 0; }
+        .bigwin-card-name { font-size: 11px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; }
+        .bigwin-card-detail { font-size: 10px; color: var(--text-muted); white-space: nowrap; }
+        .bigwin-card-detail b { color: var(--green); }
+        .bigwin-banner-empty { font-size: 11px; color: var(--text-muted); padding-right: 14px; }
         .hub-grid { display: flex; flex-direction: column; gap: 12px; padding: 0 12px; }
         .hub-card { display: flex; align-items: center; gap: 14px; background: linear-gradient(155deg, var(--bg-panel) 0%, var(--bg-panel-light) 140%); border: 1px solid #1f222b; border-radius: 18px; padding: 14px; cursor: pointer; position: relative; overflow: hidden; box-shadow: 0 4px 14px rgba(0,0,0,0.22); transition: transform 0.18s var(--ease), box-shadow 0.18s var(--ease), border-color 0.18s; }
         .hub-card:nth-of-type(5n+2) { background: linear-gradient(155deg, rgba(79,179,240,0.09) 0%, var(--bg-panel-light) 140%); }
@@ -819,6 +833,10 @@
         <!-- CRASH -->
         <!-- ХАБ: список игр по категориям -->
         <div class="game-view active" id="view-games">
+            <div class="bigwin-banner" id="bigwin-banner">
+                <div class="bigwin-banner-label">🏆 Крупные выигрыши</div>
+                <div class="bigwin-banner-track" id="bigwin-track"></div>
+            </div>
             <div class="panel" style="margin: 10px 10px 14px; background: linear-gradient(135deg, rgba(215,180,93,0.12), rgba(215,180,93,0.02)); border: 1px solid rgba(215,180,93,0.25);">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <div>
@@ -904,10 +922,6 @@
 
             <div class="hub-category" style="color:var(--gold);">🏛️ Бизнес</div>
             <div class="hub-grid" style="margin-bottom: 20px;">
-                <div class="hub-card" onclick="App.s('tycoon', null, 'Империя')">
-                    <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10l4-2M8 20V6l4-2M12 20V9l4 1M16 20v-7l4-1v8" fill="currentColor" fill-opacity="0.1"/></svg></div>
-                    <div class="hub-card-info"><div class="hub-card-title">Империя</div><div class="hub-card-desc">Стройте казино, получайте пассивный доход</div></div>
-                </div>
                 <div class="hub-card" onclick="App.s('crypto', null, 'Крипто')">
                     <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l5-6 4 3 6-8v14l-15 0z" fill="currentColor" fill-opacity="0.1"/><path d="M4 17l5-6 4 3 6-8"/><path d="M14 6h5v5"/></svg></div>
                     <div class="hub-card-info"><div class="hub-card-title">Крипто</div><div class="hub-card-desc">Торгуйте dxxxcoin на своей бирже</div></div>
@@ -1800,6 +1814,34 @@
         </svg>`;
     };
 
+    window.BigWins = {
+        list: [],
+        async load() {
+            if (!window.Multiplayer) return;
+            const { data, error } = await sb.rpc('get_recent_big_wins', { p_limit: 15 });
+            if (error || !data) return;
+            this.list = data;
+            this.render();
+        },
+        render() {
+            const track = document.getElementById('bigwin-track'); if (!track) return;
+            if (!this.list.length) { track.innerHTML = `<div class="bigwin-banner-empty">Пока никто не выигрывал 1000+⭐ — стань первым!</div>`; return; }
+            track.innerHTML = this.list.map(w => {
+                const initial = (w.username || '?')[0].toUpperCase();
+                const avatarInner = w.avatar_url
+                    ? `<img src="${w.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.parentElement.innerText='${initial}'">`
+                    : initial;
+                return `<div class="bigwin-card">
+                    <div class="avatar-frame-wrap ${w.frame_css_class || ''}"><div class="profile-avatar">${avatarInner}</div></div>
+                    <div class="bigwin-card-info">
+                        <div class="bigwin-card-name">${w.username || 'Игрок'}</div>
+                        <div class="bigwin-card-detail">+<b>${Number(w.amount).toLocaleString()}⭐</b> · ${w.game_name}</div>
+                    </div>
+                </div>`;
+            }).join('');
+        },
+    };
+
     window.Settings = {
         data: { animationsEnabled: true, soundEnabled: true, vibrationEnabled: true, language: 'ru' },
         init() {
@@ -1888,6 +1930,8 @@
             if(isNaN(this.balance) || this.balance < 0) this.balance = 10000;
 
             window.Settings.init(); window.Stats.init(); window.Levels.init(); window.Gifts.init(); window.Tasks.init(); window.Roulette.init(); window.Upgrader.init(); window.Tower.init(); window.Mines.init(); window.Shells.init(); window.Dice.init(); window.Plinko.init(); window.Crash.init(); window.HiLo.init(); window.Coin.init(); window.Slots.init(); window.Scratch.init(); window.Balloon.init(); window.ProfileBg.init();
+            window.BigWins.load();
+            setInterval(() => window.BigWins.load(), 60000);
             this.updBalUI();
         },
         updBalUI() {
@@ -2069,7 +2113,7 @@
             setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 3700);
         },
         mCb(n, k) { if(k<0 || k>n) return 0; if(k===0 || k===n) return 1; let res=1; for(let i=1; i<=k; i++) res = res * (n-i+1)/i; return res; },
-        win(amount, label) { this.chgBal(amount, label); this.toast(`Победа! +${amount}`, 'success'); if(window.Sound) window.Sound.coin(); this.haptic('win'); window.Tasks.chk('win', amount); window.Levels.addWin(amount); }
+        win(amount, label) { this.chgBal(amount, label); this.toast(`Победа! +${amount}`, 'success'); if(window.Sound) window.Sound.coin(); this.haptic('win'); window.Tasks.chk('win', amount); window.Levels.addWin(amount); if (window.Multiplayer) window.Multiplayer.logBigWin(amount, label || 'Игра'); }
     };
 
     // Статистика собирается централизованно в App.logOperation() (вызывается из
@@ -3365,6 +3409,7 @@
                         window.App.toast(`Забрано! x${result.cashout_mult.toFixed(2)} = +${result.win_amount.toLocaleString()}⭐`, 'success');
                         if (window.Sound) window.Sound.coin();
                         window.Levels.addWin(result.win_amount);
+                        window.Multiplayer.logBigWin(result.win_amount, 'Воздушный шар');
                         window.Tasks.chk('win', result.win_amount);
                     }
                     this.locked = false; this.updBtns();
@@ -3530,6 +3575,7 @@
                 }
                 if (window.Sound) window.Sound.coin();
                 window.Levels.addWin(result.win_amount);
+                window.Multiplayer.logBigWin(result.win_amount, 'Скретч-карта');
             } else {
                 window.App.toast('Не повезло', 'error');
             }
@@ -3646,10 +3692,12 @@
                 window.App.toast(`🐸 ДЖЕКПОТ! +${result.win_amount.toLocaleString()}⭐`, 'success');
                 if (window.Sound) window.Sound.coin();
                 window.Levels.addWin(result.win_amount);
+                window.Multiplayer.logBigWin(result.win_amount, 'Слоты');
             } else if (result.win_amount > bet) {
                 window.App.toast(`Выигрыш! +${result.win_amount.toLocaleString()}⭐`, 'success');
                 if (window.Sound) window.Sound.coin();
                 window.Levels.addWin(result.win_amount);
+                window.Multiplayer.logBigWin(result.win_amount, 'Слоты');
             } else if (result.win_amount > 0) {
                 window.App.toast(`Частичный возврат: +${result.win_amount.toLocaleString()}⭐`, 'success');
             } else {
@@ -3751,6 +3799,7 @@
                 window.App.toast(`🎉 Выиграл(а) "${result.target_gift_name}"!`, 'success');
                 if (window.Sound) window.Sound.coin();
                 window.App.haptic && window.App.haptic('win');
+                if (this.targetPrice >= 1000) window.Multiplayer.logBigWin(this.targetPrice, 'Апгрейдер гифтов');
             } else {
                 window.App.toast('Не повезло — ставка сгорела', 'error');
                 window.App.haptic && window.App.haptic('lose');
@@ -5448,6 +5497,6 @@
 <!-- МУЛЬТИПЛЕЕР: общий раунд Ракеты, Рулетки, Арены, промокоды, Дурак, маркетплейс -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="multiplayer-client.js?v=148"></script>
+<script src="multiplayer-client.js?v=149"></script>
 </body>
 </html>

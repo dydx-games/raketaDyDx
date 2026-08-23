@@ -283,6 +283,7 @@ window.Multiplayer = {
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Не удалось забрать', 'error'); return null; }
         await this.syncBalanceFromServer();
         window.App.toast(`Забрано ${data[0].win_amount}!`, 'success');
+        this.logBigWin(data[0].win_amount, 'Ракета');
         return data[0].win_amount;
     },
 
@@ -523,6 +524,10 @@ window.Multiplayer = {
     // отправка (см. App.syncDelta) — остальные 12 могли перебить свежий локальный
     // выигрыш устаревшим серверным числом, пока отправка ещё в пути. Теперь
     // проверка в одном месте, и её точно не забудут в новом коде.
+    async logBigWin(amount, gameName) {
+        if (amount < 1000 || !ME || !ME.id) return;
+        try { await sb.rpc('record_big_win', { p_telegram_id: ME.id, p_username: ME.username, p_avatar_url: ME.avatar_url, p_amount: amount, p_game_name: gameName }); } catch (e) {}
+    },
     async syncBalanceFromServer() {
         if (window.App && window.App._pendingSyncCount > 0) return null; // не перебиваем ещё не долетевшую отправку
         const bal = await this.getBalance();
