@@ -385,6 +385,11 @@
         .tx-amount { font-size: 13px; font-weight: 800; flex-shrink: 0; }
         .tx-amount.plus { color: var(--green); }
         .tx-amount.minus { color: var(--red); }
+        .gu-hist-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 4px; border-bottom: 1px solid var(--border); font-size: 11px; }
+        .gu-hist-row:last-child { border-bottom: none; }
+        .gu-hist-badge { font-weight: 800; padding: 2px 7px; border-radius: 6px; font-size: 10px; }
+        .gu-hist-badge.won { background: rgba(52,211,153,0.15); color: var(--green); }
+        .gu-hist-badge.lost { background: rgba(244,87,106,0.15); color: var(--red); }
         .streak-panel { background: linear-gradient(135deg, rgba(255,140,60,0.1), rgba(255,90,30,0.02)); border: 1px solid rgba(255,140,60,0.25); }
         .streak-header { display: flex; justify-content: space-between; align-items: center; }
         .streak-title { font-size: 15px; font-weight: 900; }
@@ -768,28 +773,36 @@
         .upg-mode-switch button { flex: 1; padding: 10px; background: var(--bg-panel); border: 1px solid var(--border); color: var(--text-muted);
             border-radius: var(--border-radius-sm); font-weight: 800; font-size: 13px; transition: all 0.2s; }
         .upg-mode-switch button.active { background: var(--gold); color: #000; border-color: var(--gold); }
-        .upg-stake-tabs { display: flex; gap: 6px; margin-bottom: 8px; }
-        .upg-stake-tabs button { flex: 1; padding: 7px; background: var(--bg-panel-light); border: 1px solid var(--border); color: var(--text-muted);
-            border-radius: 8px; font-size: 11px; font-weight: 700; }
-        .upg-stake-tabs button.active { border-color: var(--gold); color: var(--gold); }
-        .upg-gift-scroll { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0; }
-        .upg-gift-item { flex-shrink: 0; width: 68px; background: var(--bg-panel-light); border: 2px solid var(--border); border-radius: 12px;
-            padding: 6px; text-align: center; cursor: pointer; transition: border-color 0.2s; }
-        .upg-gift-item.selected { border-color: var(--gold); box-shadow: 0 0 10px rgba(215,180,93,0.4); }
-        .upg-gift-item .upg-gift-item-anim { width: 44px; height: 44px; margin: 0 auto 4px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
-        .upg-gift-item .upg-gift-item-price { font-size: 9px; color: var(--gold); font-weight: 800; }
-        .upg-gift-item .upg-gift-item-chance { font-size: 8.5px; color: var(--green); font-weight: 700; margin-top: 1px; }
-        .upg-gift-stage { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 16px 0; }
+        .upg-stake-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+        .upg-stake-tabs button { flex: 1; padding: 10px; background: var(--bg-panel-light); border: 1px solid var(--border); color: var(--text-muted);
+            border-radius: 10px; font-size: 12px; font-weight: 800; transition: all 0.2s; }
+        .upg-stake-tabs button.active { border-color: var(--gold); color: var(--gold); background: rgba(215,180,93,0.08); }
+        .upg-gift-scroll { display: flex; gap: 10px; overflow-x: auto; padding: 6px 2px; }
+        .upg-gift-item { flex-shrink: 0; width: 86px; background: linear-gradient(160deg, var(--bg-panel-light), var(--bg-panel));
+            border: 2px solid var(--border); border-radius: 16px;
+            padding: 10px 8px; text-align: center; cursor: pointer; transition: all 0.2s; box-shadow: 0 3px 8px rgba(0,0,0,0.15); }
+        .upg-gift-item:active { transform: scale(0.96); }
+        .upg-gift-item.selected { border-color: var(--gold); box-shadow: 0 0 16px rgba(215,180,93,0.5), 0 3px 8px rgba(0,0,0,0.2); transform: translateY(-2px); }
+        .upg-gift-item .upg-gift-item-anim { width: 58px; height: 58px; margin: 0 auto 6px; display: flex; align-items: center; justify-content: center; font-size: 28px;
+            background: rgba(0,0,0,0.2); border-radius: 12px; }
+        .upg-gift-item .upg-gift-item-price { font-size: 11px; color: var(--gold); font-weight: 800; }
+        .upg-gift-item .upg-gift-item-chance { font-size: 10px; color: var(--green); font-weight: 800; margin-top: 2px; padding: 2px 6px; background: rgba(52,211,153,0.12); border-radius: 999px; display: inline-block; }
+        .upg-gift-stage { display: flex; align-items: center; justify-content: center; gap: 18px; padding: 22px 0; }
         .upg-gift-anim.spinning { animation: gu-spin-pulse 0.5s ease-in-out infinite; }
         @keyframes gu-spin-pulse { 0%,100% { transform: scale(1) rotate(0deg); filter: brightness(1); } 50% { transform: scale(1.08) rotate(4deg); filter: brightness(1.3); } }
         .upg-gift-arrow.spinning { animation: gu-arrow-pulse 0.5s ease-in-out infinite; color: var(--gold-bright); }
         @keyframes gu-arrow-pulse { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
-        .upg-gift-anim.result-win { animation: gu-win-flash 0.5s ease 2; box-shadow: 0 0 20px 4px rgba(52,211,153,0.7); }
-        .upg-gift-anim.result-lose { animation: gu-lose-shake 0.4s ease; box-shadow: 0 0 20px 4px rgba(244,87,106,0.6); opacity: 0.4; filter: grayscale(1); }
-        @keyframes gu-win-flash { 0%,100% { box-shadow: 0 0 20px 4px rgba(52,211,153,0.7); } 50% { box-shadow: 0 0 34px 8px rgba(52,211,153,1); } }
+        .upg-gift-anim.result-win { animation: gu-win-flash 0.5s ease 2; box-shadow: 0 0 26px 6px rgba(52,211,153,0.7); }
+        .upg-gift-anim.result-lose { animation: gu-lose-shake 0.4s ease; box-shadow: 0 0 26px 6px rgba(244,87,106,0.6); opacity: 0.4; filter: grayscale(1); }
+        @keyframes gu-win-flash { 0%,100% { box-shadow: 0 0 26px 6px rgba(52,211,153,0.7); } 50% { box-shadow: 0 0 42px 10px rgba(52,211,153,1); } }
         @keyframes gu-lose-shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
-        .upg-gift-anim { width: 70px; height: 70px; background: var(--bg-panel-light); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 30px; }
+        .upg-gift-anim { width: 92px; height: 92px; background: linear-gradient(160deg, var(--bg-panel-light), var(--bg-panel));
+            border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 38px; box-shadow: inset 0 2px 6px rgba(0,0,0,0.3); }
         .upg-gift-arrow { font-size: 22px; color: var(--gold); }
+        .gu-hist-row { display: flex; justify-content: space-between; align-items: center; font-size: 11px; padding: 7px 0; }
+        .gu-hist-badge { font-weight: 800; padding: 3px 9px; border-radius: 999px; font-size: 10px; }
+        .gu-hist-badge.won { background: rgba(52,211,153,0.15); color: var(--green); }
+        .gu-hist-badge.lost { background: rgba(244,87,106,0.12); color: var(--red); }
 
         .upgrader-stage { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 10px 10px 0;
             background: linear-gradient(180deg, var(--bg-panel) 0%, var(--bg-panel-light) 100%); border-radius: var(--border-radius);
@@ -1301,16 +1314,21 @@
                 <div class="panel" style="margin-bottom:20px;">
                     <div class="upg-gift-stage" id="gu-stage">
                         <div class="upg-gift-anim" id="gu-anim-stake"></div>
-                        <div class="upgrader-wheel-wrap" style="width:110px; height:110px;">
-                            <div class="upgrader-indicator" style="border-left-width:6px; border-right-width:6px; border-top-width:12px;"></div>
-                            <div class="upgrader-wheel" id="gu-wheel" style="width:110px; height:110px;"></div>
-                            <div class="upgrader-center" style="width:70px;">
-                                <div class="upg-pct" id="gu-pct" style="font-size:17px;">—</div>
+                        <div class="upgrader-wheel-wrap" style="width:130px; height:130px;">
+                            <div class="upgrader-indicator" style="border-left-width:7px; border-right-width:7px; border-top-width:14px;"></div>
+                            <div class="upgrader-wheel" id="gu-wheel" style="width:130px; height:130px;"></div>
+                            <div class="upgrader-center" style="width:85px;">
+                                <div class="upg-pct" id="gu-pct" style="font-size:20px;">—</div>
                             </div>
                         </div>
                         <div class="upg-gift-anim" id="gu-anim-target"></div>
                     </div>
                     <button class="main-btn btn-gold" id="gu-play-btn" onclick="GiftUpgrader.play()" disabled>Выбери гифт и цель</button>
+                    <div id="gu-history-list" style="margin-top:10px; padding-top:8px; border-top:1px solid var(--border);"></div>
+                </div>
+                <div class="panel" style="margin-bottom:20px;">
+                    <div class="panel-title">📜 Последние попытки</div>
+                    <div id="gu-history-list"></div>
                 </div>
             </div>
         </div>
@@ -4038,9 +4056,30 @@
             // пытался просто "перемотать на кадр 0" уже пустой, стёртый элемент —
             // картинка визуально пропадала. Теперь чистим ТОЛЬКО когда реально
             // нечего показывать, а не всегда заранее.
+            //
+            // Дополнительная защита: контейнеры gu-anim-stake/target — ОДНИ И ТЕ ЖЕ
+            // DOM-узлы для ЛЮБОГО выбранного гифта (переиспользуются). Если сменить
+            // выбор — явно уничтожаем инстанс ПРЕДЫДУЩЕГО гифта, иначе при возврате
+            // к нему позже playCard мог решить, что старый (уже удалённый) инстанс
+            // ещё актуален (тот же DOM-узел), и не перерисовать модель заново —
+            // отсюда несовпадение модели с гифтом.
+            const newStakeKey = (this.stakeType === 'gift' && this.stakeInventoryId) ? 'gu-stage-stake::' + this.stakeInventoryId : null;
+            if (this._lastStakeStageKey && this._lastStakeStageKey !== newStakeKey && window.Showcase.cardInstances[this._lastStakeStageKey]) {
+                try { window.Showcase.cardInstances[this._lastStakeStageKey].destroy(); } catch (e) {}
+                delete window.Showcase.cardInstances[this._lastStakeStageKey];
+            }
+            this._lastStakeStageKey = newStakeKey;
+
+            const newTargetKey = this.targetCatalogId ? 'gu-stage-target::' + this.targetCatalogId : null;
+            if (this._lastTargetStageKey && this._lastTargetStageKey !== newTargetKey && window.Showcase.cardInstances[this._lastTargetStageKey]) {
+                try { window.Showcase.cardInstances[this._lastTargetStageKey].destroy(); } catch (e) {}
+                delete window.Showcase.cardInstances[this._lastTargetStageKey];
+            }
+            this._lastTargetStageKey = newTargetKey;
+
             if (this.stakeType === 'gift' && this.stakeInventoryId && window.ProfileGifts) {
                 const item = window.ProfileGifts.items.find(i => i.inventory_id === this.stakeInventoryId);
-                if (item && window.Showcase) window.Showcase.playCard(item.catalog_id, stakeEl, item.model_anim_file || undefined, 'gu-stage-stake::' + item.inventory_id);
+                if (item && window.Showcase) window.Showcase.playCard(item.catalog_id, stakeEl, item.model_anim_file || undefined, newStakeKey);
                 else { stakeEl.innerHTML = '🎁'; stakeEl.classList.add('placeholder'); }
             } else if (this.stakeType === 'stars') {
                 stakeEl.innerHTML = '⭐'; stakeEl.classList.remove('placeholder');
@@ -4048,10 +4087,23 @@
                 stakeEl.innerHTML = '🎁'; stakeEl.classList.add('placeholder');
             }
             if (this.targetCatalogId && window.Showcase) {
-                window.Showcase.playCard(this.targetCatalogId, targetEl, undefined, 'gu-stage-target::' + this.targetCatalogId);
+                window.Showcase.playCard(this.targetCatalogId, targetEl, undefined, newTargetKey);
             } else {
                 targetEl.innerHTML = '🎁'; targetEl.classList.add('placeholder');
             }
+        },
+        async loadHistory() {
+            if (!window.Multiplayer || !window.ME) return;
+            const { data, error } = await sb.rpc('get_upgrader_history', { p_telegram_id: window.ME.id, p_limit: 10 });
+            const el = document.getElementById('gu-history-list'); if (!el) return;
+            if (error || !data || !data.length) { el.innerHTML = `<div style="font-size:11px; color:var(--text-muted); padding:6px 0;">Пока не было попыток</div>`; return; }
+            el.innerHTML = data.map(h => {
+                const stakeLabel = h.stake_type === 'gift' ? '🎁' : (h.stake_value.toLocaleString() + '⭐');
+                return `<div class="gu-hist-row">
+                    <span>${stakeLabel} → ${h.target_gift_name}</span>
+                    <span class="gu-hist-badge ${h.won ? 'won' : 'lost'}">${h.won ? '✓ Выигрыш' : '✗ Мимо'} (${h.win_chance}%)</span>
+                </div>`;
+            }).join('');
         },
         async play() {
             if (this.pl) return;
@@ -4126,14 +4178,16 @@
                 window.App.haptic && window.App.haptic('lose');
             }
 
-            // Сброс выбора — ЖДЁМ, пока честно доиграет вспышка результата (иначе
-            // превью ставки стиралось прямо во время анимации, выглядело как
-            // "гифт пропал"). Вспышка длится ~1с, даём 2с с запасом на визуальный отклик.
+            // Сброс выбора — ждём, пока доиграет вспышка результата, но не дольше
+            // необходимого: раньше стояла одна и та же долгая пауза (2с) для ОБОИХ
+            // исходов, хотя анимация проигрыша ("тряска") длится всего 0.4с — то
+            // есть ты реально ждал лишние 1.5+ секунды впустую, пока гифт "висел".
+            const resetDelay = result.won ? 1300 : 800;
             setTimeout(() => {
                 this.stakeInventoryId = null; this.targetCatalogId = null;
                 if (window.Multiplayer) window.Multiplayer.ensureProfileGiftsLoaded();
-                this.renderStakePicker(); this.onStakeChange();
-            }, 2000);
+                this.renderStakePicker(); this.onStakeChange(); this.loadHistory();
+            }, resetDelay);
         },
     };
 
@@ -4145,7 +4199,7 @@
             document.getElementById('upg-mode-gifts').classList.toggle('active', mode === 'gifts');
             document.getElementById('upg-stars-mode').style.display = mode === 'stars' ? '' : 'none';
             document.getElementById('upg-gifts-mode').style.display = mode === 'gifts' ? '' : 'none';
-            if (mode === 'gifts' && window.GiftUpgrader) window.GiftUpgrader.renderStakePicker();
+            if (mode === 'gifts' && window.GiftUpgrader) { window.GiftUpgrader.renderStakePicker(); window.GiftUpgrader.loadHistory(); }
         },
         mod(act) { if(this.pl) return; window.Sound && window.Sound.click(); let v = Math.floor(Number(document.getElementById('upg-bet').value)) || 0; if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById('upg-bet').value = Math.max(0, Math.min(v, window.App.balance)); this.updSideBet(); },
         set(v) { if(!this.pl) { document.getElementById('upg-bet').value=v; this.updSideBet(); } },
@@ -5363,7 +5417,7 @@
                 // пропадёт в никуда, а видимый (новый) элемент останется пустым.
                 // Молча прерываемся, если контейнер больше не в живом DOM.
                 if (!container.isConnected) return;
-                container.classList.remove('placeholder'); container.innerText = '';
+                container.classList.remove('placeholder'); container.innerHTML = ''; // innerText не чистит вложенные SVG-элементы, только текстовые узлы — старая анимация оставалась "под" новой
                 const shouldPlay = autoplay && !animsOff;
                 inst = lottie.loadAnimation({ container, renderer: 'svg', loop: shouldPlay, autoplay: shouldPlay, animationData: data });
                 inst._playedOnce = false;
