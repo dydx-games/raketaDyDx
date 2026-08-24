@@ -3940,10 +3940,26 @@
             // гифты реально есть. Теперь подтягиваем сами, если ещё не загружено.
             if ((!window.ProfileGifts || !window.ProfileGifts.items.length) && window.Multiplayer) {
                 el.innerHTML = `<div style="font-size:11px; color:var(--text-muted); padding:8px;">Загрузка...</div>`;
-                await window.Multiplayer.refreshMarketShop();
+                await window.Multiplayer.ensureProfileGiftsLoaded();
             }
             const items = (window.ProfileGifts ? window.ProfileGifts.items : []).filter(i => !i.listed);
             if (!items.length) { el.innerHTML = `<div style="font-size:11px; color:var(--text-muted); padding:8px;">Нет гифтов для ставки</div>`; return; }
+
+            // Раньше HTML списка пересобирался ЗАНОВО при каждом действии (выбор
+            // ставки, после спина и т.д.) — новые DOM-элементы с теми же ID, а
+            // асинхронная загрузка анимации, начатая для старого элемента, потом
+            // дорисовывалась в уже удалённый узел ("гифты пропадают со временем").
+            // Теперь пересобираем HTML, только если реально изменился состав.
+            const sig = items.map(i => i.inventory_id).sort().join(',');
+            if (sig === this._lastStakeSig && el.children.length) {
+                // Состав тот же — просто обновляем подсветку выбранного, ничего не рушим
+                el.querySelectorAll('.upg-gift-item').forEach(node => node.classList.remove('selected'));
+                const sel = el.querySelector(`[onclick*="pickStakeGift(${this.stakeInventoryId},"]`);
+                if (sel) sel.classList.add('selected');
+                return;
+            }
+            this._lastStakeSig = sig;
+
             el.innerHTML = items.map(i => `
                 <div class="upg-gift-item ${this.stakeInventoryId === i.inventory_id ? 'selected' : ''}" onclick="GiftUpgrader.pickStakeGift(${i.inventory_id}, ${i.price_stars})">
                     <div class="upg-gift-item-anim placeholder" id="gu-stake-anim-${i.inventory_id}">🎁</div>
@@ -4017,16 +4033,25 @@
             const stakeEl = document.getElementById('gu-anim-stake');
             const targetEl = document.getElementById('gu-anim-target');
             if (!stakeEl || !targetEl) return;
-            stakeEl.innerHTML = ''; stakeEl.classList.add('placeholder');
-            targetEl.innerHTML = ''; targetEl.classList.add('placeholder');
+            // РАНЬШЕ здесь вручную стирался innerHTML ПЕРЕД вызовом playCard —
+            // если в контейнере уже была загруженная (пусть и замороженная)
+            // анимация, это физически удаляло её SVG из DOM, а playCard потом
+            // пытался просто "перемотать на кадр 0" уже пустой, стёртый элемент —
+            // картинка визуально пропадала. Теперь чистим ТОЛЬКО когда реально
+            // нечего показывать, а не всегда заранее.
             if (this.stakeType === 'gift' && this.stakeInventoryId && window.ProfileGifts) {
                 const item = window.ProfileGifts.items.find(i => i.inventory_id === this.stakeInventoryId);
                 if (item && window.Showcase) window.Showcase.playCard(item.catalog_id, stakeEl, item.model_anim_file || undefined, 'gu-stage-stake::' + item.inventory_id);
+                else { stakeEl.innerHTML = '🎁'; stakeEl.classList.add('placeholder'); }
             } else if (this.stakeType === 'stars') {
                 stakeEl.innerHTML = '⭐'; stakeEl.classList.remove('placeholder');
+            } else {
+                stakeEl.innerHTML = '🎁'; stakeEl.classList.add('placeholder');
             }
             if (this.targetCatalogId && window.Showcase) {
                 window.Showcase.playCard(this.targetCatalogId, targetEl, undefined, 'gu-stage-target::' + this.targetCatalogId);
+            } else {
+                targetEl.innerHTML = '🎁'; targetEl.classList.add('placeholder');
             }
         },
         async play() {
@@ -4108,7 +4133,7 @@
             // "гифт пропал"). Вспышка длится ~1с, даём 2с с запасом на визуальный отклик.
             setTimeout(() => {
                 this.stakeInventoryId = null; this.targetCatalogId = null;
-                if (window.Multiplayer) window.Multiplayer.refreshMarketShop();
+                if (window.Multiplayer) window.Multiplayer.ensureProfileGiftsLoaded();
                 this.renderStakePicker(); this.onStakeChange();
             }, 2000);
         },
@@ -5331,6 +5356,15 @@
                     data = await res.json();
                     this.animCache[path] = data;
                 }
+                // КЛЮЧЕВОЙ МОМЕНТ ФИКСА: пока шла асинхронная загрузка (await
+                // fetch выше), список гифтов мог уже успеть полностью
+                // пересобраться заново (например апгрейдер перерисовал HTML
+                // после выбора ставки) — и container, на который мы нацелились
+                // изначально, уже вырван из страницы. Рендерить в такой
+                // "осиротевший" элемент бессмысленно — анимация просто
+                // пропадёт в никуда, а видимый (новый) элемент останется пустым.
+                // Молча прерываемся, если контейнер больше не в живом DOM.
+                if (!container.isConnected) return;
                 container.classList.remove('placeholder'); container.innerText = '';
                 const shouldPlay = autoplay && !animsOff;
                 inst = lottie.loadAnimation({ container, renderer: 'svg', loop: shouldPlay, autoplay: shouldPlay, animationData: data });

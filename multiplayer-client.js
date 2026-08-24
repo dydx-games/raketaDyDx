@@ -568,6 +568,16 @@ window.Multiplayer = {
         if (window.Showcase) window.Showcase.setState(data);
         if (window.ProfileGifts) window.ProfileGifts.setState(data);
     },
+    // Лёгкая версия — только для случаев вроде Апгрейдера гифтов, которому
+    // нужен просто актуальный список СВОИХ гифтов, а не вся витрина каталога
+    // (сотня+ карточек). Раньше для этого дёргался refreshMarketShop() целиком,
+    // что перестраивало ВСЮ витрину даже если она не видна на экране — выглядело
+    // как "страница обновляется".
+    async ensureProfileGiftsLoaded() {
+        const { data, error } = await sb.rpc('get_market_state', { p_telegram_id: ME.id });
+        if (error || !data) return;
+        if (window.ProfileGifts) window.ProfileGifts.setState(data);
+    },
     async refreshReferrals() {
         const { data, error } = await sb.rpc('get_referral_stats', { p_telegram_id: ME.id });
         if (error || !data) return;
