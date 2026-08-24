@@ -385,6 +385,16 @@
         .tx-amount { font-size: 13px; font-weight: 800; flex-shrink: 0; }
         .tx-amount.plus { color: var(--green); }
         .tx-amount.minus { color: var(--red); }
+        .streak-panel { background: linear-gradient(135deg, rgba(255,140,60,0.1), rgba(255,90,30,0.02)); border: 1px solid rgba(255,140,60,0.25); }
+        .streak-header { display: flex; justify-content: space-between; align-items: center; }
+        .streak-title { font-size: 15px; font-weight: 900; }
+        .streak-sub { font-size: 10.5px; color: var(--text-muted); margin-top: 2px; }
+        .streak-claim-btn { background: linear-gradient(135deg, #ff9a4d, #d6401a); color: #fff; border: none; padding: 9px 16px; border-radius: 10px; font-weight: 800; font-size: 12px; }
+        .streak-claim-btn:disabled { background: var(--bg-panel-light); color: var(--text-muted); }
+        .streak-dots { display: flex; gap: 6px; margin-top: 12px; }
+        .streak-dot { flex: 1; height: 6px; border-radius: 999px; background: var(--bg-panel-light); }
+        .streak-dot.filled { background: linear-gradient(90deg, #ff9a4d, #ffce6b); }
+        .streak-dot.today { box-shadow: 0 0 8px rgba(255,180,80,0.7); }
         /* Ползунки — плавные, с лёгким пружинящим переходом вместо резкого "щелчка" */
         .switch { position: relative; display: inline-block; width: 46px; height: 27px; flex-shrink: 0; }
         .switch input { opacity: 0; width: 0; height: 0; }
@@ -419,6 +429,8 @@
         .crypto-chart-tooltip { position: absolute; background: rgba(20,22,28,0.95); border: 1px solid #2a2e3a; border-radius: 8px; padding: 5px 8px; font-size: 10px; color: #fff; pointer-events: none; white-space: nowrap; z-index: 5; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
         .hub-category { font-size: 13px; font-weight: 800; letter-spacing: 0.5px; margin: 26px 12px 12px; text-transform: uppercase; }
 
+        .lucky-hour-banner { margin: 10px 10px 0; background: linear-gradient(135deg, rgba(80,220,140,0.18), rgba(80,220,140,0.03));
+            border: 1px solid rgba(80,220,140,0.4); border-radius: var(--border-radius); padding: 10px 14px; font-size: 12px; font-weight: 800; color: var(--green); text-align: center; }
         .bigwin-banner { margin: 10px 10px 0; background: linear-gradient(135deg, rgba(215,180,93,0.16), rgba(215,180,93,0.03));
             border: 1px solid rgba(215,180,93,0.35); border-radius: var(--border-radius); padding: 12px 0 12px 14px; overflow: hidden; }
         .bigwin-banner-label { font-size: 12px; font-weight: 800; color: var(--gold); margin-bottom: 8px; padding-right: 14px; }
@@ -875,6 +887,7 @@
         <!-- CRASH -->
         <!-- ХАБ: список игр по категориям -->
         <div class="game-view active" id="view-games">
+            <div class="lucky-hour-banner" id="lucky-hour-banner" style="display:none;"></div>
             <div class="bigwin-banner" id="bigwin-banner">
                 <div class="bigwin-banner-label">🏆 Крупные выигрыши</div>
                 <div class="bigwin-banner-track" id="bigwin-track"></div>
@@ -1538,6 +1551,17 @@
                 <div class="frames-grid" id="frames-grid"></div>
             </div>
 
+            <div class="panel streak-panel" id="streak-panel" style="margin: 10px 10px 0; display:none;">
+                <div class="streak-header">
+                    <div>
+                        <div class="streak-title">🔥 Стрик: <span id="streak-days">0</span> дней</div>
+                        <div class="streak-sub" id="streak-sub">Рекорд: 0</div>
+                    </div>
+                    <button class="streak-claim-btn" id="streak-claim-btn" onclick="Streak.claim()">Забрать</button>
+                </div>
+                <div class="streak-dots" id="streak-dots"></div>
+            </div>
+
             <div class="panel" style="margin: 10px 10px 0;" id="profile-section-gifts">
                 <div class="panel-title">🎁 Мои подарки</div>
                 <div class="profile-gifts-grid" id="profile-gifts-grid"></div>
@@ -1905,6 +1929,40 @@
         </svg>`;
     };
 
+    window.Streak = {
+        REWARDS: [50, 75, 100, 150, 250, 350, 500],
+        async load() {
+            if (!window.Multiplayer || !window.ME) return;
+            const { data, error } = await sb.rpc('get_daily_streak_status', { p_telegram_id: window.ME.id });
+            const panel = document.getElementById('streak-panel'); if (!panel || error || !data || !data[0]) return;
+            panel.style.display = '';
+            const s = data[0];
+            document.getElementById('streak-days').innerText = s.current_streak;
+            document.getElementById('streak-sub').innerText = `Рекорд: ${s.longest_streak}`;
+            const btn = document.getElementById('streak-claim-btn');
+            btn.disabled = !s.can_claim_today;
+            btn.innerText = s.can_claim_today ? `Забрать +${s.next_reward}⭐` : 'Уже забрано';
+
+            const dots = document.getElementById('streak-dots');
+            const cyclePos = s.can_claim_today ? (s.current_streak % 7) : ((s.current_streak - 1) % 7);
+            dots.innerHTML = this.REWARDS.map((r, i) => {
+                const filled = i < (s.can_claim_today ? cyclePos : cyclePos + 1);
+                const isNext = s.can_claim_today && i === cyclePos;
+                return `<div class="streak-dot ${filled ? 'filled' : ''} ${isNext ? 'today' : ''}"></div>`;
+            }).join('');
+        },
+        async claim() {
+            const { data, error } = await sb.rpc('claim_daily_streak', { p_telegram_id: window.ME.id });
+            if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return; }
+            const r = data[0];
+            window.App.balance = r.new_balance; window.App.updBalUI();
+            window.App.toast(`🔥 День ${r.streak_day}! +${r.reward}⭐`, 'success');
+            if (window.Sound) window.Sound.coin();
+            window.App.haptic && window.App.haptic('win');
+            this.load();
+        },
+    };
+
     window.TxHistory = {
         KIND_ICON: { purchase_gift: '🎁', purchase_frame: '🖼', check_create: '💵', donation: '💝', big_win: '🏆', sell_gift: '💰', market_sale: '🏪' },
         KIND_LABEL: { purchase_gift: 'Покупка гифта', purchase_frame: 'Покупка рамки', check_create: 'Создан чек', donation: 'Донат', big_win: 'Крупный выигрыш', sell_gift: 'Продажа в банк', market_sale: 'Продажа на рынке' },
@@ -1962,6 +2020,25 @@
                 const wrap = document.getElementById('lb-frame-' + p.rank);
                 if (wrap && window.Frames) window.Frames.decorateWrap(wrap, p.frame_css_class, 'lb' + p.rank);
             });
+        },
+    };
+
+    window.LuckyHour = {
+        active: false, gameName: null, bonusPercent: 0, endsAt: null,
+        async load() {
+            if (!window.Multiplayer) return;
+            const { data, error } = await sb.rpc('get_lucky_hour_state');
+            if (error || !data || !data[0]) return;
+            const s = data[0];
+            this.active = s.active; this.gameName = s.game_name; this.bonusPercent = s.bonus_percent; this.endsAt = s.ends_at;
+            this.renderBanner();
+        },
+        renderBanner() {
+            const el = document.getElementById('lucky-hour-banner'); if (!el) return;
+            if (!this.active) { el.style.display = 'none'; return; }
+            el.style.display = '';
+            const mins = Math.max(0, Math.ceil((new Date(this.endsAt).getTime() - Date.now()) / 60000));
+            el.innerHTML = `🍀 Счастливый час в игре «${this.gameName}»! +${this.bonusPercent}% к выигрышу, ещё ${mins} мин.`;
         },
     };
 
@@ -2111,6 +2188,8 @@
 
             window.Settings.init(); window.Stats.init(); window.Levels.init(); window.Gifts.init(); window.Tasks.init(); window.Upgrader.init(); window.Tower.init(); window.Mines.init(); window.Shells.init(); window.Dice.init(); window.Plinko.init(); window.Crash.init(); window.HiLo.init(); window.Coin.init(); window.Slots.init(); window.Scratch.init(); window.Balloon.init(); window.ProfileBg.init();
             window.BigWins.load();
+            window.LuckyHour.load();
+            setInterval(() => window.LuckyHour.load(), 60000);
             this.updBalUI();
         },
         updBalUI() {
@@ -2270,6 +2349,7 @@
             if(id === 'profile' && window.ProfileStats) window.ProfileStats.render();
             if(id === 'profile' && window.ProfileBg) window.ProfileBg.render();
             if(id === 'profile' && window.Frames) window.Frames.load();
+            if(id === 'profile' && window.Streak) window.Streak.load();
             if(id === 'settings' && window.Settings) window.Settings.syncUI();
             if(id === 'leaderboard' && window.Leaderboard) window.Leaderboard.load();
             if(id === 'history' && window.TxHistory) window.TxHistory.load();
@@ -2292,7 +2372,18 @@
             setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 3700);
         },
         mCb(n, k) { if(k<0 || k>n) return 0; if(k===0 || k===n) return 1; let res=1; for(let i=1; i<=k; i++) res = res * (n-i+1)/i; return res; },
-        win(amount, label) { this.chgBal(amount, label); this.toast(`Победа! +${amount}`, 'success'); if(window.Sound) window.Sound.coin(); this.haptic('win'); window.Tasks.chk('win', amount); window.Levels.addWin(amount); if (window.Multiplayer) window.Multiplayer.logBigWin(amount, label || 'Игра'); }
+        win(amount, label) {
+            // Счастливый час — если сейчас идёт бонус именно для этой игры,
+            // добавляем сверху. Проверка на клиенте (не идеально защищено от
+            // изменения кода в консоли), но риск тут маленький — это просто
+            // бонусное событие, не критичная для экономики механика.
+            if (window.LuckyHour && window.LuckyHour.active && window.LuckyHour.gameName === label) {
+                const bonus = Math.floor(amount * (window.LuckyHour.bonusPercent / 100));
+                amount += bonus;
+                this.toast(`🍀 Счастливый час! +${bonus} бонусом`, '');
+            }
+            this.chgBal(amount, label); this.toast(`Победа! +${amount}`, 'success'); if(window.Sound) window.Sound.coin(); this.haptic('win'); window.Tasks.chk('win', amount); window.Levels.addWin(amount); if (window.Multiplayer) window.Multiplayer.logBigWin(amount, label || 'Игра');
+        },
     };
 
     // Статистика собирается централизованно в App.logOperation() (вызывается из
@@ -4012,10 +4103,14 @@
                 window.App.haptic && window.App.haptic('lose');
             }
 
-            // Сброс выбора после раунда, обновляем свежий список своих гифтов
-            this.stakeInventoryId = null; this.targetCatalogId = null;
-            if (window.Multiplayer) window.Multiplayer.refreshMarketShop();
-            setTimeout(() => { this.renderStakePicker(); this.onStakeChange(); }, 400);
+            // Сброс выбора — ЖДЁМ, пока честно доиграет вспышка результата (иначе
+            // превью ставки стиралось прямо во время анимации, выглядело как
+            // "гифт пропал"). Вспышка длится ~1с, даём 2с с запасом на визуальный отклик.
+            setTimeout(() => {
+                this.stakeInventoryId = null; this.targetCatalogId = null;
+                if (window.Multiplayer) window.Multiplayer.refreshMarketShop();
+                this.renderStakePicker(); this.onStakeChange();
+            }, 2000);
         },
     };
 
