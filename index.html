@@ -2188,6 +2188,12 @@
 
             window.Settings.init(); window.Stats.init(); window.Levels.init(); window.Gifts.init(); window.Tasks.init(); window.Upgrader.init(); window.Tower.init(); window.Mines.init(); window.Shells.init(); window.Dice.init(); window.Plinko.init(); window.Crash.init(); window.HiLo.init(); window.Coin.init(); window.Slots.init(); window.Scratch.init(); window.Balloon.init(); window.ProfileBg.init();
             window.BigWins.load();
+            // Раньше данные о гифтах (свои + витрина) подгружались только при
+            // заходе на конкретный экран — если сразу открыть Апгрейдер, была
+            // гонка между "ещё грузится" и попытками отрисовать анимацию,
+            // из-за чего мог мелькать эмодзи вместо гифта. Теперь грузим сразу
+            // при входе в игру, один раз, заранее.
+            if (window.Multiplayer) window.Multiplayer.refreshMarketShop();
             window.LuckyHour.load();
             setInterval(() => window.LuckyHour.load(), 60000);
             this.updBalUI();
@@ -4002,10 +4008,20 @@
             }
             this.targetCatalogId = null;
             this.updatePlayBtn();
-            if (this.stakeValue <= 0 || !window.Multiplayer) { document.getElementById('upg-target-list').innerHTML = ''; return; }
+            if (this.stakeValue <= 0 || !window.Multiplayer) { document.getElementById('upg-target-list').innerHTML = ''; this._lastTargetSig = null; return; }
             const { data, error } = await sb.rpc('gift_upgrader_targets', { p_stake_value: this.stakeValue, p_multiplier: this.multiplier });
             const el = document.getElementById('upg-target-list');
-            if (error || !data || !data.length) { el.innerHTML = `<div style="font-size:11px; color:var(--text-muted); padding:8px;">Нет подходящих целей под эту ставку×множитель</div>`; return; }
+            if (error || !data || !data.length) { el.innerHTML = `<div style="font-size:11px; color:var(--text-muted); padding:8px;">Нет подходящих целей под эту ставку×множитель</div>`; this._lastTargetSig = null; return; }
+
+            // Та же защита, что и у списка ставок — раньше HTML пересобирался
+            // заново ДАЖЕ ПРИ КАЖДОМ НАЖАТИИ КЛАВИШИ в поле суммы, сбрасывая уже
+            // загруженные анимации обратно на эмодзи-заглушку и загружая их
+            // заново — отсюда мигание "эмодзи → модель". Теперь пересобираем
+            // только если реально изменился состав целей.
+            const sig = data.map(g => g.id).sort().join(',');
+            if (sig === this._lastTargetSig && el.children.length) return;
+            this._lastTargetSig = sig;
+
             el.innerHTML = data.map(g => `
                 <div class="upg-gift-item ${this.targetCatalogId === g.id ? 'selected' : ''}" onclick="GiftUpgrader.pickTarget('${g.id}', ${g.price_stars}, this)">
                     <div class="upg-gift-item-anim placeholder" id="gu-target-anim-${g.id}">🎁</div>
