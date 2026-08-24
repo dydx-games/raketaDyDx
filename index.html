@@ -369,7 +369,7 @@
         .lb-row:nth-child(1) .lb-rank { color: #ffd700; font-size: 16px; }
         .lb-row:nth-child(2) .lb-rank { color: #c0c0c0; font-size: 15px; }
         .lb-row:nth-child(3) .lb-rank { color: #cd7f32; font-size: 15px; }
-        .lb-row .avatar-frame-wrap { width: 36px; height: 36px; flex-shrink: 0; }
+        .lb-row .avatar-frame-wrap { width: 36px; height: 36px; flex-shrink: 0; transform: scale(0.65); transform-origin: center; overflow: visible; }
         .lb-row .profile-avatar { width: 36px; height: 36px; font-size: 16px; }
         .lb-name { flex: 1; min-width: 0; font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .lb-balance { font-size: 13px; font-weight: 800; color: var(--gold); flex-shrink: 0; }
@@ -412,6 +412,10 @@
         .lang-switch button { background: var(--bg-panel-light); border: 1px solid var(--border); color: var(--text-muted); padding: 6px 14px; border-radius: 9px; font-size: 11px; font-weight: 800; transition: all 0.25s ease; }
         .lang-switch button.active { background: var(--gold); color: #000; border-color: var(--gold); }
         .frame-card { background: var(--bg-panel-light); border: 1px solid var(--border); border-radius: 14px; padding: 10px 6px; text-align: center; }
+        .titles-scroll { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px; }
+        .title-chip { flex-shrink: 0; border-radius: 999px; padding: 8px 14px; font-size: 12px; font-weight: 800; border: 1.5px solid; cursor: pointer; white-space: nowrap; }
+        .title-chip.equipped { box-shadow: 0 0 10px currentColor; }
+        .title-chip.locked { opacity: 0.5; }
         .frame-card .fc-preview { width: 50px; height: 50px; margin: 0 auto 6px; border-radius: 50%; }
         .frame-card .fc-name { font-size: 10px; font-weight: 700; margin-bottom: 4px; }
         .frame-card .fc-btn { width: 100%; padding: 5px 2px; border: none; border-radius: 7px; font-size: 9.5px; font-weight: 800; cursor: pointer; }
@@ -444,7 +448,7 @@
         @keyframes bigwin-scroll { from { transform: translateX(0); } to { transform: translateX(var(--scroll-distance, -1000px)); } }
         .bigwin-card { flex-shrink: 0; scroll-snap-align: start; display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.25);
             border: 1px solid rgba(215,180,93,0.25); border-radius: 12px; padding: 8px 12px; min-width: 190px; }
-        .bigwin-card .avatar-frame-wrap { width: 32px; height: 32px; flex-shrink: 0; }
+        .bigwin-card .avatar-frame-wrap { width: 32px; height: 32px; flex-shrink: 0; transform: scale(0.6); transform-origin: center; overflow: visible; }
         .bigwin-card .profile-avatar { width: 32px; height: 32px; font-size: 15px; }
         .bigwin-card-info { min-width: 0; }
         .bigwin-card-name { font-size: 11px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; }
@@ -1560,6 +1564,11 @@
                 <div class="frames-grid" id="frames-grid"></div>
             </div>
 
+            <div class="panel" style="margin: 10px 10px 0;">
+                <div class="panel-title">🏷 Титулы</div>
+                <div class="titles-scroll" id="titles-scroll"></div>
+            </div>
+
             <div class="panel streak-panel" id="streak-panel" style="margin: 10px 10px 0; display:none;">
                 <div class="streak-header">
                     <div>
@@ -1936,6 +1945,38 @@
             <text x="19.3" y="45" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-weight="900"
                 font-size="54" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="0.8">7</text>
         </svg>`;
+    };
+
+    window.Titles = {
+        list: [],
+        async load() {
+            if (!window.Multiplayer || !window.ME) return;
+            const { data, error } = await sb.rpc('get_my_titles', { p_telegram_id: window.ME.id });
+            if (error || !data) return;
+            this.list = data;
+            this.render();
+        },
+        render() {
+            const el = document.getElementById('titles-scroll'); if (!el) return;
+            el.innerHTML = this.list.map(t => {
+                const style = `color:${t.color_hex}; border-color:${t.owned ? t.color_hex : 'var(--border)'};`;
+                const action = t.owned ? `Titles.equip('${t.id}')` : `Titles.buy('${t.id}')`;
+                const label = t.owned ? t.name : `${t.name} — ${t.price.toLocaleString()}⭐`;
+                return `<div class="title-chip ${t.equipped ? 'equipped' : ''} ${t.owned ? '' : 'locked'}" style="${style}" onclick="${action}">${label}</div>`;
+            }).join('');
+        },
+        async buy(id) {
+            const { data, error } = await sb.rpc('buy_title', { p_telegram_id: window.ME.id, p_title_id: id });
+            if (error || !data || !data[0].success) return window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
+            window.App.balance = data[0].new_balance; window.App.updBalUI();
+            window.App.toast('Титул куплен!', 'success');
+            this.load();
+        },
+        async equip(id) {
+            const { data, error } = await sb.rpc('equip_title', { p_telegram_id: window.ME.id, p_title_id: id });
+            if (error || !data || !data[0].success) return window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
+            this.load();
+        },
     };
 
     window.Streak = {
@@ -2365,6 +2406,7 @@
             if(id === 'profile' && window.ProfileBg) window.ProfileBg.render();
             if(id === 'profile' && window.Frames) window.Frames.load();
             if(id === 'profile' && window.Streak) window.Streak.load();
+            if(id === 'profile' && window.Titles) window.Titles.load();
             if(id === 'settings' && window.Settings) window.Settings.syncUI();
             if(id === 'leaderboard' && window.Leaderboard) window.Leaderboard.load();
             if(id === 'history' && window.TxHistory) window.TxHistory.load();
