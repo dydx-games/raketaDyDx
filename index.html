@@ -778,6 +778,7 @@
         .upg-gift-item.selected { border-color: var(--gold); box-shadow: 0 0 10px rgba(215,180,93,0.4); }
         .upg-gift-item .upg-gift-item-anim { width: 44px; height: 44px; margin: 0 auto 4px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
         .upg-gift-item .upg-gift-item-price { font-size: 9px; color: var(--gold); font-weight: 800; }
+        .upg-gift-item .upg-gift-item-chance { font-size: 8.5px; color: var(--green); font-weight: 700; margin-top: 1px; }
         .upg-gift-stage { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 16px 0; }
         .upg-gift-anim.spinning { animation: gu-spin-pulse 0.5s ease-in-out infinite; }
         @keyframes gu-spin-pulse { 0%,100% { transform: scale(1) rotate(0deg); filter: brightness(1); } 50% { transform: scale(1.08) rotate(4deg); filter: brightness(1.3); } }
@@ -1293,18 +1294,8 @@
                     </div>
                 </div>
                 <div class="panel">
-                    <div class="panel-title">2. Множитель</div>
-                    <div class="bet-row">
-                        <button class="btn-small active" onclick="GiftUpgrader.setMultiplier(2, this)">2x</button>
-                        <button class="btn-small" onclick="GiftUpgrader.setMultiplier(3, this)">3x</button>
-                        <button class="btn-small" onclick="GiftUpgrader.setMultiplier(5, this)">5x</button>
-                        <button class="btn-small" onclick="GiftUpgrader.setMultiplier(10, this)">10x</button>
-                        <button class="btn-small" onclick="GiftUpgrader.setMultiplier(20, this)">20x</button>
-                    </div>
-                    <div style="font-size:11px; color:var(--text-muted); margin-top:6px;">Шанс выигрыша: <b id="gu-chance" style="color:var(--gold);">46%</b></div>
-                </div>
-                <div class="panel">
-                    <div class="panel-title">3. Целевой гифт</div>
+                    <div class="panel-title">2. Какой гифт хочешь выбить</div>
+                    <div style="font-size:10.5px; color:var(--text-muted); margin-bottom:6px;">Шанс написан прямо на карточке — чем дороже цель, тем он ниже</div>
                     <div id="upg-target-list" class="upg-gift-scroll"></div>
                 </div>
                 <div class="panel" style="margin-bottom:20px;">
@@ -1314,7 +1305,7 @@
                             <div class="upgrader-indicator" style="border-left-width:6px; border-right-width:6px; border-top-width:12px;"></div>
                             <div class="upgrader-wheel" id="gu-wheel" style="width:110px; height:110px;"></div>
                             <div class="upgrader-center" style="width:70px;">
-                                <div class="upg-pct" id="gu-pct" style="font-size:17px;">46%</div>
+                                <div class="upg-pct" id="gu-pct" style="font-size:17px;">—</div>
                             </div>
                         </div>
                         <div class="upg-gift-anim" id="gu-anim-target"></div>
@@ -3936,9 +3927,8 @@
     };
 
     window.GiftUpgrader = {
-        stakeType: 'gift', stakeInventoryId: null, stakeValue: 0, multiplier: 2, targetCatalogId: null, targetPrice: 0,
+        stakeType: 'gift', stakeInventoryId: null, stakeValue: 0, targetCatalogId: null, targetPrice: 0, targetChance: 0,
         pl: false,
-        MULT_CHANCE: { 2: 46, 3: 30.67, 5: 18.4, 10: 9.2, 20: 4.6 },
         async renderStakePicker() {
             const el = document.getElementById('upg-stake-gift-picker'); if (!el) return;
             // Раньше данные о гифтах подгружались только при заходе в маркетплейс —
@@ -3991,17 +3981,6 @@
             this.renderStakePicker();
             this.onStakeChange();
         },
-        setMultiplier(m, btn) {
-            this.multiplier = m;
-            document.querySelectorAll('#view-upgrader #upg-gifts-mode .panel:nth-child(2) .btn-small').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            const ch = this.MULT_CHANCE[m];
-            document.getElementById('gu-chance').innerText = ch + '%';
-            const pctEl = document.getElementById('gu-pct'); if (pctEl) pctEl.innerText = ch.toFixed(1) + '%';
-            const wheelEl = document.getElementById('gu-wheel');
-            if (wheelEl) wheelEl.style.background = `conic-gradient(var(--green) 0% ${ch}%, var(--red) ${ch}% 100%)`;
-            this.onStakeChange();
-        },
         async onStakeChange() {
             if (this.stakeType === 'stars') {
                 this.stakeValue = Math.floor(Number(document.getElementById('gu-stars-amount').value)) || 0;
@@ -4009,9 +3988,9 @@
             this.targetCatalogId = null;
             this.updatePlayBtn();
             if (this.stakeValue <= 0 || !window.Multiplayer) { document.getElementById('upg-target-list').innerHTML = ''; this._lastTargetSig = null; return; }
-            const { data, error } = await sb.rpc('gift_upgrader_targets', { p_stake_value: this.stakeValue, p_multiplier: this.multiplier });
+            const { data, error } = await sb.rpc('gift_upgrader_targets_v2', { p_stake_value: this.stakeValue });
             const el = document.getElementById('upg-target-list');
-            if (error || !data || !data.length) { el.innerHTML = `<div style="font-size:11px; color:var(--text-muted); padding:8px;">Нет подходящих целей под эту ставку×множитель</div>`; this._lastTargetSig = null; return; }
+            if (error || !data || !data.length) { el.innerHTML = `<div style="font-size:11px; color:var(--text-muted); padding:8px;">Нет подходящих целей под эту ставку (нужна ставка от ~1.5x до 50x цены гифта)</div>`; this._lastTargetSig = null; return; }
 
             // Та же защита, что и у списка ставок — раньше HTML пересобирался
             // заново ДАЖЕ ПРИ КАЖДОМ НАЖАТИИ КЛАВИШИ в поле суммы, сбрасывая уже
@@ -4023,26 +4002,30 @@
             this._lastTargetSig = sig;
 
             el.innerHTML = data.map(g => `
-                <div class="upg-gift-item ${this.targetCatalogId === g.id ? 'selected' : ''}" onclick="GiftUpgrader.pickTarget('${g.id}', ${g.price_stars}, this)">
+                <div class="upg-gift-item ${this.targetCatalogId === g.id ? 'selected' : ''}" onclick="GiftUpgrader.pickTarget('${g.id}', ${g.price_stars}, ${g.win_chance}, this)">
                     <div class="upg-gift-item-anim placeholder" id="gu-target-anim-${g.id}">🎁</div>
                     <div class="upg-gift-item-price">${g.price_stars.toLocaleString()}⭐</div>
+                    <div class="upg-gift-item-chance">${g.win_chance}% шанс</div>
                 </div>`).join('');
             data.forEach(g => {
                 const el2 = document.getElementById('gu-target-anim-' + g.id);
                 if (el2 && window.Showcase) window.Showcase.playCard(g.id, el2, undefined, 'gu-target::' + g.id);
             });
         },
-        pickTarget(catalogId, price, el) {
-            this.targetCatalogId = catalogId; this.targetPrice = price;
+        pickTarget(catalogId, price, chance, el) {
+            this.targetCatalogId = catalogId; this.targetPrice = price; this.targetChance = chance;
             document.querySelectorAll('#upg-target-list .upg-gift-item').forEach(x => x.classList.remove('selected'));
             if (el) el.classList.add('selected');
+            const pctEl = document.getElementById('gu-pct'); if (pctEl) pctEl.innerText = chance + '%';
+            const wheelEl = document.getElementById('gu-wheel');
+            if (wheelEl) wheelEl.style.background = `conic-gradient(var(--green) 0% ${chance}%, var(--red) ${chance}% 100%)`;
             this.updatePlayBtn();
         },
         updatePlayBtn() {
             const btn = document.getElementById('gu-play-btn'); if (!btn) return;
             const ready = this.stakeValue > 0 && this.targetCatalogId && (this.stakeType === 'gift' ? this.stakeInventoryId : true);
             btn.disabled = !ready;
-            btn.innerText = ready ? `⚙️ АПГРЕЙД (${this.MULT_CHANCE[this.multiplier]}%)` : 'Выбери гифт и цель';
+            btn.innerText = ready ? `⚙️ АПГРЕЙД (${this.targetChance}%)` : 'Выбери гифт и цель';
             this.updateStagePreview();
         },
         updateStagePreview() {
@@ -4091,13 +4074,12 @@
             // без единого стыка фаз, потому что фаза буквально одна.
             if (wheelEl) { wheelEl.style.transition = 'none'; wheelEl.style.transform = 'rotate(0deg)'; }
 
-            const { data, error } = await sb.rpc('gift_upgrader_play', {
+            const { data, error } = await sb.rpc('gift_upgrader_play_v2', {
                 p_telegram_id: window.ME.id,
                 p_stake_type: this.stakeType,
                 p_stake_inventory_id: this.stakeType === 'gift' ? this.stakeInventoryId : null,
                 p_stake_stars: this.stakeType === 'stars' ? this.stakeValue : null,
                 p_target_catalog_id: this.targetCatalogId,
-                p_multiplier: this.multiplier,
             });
 
             if (error || !data || !data[0].success) {
@@ -4114,7 +4096,7 @@
             // быстрый разгон в начале и долгое мягкое торможение в конце —
             // именно ощущение "крутящегося колеса", а не рывок.
             if (wheelEl) {
-                const ch = this.MULT_CHANCE[this.multiplier];
+                const ch = result.win_chance; // честный шанс уже посчитан сервером, используем его же для визуала
                 const td = result.won ? Math.random() * (ch * 3.6) : (ch * 3.6) + Math.random() * (360 - ch * 3.6);
                 const extraSpins = 5; // больше оборотов = дольше и убедительнее ощущается разгон в начале
                 const finalDeg = extraSpins * 360 + (360 - td);
