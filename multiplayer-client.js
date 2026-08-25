@@ -268,12 +268,28 @@ window.Multiplayer = {
     async renderCrashFeed() {
         const key = this.crashRoundKey();
         if (!key) return;
-        const { data } = await sb.from('crash_bets').select('*').eq('round_started_at', key).order('id', { ascending: false }).limit(20);
+        const { data } = await sb.rpc('get_crash_bets_rich', { p_round_key: key });
         const el = document.getElementById('crash-live-feed'); if (!el || !data) return;
-        el.innerHTML = data.map(b => `<div class="live-bet-row">
-            <span>${b.username || 'Игрок'}</span><span>${b.amount}</span>
-            <span style="color:${b.cashed_out_multiplier ? 'var(--green)' : 'var(--text-muted)'}">${b.cashed_out_multiplier ? Number(b.cashed_out_multiplier).toFixed(2)+'x' : '...'}</span>
-        </div>`).join('');
+        el.innerHTML = data.map((b, idx) => {
+            const initial = (b.username || '?')[0].toUpperCase();
+            const avatarInner = b.avatar_url
+                ? `<img src="${b.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.parentElement.innerText='${initial}'">`
+                : initial;
+            const nameStyle = b.title_color_hex ? `color:${b.title_color_hex};` : '';
+            return `<div class="rich-bet-row">
+                <div class="avatar-frame-wrap" id="crash-frame-${idx}"><div class="profile-avatar">${avatarInner}</div></div>
+                <div class="rich-bet-info">
+                    <div class="rich-bet-name" style="${nameStyle}">${b.username || 'Игрок'}</div>
+                    ${b.title_name ? `<div class="rich-bet-title" style="color:${b.title_color_hex};">${b.title_name}</div>` : ''}
+                </div>
+                <div class="rich-bet-amount">${b.amount}⭐</div>
+                <div class="rich-bet-mult" style="color:${b.cashed_out_multiplier ? 'var(--green)' : 'var(--text-muted)'}">${b.cashed_out_multiplier ? Number(b.cashed_out_multiplier).toFixed(2)+'x' : '...'}</div>
+            </div>`;
+        }).join('');
+        data.forEach((b, idx) => {
+            const wrap = document.getElementById('crash-frame-' + idx);
+            if (wrap && window.Frames) window.Frames.decorateWrap(wrap, b.frame_css_class, 'crash' + idx);
+        });
         // Мини-фича: бейдж самой крупной ставки раунда — считаем из уже
         // загруженных данных, отдельный запрос к серверу не нужен.
         const topEl = document.getElementById('crash-feed-top');
