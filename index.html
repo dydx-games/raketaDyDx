@@ -1166,7 +1166,19 @@
         <!-- АУКЦИОН ГИФТОВ -->
         <div class="game-view" id="view-auction">
             <div class="panel" style="margin-bottom:20px;">
+                <div class="panel-title-row">
+                    <div class="panel-title">🔨 Активные аукционы</div>
+                    <button class="panel-collapse-btn" onclick="Auction.openCreatePanel()">+ Выставить свой</button>
+                </div>
                 <div id="auction-list"></div>
+            </div>
+            <div class="panel" id="auction-create-panel" style="margin-bottom:20px; display:none;">
+                <div class="panel-title">Выставить гифт на аукцион</div>
+                <div class="upg-gift-scroll" id="auction-gift-picker"></div>
+                <div class="bet-row" style="margin-top:10px;">
+                    <div class="input-wrap"><input type="number" inputmode="decimal" id="auction-start-price" placeholder="Стартовая цена, ⭐"></div>
+                </div>
+                <button class="main-btn btn-gold" style="margin-top:10px;" onclick="Auction.create()">Выставить на 24 часа</button>
             </div>
         </div>
 
@@ -2050,6 +2062,46 @@
 
     window.Auction = {
         list: [],
+        selectedInventoryId: null,
+        openCreatePanel() {
+            const panel = document.getElementById('auction-create-panel');
+            const isOpen = panel.style.display !== 'none';
+            panel.style.display = isOpen ? 'none' : '';
+            if (!isOpen) this.renderGiftPicker();
+        },
+        async renderGiftPicker() {
+            const el = document.getElementById('auction-gift-picker'); if (!el) return;
+            if (!window.ProfileGifts || !window.ProfileGifts.items.length) await window.Multiplayer.ensureProfileGiftsLoaded();
+            // На аукцион можно выставить только улучшенные гифты (с моделью)
+            const items = (window.ProfileGifts ? window.ProfileGifts.items : []).filter(i => !i.listed && i.model_name);
+            if (!items.length) { el.innerHTML = `<div style="font-size:11px; color:var(--text-muted); padding:8px;">Нет улучшенных гифтов для выставления</div>`; return; }
+            el.innerHTML = items.map(i => `
+                <div class="upg-gift-item ${this.selectedInventoryId === i.inventory_id ? 'selected' : ''}" onclick="Auction.pickGift(${i.inventory_id}, this)">
+                    <div class="upg-gift-item-anim placeholder" id="auction-pick-anim-${i.inventory_id}">🎁</div>
+                    <div class="upg-gift-item-price">${i.price_stars.toLocaleString()}⭐</div>
+                </div>`).join('');
+            items.forEach(i => {
+                const el2 = document.getElementById('auction-pick-anim-' + i.inventory_id);
+                if (el2 && window.Showcase) window.Showcase.playCard(i.catalog_id, el2, i.model_anim_file || undefined, 'auction-pick::' + i.inventory_id);
+            });
+        },
+        pickGift(inventoryId, el) {
+            this.selectedInventoryId = inventoryId;
+            document.querySelectorAll('#auction-gift-picker .upg-gift-item').forEach(x => x.classList.remove('selected'));
+            if (el) el.classList.add('selected');
+        },
+        async create() {
+            if (!this.selectedInventoryId) return window.App.toast('Выбери гифт', 'error');
+            const price = Math.floor(Number(document.getElementById('auction-start-price').value));
+            if (!price || price <= 0) return window.App.toast('Укажи стартовую цену', 'error');
+            const { data, error } = await sb.rpc('create_auction', { p_telegram_id: window.ME.id, p_inventory_id: this.selectedInventoryId, p_starting_price: price });
+            if (error || !data || !data[0].success) return window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
+            window.App.toast('Гифт выставлен на аукцион!', 'success');
+            this.selectedInventoryId = null;
+            document.getElementById('auction-create-panel').style.display = 'none';
+            document.getElementById('auction-start-price').value = '';
+            this.load();
+        },
         async load() {
             if (!window.Multiplayer || !window.ME) return;
             const { data, error } = await sb.rpc('get_active_auctions');
