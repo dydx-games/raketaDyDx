@@ -4737,37 +4737,48 @@
         },
         mod(act) { if(this.pl) return; window.Sound && window.Sound.click(); let v = Math.floor(Number(document.getElementById('dice-bet').value)) || 0; if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById('dice-bet').value = Math.max(0, Math.min(v, window.App.balance)); },
         set(v) { if(!this.pl) document.getElementById('dice-bet').value = v; },
-        play() {
+        async play() {
             if (this.pl) return;
             this.b = Math.floor(Number(document.getElementById('dice-bet').value));
             if(!this.b || isNaN(this.b) || this.b<=0) return window.App.toast('Неверная ставка', 'error');
             if(this.b > window.App.balance) return window.App.toast('Недостаточно звёзд', 'error');
-            window.App.chgBal(-this.b, 'Кости'); window.Stats.addBet(); this.pl = true;
+            this.pl = true;
             document.getElementById('dice-btn').className = 'main-btn btn-disabled'; document.getElementById('dice-btn').innerText = 'Бросаем...';
             const cube = document.getElementById('dice-cube'); cube.classList.add('rolling');
             const resultEl = document.getElementById('dice-track-result'); resultEl.style.opacity = '0';
 
-            setTimeout(() => {
-                const roll = Math.random() * 100; // 0.00 - 99.99, честный ролл до самого показа результата
-                const { mult } = this.currentChanceAndMult();
-                // Бонус от защиты сухих полос применяется прямо к порогу — эффективно
-                // расширяет "выигрышную" зону роля на pityBonus процентных пунктов
-                let won;
-                if (this.mode === 'under') won = roll < (this.target + this.pityBonus);
-                else won = roll > (this.target - this.pityBonus);
+            // Бросок теперь реально кидает сервер (не Math.random() в браузере) —
+            // раньше это можно было подделать через консоль, отправив серверу
+            // произвольную "дельту" баланса минуя настоящую игру.
+            const rollPromise = window.SecureAPI.call('dice_play', { p_telegram_id: window.ME.id, p_bet: this.b, p_target: this.target, p_mode: this.mode });
+            const minDelay = new Promise(r => setTimeout(r, 900)); // не мелькает мгновенно, даже если сервер ответил быстро
+            const [{ data, error }] = await Promise.all([rollPromise, minDelay]);
 
-                cube.classList.remove('rolling'); cube.innerText = Math.floor(roll);
-                resultEl.style.left = roll + '%'; resultEl.style.opacity = '1'; resultEl.innerText = Math.floor(roll);
-                resultEl.style.background = won ? 'var(--green)' : 'var(--red)'; resultEl.style.color = '#fff';
+            this.pl = false;
+            document.getElementById('dice-btn').className = 'main-btn btn-green'; document.getElementById('dice-btn').innerText = '🎲 БРОСИТЬ';
+            cube.classList.remove('rolling');
 
-                if (won) { window.App.win(Math.floor(this.b * mult), 'Кости'); }
-                else { window.App.toast('Мимо!', 'error'); }
+            if (error || !data || !data[0].success) {
+                window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
+                return;
+            }
+            const r = data[0];
+            const roll = Number(r.roll);
+            window.App.balance = r.new_balance; window.App.updBalUI();
+            this.pityBonus = Number(r.pity_bonus) || 0; this.updateDisplay();
 
-                if (window.Multiplayer && window.ME) window.SecureAPI.call('update_loss_streak', { p_telegram_id: window.ME.id, p_won: won }).then(({ data }) => { if (data && data[0]) this.pityBonus = Number(data[0].current_bonus_percent) || 0; });
+            cube.innerText = Math.floor(roll);
+            resultEl.style.left = roll + '%'; resultEl.style.opacity = '1'; resultEl.innerText = Math.floor(roll);
+            resultEl.style.background = r.won ? 'var(--green)' : 'var(--red)'; resultEl.style.color = '#fff';
 
-                this.pl = false;
-                document.getElementById('dice-btn').className = 'main-btn btn-green'; document.getElementById('dice-btn').innerText = '🎲 БРОСИТЬ';
-            }, 900);
+            if (r.won) {
+                window.App.toast(`Победа! +${r.win_amount}`, 'success'); if(window.Sound) window.Sound.coin(); window.App.haptic('win');
+                window.Tasks.chk('win', r.win_amount); window.Levels.addWin(r.win_amount);
+                if (window.Multiplayer) window.Multiplayer.logBigWin(r.win_amount, 'Кости');
+            } else {
+                window.App.toast('Мимо!', 'error');
+            }
+            window.Stats.addBet();
         }
     };
 
