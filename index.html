@@ -103,6 +103,10 @@
         .avatar-frame-wrap.frame-donor-royal .fw-orbit span:nth-child(2) { bottom:-4px; right:20%; }
 
         .profile-name { font-weight: 800; font-size: 15px; }
+        /* Купленные фоны профиля бывают яркими/пёстрыми и перекрывали текст —
+           подложка под весь текстовый блок делает его читаемым при ЛЮБОМ фоне */
+        .profile-text-block { background: rgba(0,0,0,0.35); backdrop-filter: blur(2px); border-radius: 10px; padding: 6px 10px; }
+        .profile-text-block .profile-sub { color: rgba(255,255,255,0.9) !important; }
         .profile-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 
         .case-panel { margin: 10px 10px 0; background: var(--bg-panel); border-radius: var(--border-radius); padding: 12px; }
@@ -153,6 +157,15 @@
         .nft-item-traits { font-size: 9px; color: var(--text-muted); margin-top: 2px; }
         .nft-badge-mini { font-size: 8px; font-weight: 900; background: linear-gradient(135deg, var(--gold), #fff, var(--gold)); -webkit-background-clip: text; background-clip: text; color: transparent; }
         .live-bet-row { display: flex; justify-content: space-between; padding: 4px 8px; background: var(--bg-panel-light); border-radius: 6px; }
+        .rich-bet-row { display: flex; align-items: center; gap: 8px; padding: 7px 4px; border-bottom: 1px solid var(--border); }
+        .rich-bet-row:last-child { border-bottom: none; }
+        .rich-bet-row .avatar-frame-wrap { width: 28px; height: 28px; flex-shrink: 0; }
+        .rich-bet-row .profile-avatar { width: 28px; height: 28px; font-size: 13px; }
+        .rich-bet-info { flex: 1; min-width: 0; }
+        .rich-bet-name { font-size: 11.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .rich-bet-title { font-size: 8.5px; font-weight: 700; }
+        .rich-bet-amount { font-size: 11px; font-weight: 800; color: var(--gold); flex-shrink: 0; }
+        .rich-bet-mult { font-size: 11px; font-weight: 800; flex-shrink: 0; width: 44px; text-align: right; }
 
         /* МАРКЕТПЛЕЙС */
         .market-card { display: flex; align-items: center; gap: 10px; background: var(--bg-panel); border-radius: 10px; padding: 10px; position: relative; overflow: hidden; border: 1px solid #1f222b; cursor: pointer; }
@@ -385,6 +398,9 @@
         .tx-amount { font-size: 13px; font-weight: 800; flex-shrink: 0; }
         .tx-amount.plus { color: var(--green); }
         .tx-amount.minus { color: var(--red); }
+        #balance-chart-wrap { width: 100%; height: 120px; background: var(--bg-panel-light); border-radius: 12px; padding: 8px; }
+        #balance-chart { width: 100%; height: 100%; }
+        .balance-chart-empty { text-align: center; color: var(--text-muted); font-size: 11px; padding: 40px 0; }
         .gu-hist-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 4px; border-bottom: 1px solid var(--border); font-size: 11px; }
         .gu-hist-row:last-child { border-bottom: none; }
         .gu-hist-badge { font-weight: 800; padding: 2px 7px; border-radius: 6px; font-size: 10px; }
@@ -414,6 +430,7 @@
         .frame-card { background: var(--bg-panel-light); border: 1px solid var(--border); border-radius: 14px; padding: 10px 6px; text-align: center; }
         .titles-scroll { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px; }
         .title-chip { flex-shrink: 0; border-radius: 999px; padding: 8px 14px; font-size: 12px; font-weight: 800; border: 1.5px solid; cursor: pointer; white-space: nowrap; }
+        #profile-title-chip { display: inline-block; border-radius: 999px; padding: 3px 10px; font-size: 10.5px; font-weight: 800; border: 1.5px solid; margin-top: 4px; }
         .title-chip.equipped { box-shadow: 0 0 10px currentColor; }
         .title-chip.locked { opacity: 0.5; }
         .frame-card .fc-preview { width: 50px; height: 50px; margin: 0 auto 6px; border-radius: 50%; }
@@ -1009,6 +1026,10 @@
                     <div class="hub-card-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l5-6 4 3 6-8v14l-15 0z" fill="currentColor" fill-opacity="0.1"/><path d="M4 17l5-6 4 3 6-8"/><path d="M14 6h5v5"/></svg></div>
                     <div class="hub-card-info"><div class="hub-card-title">Крипто</div><div class="hub-card-desc">Торгуйте dxxxcoin на своей бирже</div></div>
                 </div>
+                <div class="hub-card" onclick="App.s('blindbox', null, 'Слепая коробка')">
+                    <div class="hub-card-emoji">📦</div>
+                    <div class="hub-card-info"><div class="hub-card-title">Слепая коробка</div><div class="hub-card-desc">Случайный гифт из закрытой коробки</div></div>
+                </div>
             </div>
 
             <div style="margin: 14px 10px 24px; padding: 12px; background: rgba(255,255,255,0.03); border: 1px solid #1f222b; border-radius: 12px; font-size: 10px; line-height: 1.5; color: var(--text-muted);">
@@ -1152,7 +1173,23 @@
         <!-- ИСТОРИЯ ОПЕРАЦИЙ -->
         <div class="game-view" id="view-history">
             <div class="panel" style="margin-bottom:20px;">
+                <div class="panel-title">📈 Баланс за 30 дней</div>
+                <div id="balance-chart-wrap"><svg id="balance-chart" viewBox="0 0 300 100" preserveAspectRatio="none"></svg></div>
+                <div id="balance-chart-labels" style="display:flex; justify-content:space-between; font-size:9px; color:var(--text-muted); margin-top:4px;"></div>
+            </div>
+            <div class="panel" style="margin-bottom:20px;">
                 <div id="tx-list"></div>
+            </div>
+        </div>
+
+        <!-- СЛЕПАЯ КОРОБКА -->
+        <div class="game-view" id="view-blindbox">
+            <div class="panel" style="margin-bottom:20px;">
+                <div id="blindbox-list"></div>
+            </div>
+            <div class="panel" style="margin-bottom:20px; text-align:center;">
+                <div class="upg-gift-anim" id="blindbox-reveal-anim" style="margin:0 auto;"></div>
+                <div id="blindbox-reveal-text" style="font-size:12px; color:var(--text-muted); margin-top:8px;"></div>
             </div>
         </div>
 
@@ -1516,6 +1553,14 @@
                 <button class="main-btn btn-gold" id="arena-btn" onclick="ArenaUI.join()">🎯 ЗАНЯТЬ МЕСТО</button>
                 <div id="arena-players-list" style="margin-top:10px; display:flex; flex-direction:column; gap:4px; font-size:11px;"></div>
             </div>
+
+            <div class="panel" style="margin-bottom: 20px;">
+                <div class="panel-title-row" onclick="ArenaHistory.toggle()" style="cursor:pointer;">
+                    <div class="panel-title">📜 История игр</div>
+                    <span class="settings-nav-arrow" id="arena-history-arrow" style="transform:rotate(0deg); transition:transform 0.2s;">›</span>
+                </div>
+                <div id="arena-history-list" style="display:none; margin-top:8px;"></div>
+            </div>
         </div>
 
         <!-- TYCOON -->
@@ -1576,8 +1621,9 @@
         <div class="game-view" id="view-profile">
             <div class="profile-header">
                 <div class="avatar-frame-wrap" id="avatar-frame-wrap"><div class="profile-avatar" id="profile-avatar">👤</div></div>
-                <div>
+                <div class="profile-text-block">
                     <div class="profile-name" id="profile-name-text">Игрок <span id="profile-pinned-gift"></span></div>
+                    <div id="profile-title-chip" style="display:none;"></div>
                     <div class="profile-sub" id="profile-sub">Уровень 1 · 0 подарков</div>
                 </div>
             </div>
@@ -2002,6 +2048,16 @@
             if (error || !data) return;
             this.list = data;
             this.render();
+            this.renderHeaderChip();
+        },
+        renderHeaderChip() {
+            const el = document.getElementById('profile-title-chip'); if (!el) return;
+            const equipped = this.list.find(t => t.equipped);
+            if (!equipped) { el.style.display = 'none'; return; }
+            el.style.display = '';
+            el.style.color = equipped.color_hex;
+            el.style.borderColor = equipped.color_hex;
+            el.innerText = equipped.name;
         },
         render() {
             const el = document.getElementById('titles-scroll'); if (!el) return;
@@ -2057,6 +2113,50 @@
             if (window.Sound) window.Sound.coin();
             window.App.haptic && window.App.haptic('win');
             this.load();
+        },
+    };
+
+    window.BlindBox = {
+        async load() {
+            if (!window.Multiplayer || !window.ME) return;
+            const { data, error } = await sb.rpc('get_blind_boxes');
+            const el = document.getElementById('blindbox-list'); if (!el) return;
+            if (error || !data) { el.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:12px;">Ошибка загрузки</div>`; return; }
+            el.innerHTML = data.map(b => `<div class="tx-row">
+                <div class="tx-info">
+                    <div class="tx-icon plus">📦</div>
+                    <div>
+                        <div class="tx-desc">${b.name}</div>
+                        <div class="tx-date">${b.pool_size} возможных гифтов внутри</div>
+                    </div>
+                </div>
+                <button class="btn-claim" onclick="BlindBox.open('${b.id}')">${b.price.toLocaleString()}⭐</button>
+            </div>`).join('');
+        },
+        async open(boxId) {
+            const revealAnim = document.getElementById('blindbox-reveal-anim');
+            const revealText = document.getElementById('blindbox-reveal-text');
+            revealAnim.innerHTML = '📦'; revealAnim.classList.add('spinning');
+            revealText.innerText = 'Открываем...';
+
+            const { data, error } = await sb.rpc('open_blind_box', { p_telegram_id: window.ME.id, p_box_id: boxId });
+            await new Promise(r => setTimeout(r, 900));
+            revealAnim.classList.remove('spinning');
+
+            if (error || !data || !data[0].success) {
+                revealText.innerText = '';
+                return window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
+            }
+            const r = data[0];
+            window.App.balance = r.new_balance; window.App.updBalUI();
+            revealText.innerText = r.gift_name;
+            revealAnim.classList.add('result-win');
+            setTimeout(() => revealAnim.classList.remove('result-win'), 1000);
+            if (window.Showcase) window.Showcase.playCard(r.catalog_id, revealAnim, undefined, 'blindbox-reveal::' + Date.now());
+            window.App.toast(`🎉 Выпало: ${r.gift_name}!`, 'success');
+            if (window.Sound) window.Sound.coin();
+            window.App.haptic && window.App.haptic('win');
+            if (window.Multiplayer) window.Multiplayer.ensureProfileGiftsLoaded();
         },
     };
 
@@ -2170,6 +2270,86 @@
                 </div>
                 <div class="tx-amount plus">${Number(r.current_balance).toLocaleString()}⭐</div>
             </div>`).join('');
+        },
+    };
+
+    window.ArenaHistory = {
+        expanded: false, loaded: false,
+        toggle() {
+            this.expanded = !this.expanded;
+            document.getElementById('arena-history-list').style.display = this.expanded ? '' : 'none';
+            document.getElementById('arena-history-arrow').style.transform = this.expanded ? 'rotate(90deg)' : 'rotate(0deg)';
+            if (this.expanded && !this.loaded) this.load();
+        },
+        async load() {
+            if (!window.Multiplayer || !window.ME) return;
+            this.loaded = true;
+            const { data, error } = await sb.rpc('get_arena_history', { p_telegram_id: window.ME.id, p_limit: 20 });
+            const el = document.getElementById('arena-history-list'); if (!el) return;
+            if (error || !data || !data.length) { el.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:11px; padding:10px 0;">Пока нет сыгранных раундов</div>`; return; }
+            const wins = data.filter(g => g.won).length;
+            const winRate = ((wins / data.length) * 100).toFixed(0);
+            el.innerHTML = `<div style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">Винрейт: <b style="color:var(--gold);">${winRate}%</b> (${wins} из ${data.length})</div>` +
+                data.map(g => `<div class="tx-row">
+                    <div class="tx-info">
+                        <div class="tx-icon ${g.won ? 'plus' : 'minus'}">${g.won ? '🏆' : '🎯'}</div>
+                        <div>
+                            <div class="tx-desc">Ставка ${g.bet_amount}⭐, банк ${g.pot_size}⭐</div>
+                            <div class="tx-date">${new Date(g.created_at).toLocaleDateString('ru-RU', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}</div>
+                        </div>
+                    </div>
+                    <div class="tx-amount ${g.won ? 'plus' : 'minus'}">${g.won ? '+' + g.win_amount : '−' + g.bet_amount}⭐</div>
+                </div>`).join('');
+        },
+    };
+
+    window.BalanceChart = {
+        async load() {
+            if (!window.Multiplayer || !window.ME) return;
+            const { data, error } = await sb.rpc('get_balance_history', { p_telegram_id: window.ME.id });
+            const svg = document.getElementById('balance-chart');
+            const labelsEl = document.getElementById('balance-chart-labels');
+            if (!svg) return;
+            if (error || !data || data.length < 2) {
+                svg.innerHTML = '';
+                labelsEl.innerHTML = `<span class="balance-chart-empty" style="width:100%;">Пока маловато данных — загляни завтра</span>`;
+                return;
+            }
+            const values = data.map(d => Number(d.balance));
+            const min = Math.min(...values), max = Math.max(...values);
+            const range = (max - min) || 1;
+            const w = 300, h = 100, pad = 6;
+            const points = values.map((v, i) => {
+                const x = pad + (i / (values.length - 1)) * (w - pad * 2);
+                const y = h - pad - ((v - min) / range) * (h - pad * 2);
+                return [x, y];
+            });
+            // Плавная линия через кубические Безье между точками — выглядит
+            // намного приятнее, чем ломаная из прямых отрезков
+            let path = `M ${points[0][0]},${points[0][1]}`;
+            for (let i = 1; i < points.length; i++) {
+                const [x0, y0] = points[i - 1]; const [x1, y1] = points[i];
+                const mx = (x0 + x1) / 2;
+                path += ` C ${mx},${y0} ${mx},${y1} ${x1},${y1}`;
+            }
+            const areaPath = path + ` L ${points[points.length-1][0]},${h} L ${points[0][0]},${h} Z`;
+            const trendUp = values[values.length - 1] >= values[0];
+            const color = trendUp ? '#34d399' : '#f4576a';
+            svg.innerHTML = `
+                <defs>
+                    <linearGradient id="balChartGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="${color}" stop-opacity="0.35"/>
+                        <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+                    </linearGradient>
+                </defs>
+                <path d="${areaPath}" fill="url(#balChartGrad)" stroke="none"/>
+                <path d="${path}" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round"/>
+                <circle cx="${points[points.length-1][0]}" cy="${points[points.length-1][1]}" r="3.5" fill="${color}"/>
+            `;
+            const firstDate = new Date(data[0].snapshot_date);
+            const lastDate = new Date(data[data.length-1].snapshot_date);
+            const fmt = d => d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+            labelsEl.innerHTML = `<span>${fmt(firstDate)}</span><span style="color:${color}; font-weight:800;">${values[values.length-1].toLocaleString()}⭐</span><span>${fmt(lastDate)}</span>`;
         },
     };
 
@@ -2620,8 +2800,10 @@
             if(id === 'settings' && window.Settings) window.Settings.syncUI();
             if(id === 'leaderboard' && window.Leaderboard) window.Leaderboard.load();
             if(id === 'history' && window.TxHistory) window.TxHistory.load();
+            if(id === 'history' && window.BalanceChart) window.BalanceChart.load();
             if(id === 'referrals' && window.ReferralStats) window.ReferralStats.load();
             if(id === 'auction' && window.Auction) window.Auction.load();
+            if(id === 'blindbox' && window.BlindBox) window.BlindBox.load();
             if(id === 'profile' && window.Referrals) window.Referrals.init();
             if(id === 'profile' && window.ProfileGifts) window.ProfileGifts.ensureLoaded();
             if(id === 'market' && window.Showcase) window.Showcase.ensureLoaded();
@@ -3812,27 +3994,53 @@
         renderFeed() { if (window.Multiplayer) window.Multiplayer.renderBalloonFeed(); },
         renderFeedData(bets) {
             const el = document.getElementById('balloon-live-feed'); if (!el) return;
-            el.innerHTML = bets.map(b => `<div class="live-bet-row">
-                <span>${b.username || 'Игрок'}</span><span>${b.amount}</span>
-                <span style="color:${b.cashed_out_multiplier ? 'var(--green)' : 'var(--text-muted)'}">${b.cashed_out_multiplier ? Number(b.cashed_out_multiplier).toFixed(2)+'x' : '...'}</span>
-            </div>`).join('');
+            el.innerHTML = bets.map((b, idx) => {
+                const initial = (b.username || '?')[0].toUpperCase();
+                const avatarInner = b.avatar_url
+                    ? `<img src="${b.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.parentElement.innerText='${initial}'">`
+                    : initial;
+                // Тестово: красим ник в цвет титула, если он надет — легко
+                // убрать одной строкой, если решим, что это лишнее
+                const nameStyle = b.title_color_hex ? `color:${b.title_color_hex};` : '';
+                return `<div class="rich-bet-row">
+                    <div class="avatar-frame-wrap" id="bln-frame-${idx}"><div class="profile-avatar">${avatarInner}</div></div>
+                    <div class="rich-bet-info">
+                        <div class="rich-bet-name" style="${nameStyle}">${b.username || 'Игрок'}</div>
+                        ${b.title_name ? `<div class="rich-bet-title" style="color:${b.title_color_hex};">${b.title_name}</div>` : ''}
+                    </div>
+                    <div class="rich-bet-amount">${b.amount}⭐</div>
+                    <div class="rich-bet-mult" style="color:${b.cashed_out_multiplier ? 'var(--green)' : 'var(--text-muted)'}">${b.cashed_out_multiplier ? Number(b.cashed_out_multiplier).toFixed(2)+'x' : '...'}</div>
+                </div>`;
+            }).join('');
+            bets.forEach((b, idx) => {
+                const wrap = document.getElementById('bln-frame-' + idx);
+                if (wrap && window.Frames) window.Frames.decorateWrap(wrap, b.frame_css_class, 'bln' + idx);
+            });
         },
 
         // ---- СИНХРОНИЗАЦИЯ С СЕРВЕРНЫМ ОБЩИМ РАУНДОМ (как у Ракеты) ----
         syncWaiting(nextRoundAt) {
             this.state = 0; this.bet.pl = false; this.bet.o = false;
             if (this.anim) cancelAnimationFrame(this.anim); if (this.timer) clearTimeout(this.timer);
+            if (this.countdownTimer) clearInterval(this.countdownTimer);
             const wrap = document.getElementById('balloon-wrap');
             wrap.classList.remove('floating', 'popped'); wrap.style.opacity = '1';
             document.getElementById('balloon-pop-msg').classList.remove('show');
             this.updateVisual(1);
-            document.getElementById('balloon-status-badge').innerText = 'Ожидание ставок...';
             this.updBtns();
-            const msLeft = new Date(nextRoundAt).getTime() - (Date.now() + (window.Multiplayer.clockOffsetMs || 0));
+            const nextMs = new Date(nextRoundAt).getTime();
+            const updCountdown = () => {
+                const secLeft = Math.max(0, Math.ceil((nextMs - (Date.now() + (window.Multiplayer.clockOffsetMs || 0))) / 1000));
+                document.getElementById('balloon-status-badge').innerText = secLeft > 0 ? `Запуск через ${secLeft}с` : 'Запускаем...';
+            };
+            updCountdown();
+            this.countdownTimer = setInterval(updCountdown, 500);
+            const msLeft = nextMs - (Date.now() + (window.Multiplayer.clockOffsetMs || 0));
             this.timer = setTimeout(() => window.Multiplayer.forceRefreshBalloon && window.Multiplayer.forceRefreshBalloon(), Math.max(200, msLeft + 200));
         },
         syncFlying(startAt) {
             this.state = 1;
+            if (this.countdownTimer) clearInterval(this.countdownTimer);
             const wrap = document.getElementById('balloon-wrap');
             wrap.classList.add('floating');
             document.getElementById('balloon-status-badge').innerText = 'В полёте!';
@@ -3850,6 +4058,7 @@
         syncPopped(targetMultiplier) {
             this.state = 2;
             if (this.anim) cancelAnimationFrame(this.anim);
+            if (this.countdownTimer) clearInterval(this.countdownTimer);
             const wrap = document.getElementById('balloon-wrap');
             wrap.classList.remove('floating'); wrap.classList.add('popped');
             this.spawnPopParticles();
