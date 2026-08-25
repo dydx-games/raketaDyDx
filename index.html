@@ -438,6 +438,10 @@
         .crypto-chart-tooltip { position: absolute; background: rgba(20,22,28,0.95); border: 1px solid #2a2e3a; border-radius: 8px; padding: 5px 8px; font-size: 10px; color: #fff; pointer-events: none; white-space: nowrap; z-index: 5; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
         .hub-category { font-size: 13px; font-weight: 800; letter-spacing: 0.5px; margin: 26px 12px 12px; text-transform: uppercase; }
 
+        .daily-gift-btn { margin: 10px 10px 0; background: linear-gradient(135deg, rgba(215,180,93,0.2), rgba(215,180,93,0.05));
+            border: 1.5px dashed rgba(215,180,93,0.5); border-radius: var(--border-radius); padding: 12px; text-align: center;
+            font-size: 13px; font-weight: 800; color: var(--gold-bright); cursor: pointer; transition: transform 0.15s; }
+        .daily-gift-btn:active { transform: scale(0.97); }
         .lucky-hour-banner { margin: 10px 10px 0; background: linear-gradient(135deg, rgba(80,220,140,0.18), rgba(80,220,140,0.03));
             border: 1px solid rgba(80,220,140,0.4); border-radius: var(--border-radius); padding: 10px 14px; font-size: 12px; font-weight: 800; color: var(--green); text-align: center; }
         .bigwin-banner { margin: 10px 10px 0; background: linear-gradient(135deg, rgba(215,180,93,0.16), rgba(215,180,93,0.03));
@@ -454,6 +458,11 @@
         .bigwin-card-name { font-size: 11px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; }
         .bigwin-card-detail { font-size: 10px; color: var(--text-muted); white-space: nowrap; }
         .bigwin-card-detail b { color: var(--green); }
+        .bigwin-like { display: flex; align-items: center; gap: 3px; flex-shrink: 0; padding: 4px 8px; border-radius: 999px;
+            background: rgba(0,0,0,0.2); cursor: pointer; pointer-events: all; }
+        .bigwin-like.liked { background: rgba(244,87,106,0.15); }
+        .bigwin-like-heart { font-size: 12px; }
+        .bigwin-like-count { font-size: 10px; font-weight: 800; color: var(--text-muted); }
         .bigwin-banner-empty { font-size: 11px; color: var(--text-muted); padding-right: 14px; }
         .hub-grid { display: flex; flex-direction: column; gap: 12px; padding: 0 12px; }
         .hub-card { display: flex; align-items: center; gap: 14px; background: linear-gradient(155deg, var(--bg-panel) 0%, var(--bg-panel-light) 140%); border: 1px solid #1f222b; border-radius: 18px; padding: 14px; cursor: pointer; position: relative; overflow: hidden; box-shadow: 0 4px 14px rgba(0,0,0,0.22); transition: transform 0.18s var(--ease), box-shadow 0.18s var(--ease), border-color 0.18s; }
@@ -905,6 +914,7 @@
         <!-- CRASH -->
         <!-- ХАБ: список игр по категориям -->
         <div class="game-view active" id="view-games">
+            <div class="daily-gift-btn" id="daily-gift-btn" style="display:none;" onclick="DailyGift.claim()">🎁 Подарок дня</div>
             <div class="lucky-hour-banner" id="lucky-hour-banner" style="display:none;"></div>
             <div class="bigwin-banner" id="bigwin-banner">
                 <div class="bigwin-banner-label">🏆 Крупные выигрыши</div>
@@ -1143,6 +1153,20 @@
         <div class="game-view" id="view-history">
             <div class="panel" style="margin-bottom:20px;">
                 <div id="tx-list"></div>
+            </div>
+        </div>
+
+        <!-- РЕФЕРАЛЫ -->
+        <div class="game-view" id="view-referrals">
+            <div class="panel" style="margin-bottom:20px;">
+                <div id="referrals-list"></div>
+            </div>
+        </div>
+
+        <!-- АУКЦИОН ГИФТОВ -->
+        <div class="game-view" id="view-auction">
+            <div class="panel" style="margin-bottom:20px;">
+                <div id="auction-list"></div>
             </div>
         </div>
 
@@ -1578,6 +1602,17 @@
                     <button class="streak-claim-btn" id="streak-claim-btn" onclick="Streak.claim()">Забрать</button>
                 </div>
                 <div class="streak-dots" id="streak-dots"></div>
+                <button class="streak-claim-btn" id="daily-gift-btn" onclick="DailyGift.claim()" style="width:100%; margin-top:10px; background:linear-gradient(135deg, #4fb3f0, #2a6fa8);">🎁 Подарок дня (0-50⭐, без риска)</button>
+            </div>
+
+            <div class="settings-nav-row" onclick="App.s('referrals', null, 'Мои рефералы')">
+                <span>👥 Мои рефералы</span>
+                <span class="settings-nav-arrow">›</span>
+            </div>
+
+            <div class="settings-nav-row" onclick="App.s('auction', null, 'Аукцион гифтов')">
+                <span>🔨 Аукцион гифтов</span>
+                <span class="settings-nav-arrow">›</span>
             </div>
 
             <div class="panel" style="margin: 10px 10px 0;" id="profile-section-gifts">
@@ -2013,6 +2048,70 @@
         },
     };
 
+    window.Auction = {
+        list: [],
+        async load() {
+            if (!window.Multiplayer || !window.ME) return;
+            const { data, error } = await sb.rpc('get_active_auctions');
+            const el = document.getElementById('auction-list'); if (!el) return;
+            if (error || !data || !data.length) { el.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:12px; padding:14px 0;">Сейчас нет активных аукционов</div>`; return; }
+            this.list = data;
+            el.innerHTML = data.map(a => {
+                const mins = Math.max(0, Math.floor((new Date(a.ends_at).getTime() - Date.now()) / 60000));
+                const timeStr = mins >= 60 ? `${Math.floor(mins/60)}ч ${mins%60}м` : `${mins}м`;
+                const isMine = a.seller_id === window.ME.id;
+                const currentPrice = a.current_bid || a.starting_price;
+                return `<div class="tx-row" style="align-items:flex-start;">
+                    <div class="tx-info">
+                        <div class="tx-icon plus">🎁</div>
+                        <div>
+                            <div class="tx-desc">${a.gift_name}${a.model_name ? ' — ' + a.model_name : ''}</div>
+                            <div class="tx-date">Текущая ставка: ${Number(currentPrice).toLocaleString()}⭐ · осталось ${timeStr}</div>
+                        </div>
+                    </div>
+                    ${isMine ? '<span style="font-size:10px; color:var(--text-muted);">твой лот</span>' : `<button class="btn-claim" onclick="Auction.bid(${a.id}, ${currentPrice + 1})">Ставка ${(currentPrice+1).toLocaleString()}⭐</button>`}
+                </div>`;
+            }).join('');
+        },
+        async bid(auctionId, amount) {
+            const { data, error } = await sb.rpc('place_bid', { p_telegram_id: window.ME.id, p_auction_id: auctionId, p_amount: amount });
+            if (error || !data || !data[0].success) return window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
+            window.App.balance = data[0].new_balance; window.App.updBalUI();
+            window.App.toast('Ставка принята!', 'success');
+            this.load();
+        },
+    };
+
+    window.DailyGift = {
+        async claim() {
+            if (!window.Multiplayer || !window.ME) return;
+            const { data, error } = await sb.rpc('claim_daily_gift', { p_telegram_id: window.ME.id });
+            if (error || !data || !data[0].success) return window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
+            window.App.balance = data[0].new_balance; window.App.updBalUI();
+            window.App.toast(`🎁 ${data[0].message} +${data[0].reward}⭐`, data[0].reward > 0 ? 'success' : '');
+            const btn = document.getElementById('daily-gift-btn'); if (btn) { btn.disabled = true; btn.innerText = '🎁 Уже забрано сегодня'; }
+        },
+    };
+
+    window.ReferralStats = {
+        async load() {
+            if (!window.Multiplayer || !window.ME) return;
+            const { data, error } = await sb.rpc('get_referral_stats', { p_telegram_id: window.ME.id });
+            const el = document.getElementById('referrals-list'); if (!el) return;
+            if (error || !data || !data.length) { el.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:12px; padding:14px 0;">Пока нет приглашённых</div>`; return; }
+            el.innerHTML = data.map(r => `<div class="tx-row">
+                <div class="tx-info">
+                    <div class="tx-icon plus">👤</div>
+                    <div>
+                        <div class="tx-desc">${r.username || 'Игрок'}</div>
+                        <div class="tx-date">Наиграл: ${Number(r.total_wagered).toLocaleString()}⭐</div>
+                    </div>
+                </div>
+                <div class="tx-amount plus">${Number(r.current_balance).toLocaleString()}⭐</div>
+            </div>`).join('');
+        },
+    };
+
     window.TxHistory = {
         KIND_ICON: { purchase_gift: '🎁', purchase_frame: '🖼', check_create: '💵', donation: '💝', big_win: '🏆', sell_gift: '💰', market_sale: '🏪' },
         KIND_LABEL: { purchase_gift: 'Покупка гифта', purchase_frame: 'Покупка рамки', check_create: 'Создан чек', donation: 'Донат', big_win: 'Крупный выигрыш', sell_gift: 'Продажа в банк', market_sale: 'Продажа на рынке' },
@@ -2096,10 +2195,23 @@
         list: [],
         async load() {
             if (!window.Multiplayer) return;
-            const { data, error } = await sb.rpc('get_recent_big_wins', { p_limit: 15 });
+            const { data, error } = await sb.rpc('get_recent_big_wins', { p_limit: 15, p_telegram_id: window.ME ? window.ME.id : null });
             if (error || !data) return;
             this.list = data;
             this.render();
+        },
+        async like(winId, el) {
+            if (!window.ME) return;
+            el.style.pointerEvents = 'none';
+            const { data, error } = await sb.rpc('like_big_win', { p_telegram_id: window.ME.id, p_win_id: winId });
+            el.style.pointerEvents = '';
+            if (error || !data || !data[0]) return;
+            const countEl = el.querySelector('.bigwin-like-count');
+            const heartEl = el.querySelector('.bigwin-like-heart');
+            if (countEl) countEl.innerText = data[0].likes_count;
+            el.classList.toggle('liked', data[0].success);
+            if (heartEl) heartEl.innerText = data[0].success ? '❤️' : '🤍';
+            window.App.haptic && window.App.haptic('select');
         },
         cardHtml(w, idx) {
             const initial = (w.username || '?')[0].toUpperCase();
@@ -2111,6 +2223,10 @@
                 <div class="bigwin-card-info">
                     <div class="bigwin-card-name">${w.username || 'Игрок'}</div>
                     <div class="bigwin-card-detail">+<b>${Number(w.amount).toLocaleString()}⭐</b> · ${w.game_name}</div>
+                </div>
+                <div class="bigwin-like ${w.liked_by_me ? 'liked' : ''}" onclick="event.stopPropagation(); window.BigWins.like(${w.id}, this)">
+                    <span class="bigwin-like-heart">${w.liked_by_me ? '❤️' : '🤍'}</span>
+                    <span class="bigwin-like-count">${w.likes_count || 0}</span>
                 </div>
             </div>`;
         },
@@ -2410,6 +2526,8 @@
             if(id === 'settings' && window.Settings) window.Settings.syncUI();
             if(id === 'leaderboard' && window.Leaderboard) window.Leaderboard.load();
             if(id === 'history' && window.TxHistory) window.TxHistory.load();
+            if(id === 'referrals' && window.ReferralStats) window.ReferralStats.load();
+            if(id === 'auction' && window.Auction) window.Auction.load();
             if(id === 'profile' && window.Referrals) window.Referrals.init();
             if(id === 'profile' && window.ProfileGifts) window.ProfileGifts.ensureLoaded();
             if(id === 'market' && window.Showcase) window.Showcase.ensureLoaded();
@@ -4484,8 +4602,16 @@
     };
 
     window.Dice = {
-        target: 50, mode: 'under', b: 0, pl: false,
-        init() { this.updateDisplay(); },
+        target: 50, mode: 'under', b: 0, pl: false, pityBonus: 0,
+        init() { this.updateDisplay(); this.refreshPity(); },
+        async refreshPity() {
+            // Защита от "сухих полос" — если давно не везёт, шанс чуть подрастает
+            // (максимум +15%, начинает работать только с 5-го проигрыша подряд).
+            // Считает и хранит сервер, клиент только применяет готовое число.
+            if (!window.Multiplayer || !window.ME) return;
+            const { data } = await sb.rpc('peek_loss_streak_bonus', { p_telegram_id: window.ME.id });
+            if (data && data[0]) { this.pityBonus = Number(data[0].current_bonus_percent) || 0; this.updateDisplay(); }
+        },
         setTarget(v) {
             if (this.pl) return;
             this.target = Math.max(2, Math.min(98, Math.round(Number(v))));
@@ -4505,7 +4631,7 @@
         },
         updateDisplay() {
             const { chance, mult } = this.currentChanceAndMult();
-            document.getElementById('dice-chance').innerText = chance.toFixed(2) + '%';
+            document.getElementById('dice-chance').innerText = chance.toFixed(2) + '%' + (this.pityBonus > 0 ? ` (+${this.pityBonus}🔥)` : '');
             document.getElementById('dice-mult').innerText = mult.toFixed(2) + 'x';
             document.getElementById('dice-target').value = this.target;
             const marker = document.getElementById('dice-track-marker'); if (marker) marker.style.left = this.target + '%';
@@ -4530,7 +4656,11 @@
             setTimeout(() => {
                 const roll = Math.random() * 100; // 0.00 - 99.99, честный ролл до самого показа результата
                 const { mult } = this.currentChanceAndMult();
-                const won = this.mode === 'under' ? (roll < this.target) : (roll > this.target);
+                // Бонус от защиты сухих полос применяется прямо к порогу — эффективно
+                // расширяет "выигрышную" зону роля на pityBonus процентных пунктов
+                let won;
+                if (this.mode === 'under') won = roll < (this.target + this.pityBonus);
+                else won = roll > (this.target - this.pityBonus);
 
                 cube.classList.remove('rolling'); cube.innerText = Math.floor(roll);
                 resultEl.style.left = roll + '%'; resultEl.style.opacity = '1'; resultEl.innerText = Math.floor(roll);
@@ -4538,6 +4668,8 @@
 
                 if (won) { window.App.win(Math.floor(this.b * mult), 'Кости'); }
                 else { window.App.toast('Мимо!', 'error'); }
+
+                if (window.Multiplayer && window.ME) sb.rpc('update_loss_streak', { p_telegram_id: window.ME.id, p_won: won }).then(({ data }) => { if (data && data[0]) this.pityBonus = Number(data[0].current_bonus_percent) || 0; });
 
                 this.pl = false;
                 document.getElementById('dice-btn').className = 'main-btn btn-green'; document.getElementById('dice-btn').innerText = '🎲 БРОСИТЬ';
