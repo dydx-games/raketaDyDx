@@ -49,7 +49,7 @@ window.Multiplayer = {
             { telegram_id: ME.id, username: ME.username, avatar_url: ME.avatar_url },
             { onConflict: 'telegram_id', ignoreDuplicates: true }
         );
-        await window.SecureAPI.call('update_profile', { p_telegram_id: ME.id, p_username: ME.username, p_avatar_url: ME.avatar_url });
+        await sb.rpc('update_profile', { p_telegram_id: ME.id, p_username: ME.username, p_avatar_url: ME.avatar_url });
 
         // Реферальная система: если игру открыли по ссылке вида t.me/бот?start=12345,
         // Telegram сам подставляет "12345" сюда — это telegram_id того, кто позвал.
@@ -59,7 +59,7 @@ window.Multiplayer = {
             const tgApp = window.Telegram.WebApp;
             const startParam = tgApp.initDataUnsafe && tgApp.initDataUnsafe.start_param;
             if (startParam && /^\d+$/.test(startParam) && startParam !== ME.id) {
-                await window.SecureAPI.call('set_referrer', { p_telegram_id: ME.id, p_referrer_id: startParam });
+                await sb.rpc('set_referrer', { p_telegram_id: ME.id, p_referrer_id: startParam });
             }
         } catch (e) {}
 
@@ -209,14 +209,14 @@ window.Multiplayer = {
         if (window.Balloon) window.Balloon.renderFeedData(data || []);
     },
     async placeBalloonBet(amount) {
-        const { data, error } = await window.SecureAPI.call('balloon_place_bet', { p_telegram_id: ME.id, p_username: ME.username, p_amount: amount });
+        const { data, error } = await sb.rpc('balloon_place_bet', { p_telegram_id: ME.id, p_username: ME.username, p_amount: amount });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка ставки', 'error'); return false; }
         window.App.balance = data[0].new_balance; window.App.updBalUI();
         return true;
     },
     async balloonCashOut() {
         if (!this.balloonRoundKey) return null;
-        const { data, error } = await window.SecureAPI.call('balloon_cash_out', { p_telegram_id: ME.id, p_round_key: this.balloonRoundKey });
+        const { data, error } = await sb.rpc('balloon_cash_out', { p_telegram_id: ME.id, p_round_key: this.balloonRoundKey });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Не удалось забрать', 'error'); return null; }
         window.App.balance = data[0].new_balance; window.App.updBalUI();
         return data[0];
@@ -288,7 +288,7 @@ window.Multiplayer = {
         }
     },
     async placeBet(amount) {
-        const { data, error } = await window.SecureAPI.call('place_bet', { p_telegram_id: ME.id, p_username: ME.username, p_amount: amount });
+        const { data, error } = await sb.rpc('place_bet', { p_telegram_id: ME.id, p_username: ME.username, p_amount: amount });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка ставки', 'error'); return false; }
         await this.syncBalanceFromServer();
         return true;
@@ -296,7 +296,7 @@ window.Multiplayer = {
     async cashOut() {
         const key = this.crashRoundKey();
         if (!key) return null;
-        const { data, error } = await window.SecureAPI.call('cash_out', { p_telegram_id: ME.id, p_round_started_at: key });
+        const { data, error } = await sb.rpc('cash_out', { p_telegram_id: ME.id, p_round_started_at: key });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Не удалось забрать', 'error'); return null; }
         await this.syncBalanceFromServer();
         window.App.toast(`Забрано ${data[0].win_amount}!`, 'success');
@@ -339,7 +339,7 @@ window.Multiplayer = {
         if (this._arenaJoinInFlight) return false;
         this._arenaJoinInFlight = true;
         try {
-            const { data, error } = await window.SecureAPI.call('arena_join', { p_telegram_id: ME.id, p_username: ME.username, p_avatar_url: ME.avatar_url, p_amount: amount });
+            const { data, error } = await sb.rpc('arena_join', { p_telegram_id: ME.id, p_username: ME.username, p_avatar_url: ME.avatar_url, p_amount: amount });
             if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return false; }
             window.App.toast(data[0].message, 'success');
             await this.syncBalanceFromServer();
@@ -379,7 +379,7 @@ window.Multiplayer = {
         }
     },
     async durakCreateRoom(bet) {
-        const { data, error } = await window.SecureAPI.call('durak_create_room', { p_host_id: ME.id, p_host_username: ME.username, p_bet: bet });
+        const { data, error } = await sb.rpc('durak_create_room', { p_host_id: ME.id, p_host_username: ME.username, p_bet: bet });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return; }
         window.App.toast('Комната создана, ждём соперника', 'success');
         await this.syncBalanceFromServer();
@@ -387,7 +387,7 @@ window.Multiplayer = {
         this.subscribeDurakRoom(data[0].room_id);
     },
     async durakJoinRoom(roomId) {
-        const { data, error } = await window.SecureAPI.call('durak_join_room', { p_room_id: roomId, p_guest_id: ME.id, p_guest_username: ME.username });
+        const { data, error } = await sb.rpc('durak_join_room', { p_room_id: roomId, p_guest_id: ME.id, p_guest_username: ME.username });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Не удалось войти', 'error'); return; }
         window.App.toast('Игра началась!', 'success');
         await this.syncBalanceFromServer();
@@ -428,22 +428,22 @@ window.Multiplayer = {
         const isAttacker = room.attacker === myRole;
         let res;
         if (isAttacker) {
-            res = await window.SecureAPI.call('durak_attack', { p_room_id: roomId, p_telegram_id: ME.id, p_card: card });
+            res = await sb.rpc('durak_attack', { p_room_id: roomId, p_telegram_id: ME.id, p_card: card });
         } else {
             const undefended = (room.table_cards || []).find(p => !p.defend);
             if (!undefended) { window.App.toast('Нет карты для отбоя', 'error'); return; }
-            res = await window.SecureAPI.call('durak_defend', { p_room_id: roomId, p_telegram_id: ME.id, p_attack_card: undefended.attack, p_defend_card: card });
+            res = await sb.rpc('durak_defend', { p_room_id: roomId, p_telegram_id: ME.id, p_attack_card: undefended.attack, p_defend_card: card });
         }
         const { data, error } = res;
         if (error || !data || !data[0].success) window.App.toast((data && data[0] && data[0].message) || 'Недопустимый ход', 'error');
     },
     async durakTake(roomId) {
-        const { data, error } = await window.SecureAPI.call('durak_take', { p_room_id: roomId, p_telegram_id: ME.id });
+        const { data, error } = await sb.rpc('durak_take', { p_room_id: roomId, p_telegram_id: ME.id });
         if (error || !data || !data[0].success) window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
         await this.syncBalanceFromServer();
     },
     async durakPass(roomId) {
-        const { data, error } = await window.SecureAPI.call('durak_pass', { p_room_id: roomId, p_telegram_id: ME.id });
+        const { data, error } = await sb.rpc('durak_pass', { p_room_id: roomId, p_telegram_id: ME.id });
         if (error || !data || !data[0].success) window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
         await this.syncBalanceFromServer();
     },
@@ -451,7 +451,7 @@ window.Multiplayer = {
     // ================= ПРОМОКОДЫ =================
     async redeemPromo(code) {
         if (!code || !code.trim()) return window.App.toast('Введите код', 'error');
-        const { data, error } = await window.SecureAPI.call('redeem_promo', { p_code: code.trim().toUpperCase(), p_telegram_id: ME.id });
+        const { data, error } = await sb.rpc('redeem_promo', { p_code: code.trim().toUpperCase(), p_telegram_id: ME.id });
         if (error) { window.App.toast('Ошибка сети', 'error'); return; }
         const r = data[0];
         window.App.toast(r.message, r.success ? 'success' : 'error');
@@ -460,7 +460,7 @@ window.Multiplayer = {
 
     // ================= ЕЖЕДНЕВНЫЙ БОНУС =================
     async claimDaily() {
-        const { data, error } = await window.SecureAPI.call('claim_daily_bonus', { p_telegram_id: ME.id });
+        const { data, error } = await sb.rpc('claim_daily_bonus', { p_telegram_id: ME.id });
         if (error) { window.App.toast('Ошибка сети', 'error'); return; }
         const r = data[0];
         window.App.toast(r.message, r.success ? 'success' : 'error');
@@ -500,7 +500,7 @@ window.Multiplayer = {
         let pending = parseInt(localStorage.getItem('dydx_pending_delta') || '0', 10); if (isNaN(pending)) pending = 0;
         if (pending === 0) return;
         try {
-            await window.SecureAPI.call('apply_balance_delta', { p_telegram_id: ME.id, p_delta: pending });
+            await sb.rpc('apply_balance_delta', { p_telegram_id: ME.id, p_delta: pending });
             localStorage.setItem('dydx_pending_delta', 0);
         } catch (e) { /* снова не долетело — останется в pending, попробуем при следующем запуске */ }
     },
@@ -512,7 +512,7 @@ window.Multiplayer = {
     // проверка в одном месте, и её точно не забудут в новом коде.
     async logBigWin(amount, gameName) {
         if (amount < 1000 || !ME || !ME.id) return;
-        try { await window.SecureAPI.call('record_big_win', { p_telegram_id: ME.id, p_username: ME.username, p_avatar_url: ME.avatar_url, p_amount: amount, p_game_name: gameName }); } catch (e) {}
+        try { await sb.rpc('record_big_win', { p_telegram_id: ME.id, p_username: ME.username, p_avatar_url: ME.avatar_url, p_amount: amount, p_game_name: gameName }); } catch (e) {}
     },
     async syncBalanceFromServer() {
         if (window.App && window.App._pendingSyncCount > 0) return null; // не перебиваем ещё не долетевшую отправку
@@ -527,7 +527,7 @@ window.Multiplayer = {
 
     // ================= МАРКЕТПЛЕЙС УЛУЧШЕННЫХ ПОДАРКОВ =================
     async upgradeGiftServer(gift, cost, baseRarity) {
-        const { data, error } = await window.SecureAPI.call('upgrade_gift_server', {
+        const { data, error } = await sb.rpc('upgrade_gift_server', {
             p_telegram_id: ME.id, p_username: ME.username,
             p_gift_id: gift.id, p_gift_name: gift.name, p_gift_emoji: gift.emoji, p_base_rarity: baseRarity
         });
@@ -552,14 +552,14 @@ window.Multiplayer = {
         el.innerText = (!error && data) ? data.balance.toLocaleString() + ' звёзд' : '—';
     },
     async refreshCrypto() {
-        const { data, error } = await window.SecureAPI.call('crypto_get_state', { p_telegram_id: ME.id });
+        const { data, error } = await sb.rpc('crypto_get_state', { p_telegram_id: ME.id });
         if (error || !data) return;
         if (window.CryptoUI) window.CryptoUI.render(data);
     },
     _marketShopRequestId: 0,
     async refreshMarketShop() {
         const myRequestId = ++this._marketShopRequestId;
-        const { data, error } = await window.SecureAPI.call('get_market_state', { p_telegram_id: ME.id });
+        const { data, error } = await sb.rpc('get_market_state', { p_telegram_id: ME.id });
         // Если за время ожидания ответа успел уйти ещё один (более новый) запрос —
         // этот ответ устарел, применять его нельзя (иначе иногда "теряются" гифты,
         // если ответы приходят не в том порядке, в котором ушли запросы).
@@ -574,17 +574,17 @@ window.Multiplayer = {
     // что перестраивало ВСЮ витрину даже если она не видна на экране — выглядело
     // как "страница обновляется".
     async ensureProfileGiftsLoaded() {
-        const { data, error } = await window.SecureAPI.call('get_market_state', { p_telegram_id: ME.id });
+        const { data, error } = await sb.rpc('get_market_state', { p_telegram_id: ME.id });
         if (error || !data) return;
         if (window.ProfileGifts) window.ProfileGifts.setState(data);
     },
     async refreshReferrals() {
-        const { data, error } = await window.SecureAPI.call('get_referral_stats', { p_telegram_id: ME.id });
+        const { data, error } = await sb.rpc('get_referral_stats', { p_telegram_id: ME.id });
         if (error || !data) return;
         if (window.Referrals) window.Referrals.setState(data);
     },
     async buyMarketGift(catalogId) {
-        const { data, error } = await window.SecureAPI.call('buy_market_gift', { p_telegram_id: ME.id, p_catalog_id: catalogId });
+        const { data, error } = await sb.rpc('buy_market_gift', { p_telegram_id: ME.id, p_catalog_id: catalogId });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return false; }
         window.App.toast(data[0].message, 'success');
         await this.syncBalanceFromServer();
@@ -592,22 +592,22 @@ window.Multiplayer = {
         return true;
     },
     async scratchCardStart(bet) {
-        const { data, error } = await window.SecureAPI.call('scratch_card_start', { p_telegram_id: ME.id, p_bet: bet });
+        const { data, error } = await sb.rpc('scratch_card_start', { p_telegram_id: ME.id, p_bet: bet });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return null; }
         return data[0];
     },
     async scratchRevealNext(cardId) {
-        const { data, error } = await window.SecureAPI.call('scratch_reveal_next', { p_telegram_id: ME.id, p_card_id: cardId });
+        const { data, error } = await sb.rpc('scratch_reveal_next', { p_telegram_id: ME.id, p_card_id: cardId });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return null; }
         return data[0];
     },
     async slotsSpin(bet) {
-        const { data, error } = await window.SecureAPI.call('slots_spin', { p_telegram_id: ME.id, p_bet: bet });
+        const { data, error } = await sb.rpc('slots_spin', { p_telegram_id: ME.id, p_bet: bet });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return null; }
         return data[0];
     },
     async sellGift(inventoryId) {
-        const { data, error } = await window.SecureAPI.call('sell_gift', { p_telegram_id: ME.id, p_inventory_id: inventoryId });
+        const { data, error } = await sb.rpc('sell_gift', { p_telegram_id: ME.id, p_inventory_id: inventoryId });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return null; }
         window.App.toast(data[0].message, 'success');
         await this.syncBalanceFromServer();
@@ -615,7 +615,7 @@ window.Multiplayer = {
         return data[0];
     },
     async upgradeGiftModel(inventoryId) {
-        const { data, error } = await window.SecureAPI.call('upgrade_gift_model', { p_telegram_id: ME.id, p_inventory_id: inventoryId });
+        const { data, error } = await sb.rpc('upgrade_gift_model', { p_telegram_id: ME.id, p_inventory_id: inventoryId });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return null; }
         // Никакого toast с результатом тут — иначе апгрейд "спойлерится" текстом
         // ДО того, как отыграет анимация барабана. Сам результат уже пришёл в
@@ -625,37 +625,37 @@ window.Multiplayer = {
         return data[0];
     },
     async cryptoBuy(coinId, chipsAmount) {
-        const { data, error } = await window.SecureAPI.call('crypto_buy', { p_telegram_id: ME.id, p_coin_id: coinId, p_chips_amount: chipsAmount });
+        const { data, error } = await sb.rpc('crypto_buy', { p_telegram_id: ME.id, p_coin_id: coinId, p_chips_amount: chipsAmount });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return; }
         window.App.toast('Куплено!', 'success');
         await this.syncBalanceFromServer();
         this.refreshCrypto();
     },
     async cryptoSell(coinId, qty) {
-        const { data, error } = await window.SecureAPI.call('crypto_sell', { p_telegram_id: ME.id, p_coin_id: coinId, p_qty: qty });
+        const { data, error } = await sb.rpc('crypto_sell', { p_telegram_id: ME.id, p_coin_id: coinId, p_qty: qty });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return; }
         window.App.toast(`Продано за ${data[0].proceeds} звёзд`, 'success');
         await this.syncBalanceFromServer();
         this.refreshCrypto();
     },
     async cryptoGetMyTrades() {
-        const { data, error } = await window.SecureAPI.call('crypto_get_my_trades', { p_telegram_id: ME.id, p_limit: 30 });
+        const { data, error } = await sb.rpc('crypto_get_my_trades', { p_telegram_id: ME.id, p_limit: 30 });
         return (!error && data) ? data : [];
     },
     async refreshTycoon() {
-        const { data, error } = await window.SecureAPI.call('tycoon_get_state', { p_telegram_id: ME.id });
+        const { data, error } = await sb.rpc('tycoon_get_state', { p_telegram_id: ME.id });
         if (error || !data) return;
         if (window.TycoonUI) window.TycoonUI.render(data);
     },
     async tycoonBuy(buildingId) {
-        const { data, error } = await window.SecureAPI.call('tycoon_buy', { p_telegram_id: ME.id, p_building_id: buildingId });
+        const { data, error } = await sb.rpc('tycoon_buy', { p_telegram_id: ME.id, p_building_id: buildingId });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return; }
         window.App.toast(data[0].message, 'success');
         await this.syncBalanceFromServer();
         this.refreshTycoon();
     },
     async tycoonCollect() {
-        const { data, error } = await window.SecureAPI.call('tycoon_collect', { p_telegram_id: ME.id });
+        const { data, error } = await sb.rpc('tycoon_collect', { p_telegram_id: ME.id });
         if (error || !data) { window.App.toast('Ошибка', 'error'); return; }
         if (!data[0].success) { window.App.toast(data[0].message || 'Пока нечего собирать', ''); return; }
         window.App.toast(`+${data[0].collected} звёзд!`, 'success');
@@ -668,14 +668,14 @@ window.Multiplayer = {
         if (window.MarketUI) window.MarketUI.setListings(data);
     },
     async listNft(inventoryId, price) {
-        const { data, error } = await window.SecureAPI.call('list_nft', { p_telegram_id: ME.id, p_inventory_id: inventoryId, p_price: price, p_username: ME.username });
+        const { data, error } = await sb.rpc('list_nft', { p_telegram_id: ME.id, p_inventory_id: inventoryId, p_price: price, p_username: ME.username });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return; }
         window.App.toast(data[0].message, 'success');
         window.Tasks && window.Tasks.chk('market_sold');
         this.refreshMarketShop(); this.refreshMarketListings();
     },
     async cancelListing(listingId) {
-        const { data, error } = await window.SecureAPI.call('cancel_listing', { p_telegram_id: ME.id, p_listing_id: listingId });
+        const { data, error } = await sb.rpc('cancel_listing', { p_telegram_id: ME.id, p_listing_id: listingId });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return; }
         window.App.toast(data[0].message, 'success');
         this.refreshMarketShop(); this.refreshMarketListings();
@@ -686,7 +686,7 @@ window.Multiplayer = {
         return data[0];
     },
     async buyNft(listingId) {
-        const { data, error } = await window.SecureAPI.call('buy_nft', { p_telegram_id: ME.id, p_username: ME.username, p_listing_id: listingId });
+        const { data, error } = await sb.rpc('buy_nft', { p_telegram_id: ME.id, p_username: ME.username, p_listing_id: listingId });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return; }
         window.App.toast(data[0].message, 'success');
         await this.syncBalanceFromServer();

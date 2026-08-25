@@ -1998,7 +1998,7 @@
         list: [],
         async load() {
             if (!window.Multiplayer || !window.ME) return;
-            const { data, error } = await window.SecureAPI.call('get_my_titles', { p_telegram_id: window.ME.id });
+            const { data, error } = await sb.rpc('get_my_titles', { p_telegram_id: window.ME.id });
             if (error || !data) return;
             this.list = data;
             this.render();
@@ -2013,14 +2013,14 @@
             }).join('');
         },
         async buy(id) {
-            const { data, error } = await window.SecureAPI.call('buy_title', { p_telegram_id: window.ME.id, p_title_id: id });
+            const { data, error } = await sb.rpc('buy_title', { p_telegram_id: window.ME.id, p_title_id: id });
             if (error || !data || !data[0].success) return window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
             window.App.balance = data[0].new_balance; window.App.updBalUI();
             window.App.toast('Титул куплен!', 'success');
             this.load();
         },
         async equip(id) {
-            const { data, error } = await window.SecureAPI.call('equip_title', { p_telegram_id: window.ME.id, p_title_id: id });
+            const { data, error } = await sb.rpc('equip_title', { p_telegram_id: window.ME.id, p_title_id: id });
             if (error || !data || !data[0].success) return window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
             this.load();
         },
@@ -2030,7 +2030,7 @@
         REWARDS: [50, 75, 100, 150, 250, 350, 500],
         async load() {
             if (!window.Multiplayer || !window.ME) return;
-            const { data, error } = await window.SecureAPI.call('get_daily_streak_status', { p_telegram_id: window.ME.id });
+            const { data, error } = await sb.rpc('get_daily_streak_status', { p_telegram_id: window.ME.id });
             const panel = document.getElementById('streak-panel'); if (!panel || error || !data || !data[0]) return;
             panel.style.display = '';
             const s = data[0];
@@ -2049,7 +2049,7 @@
             }).join('');
         },
         async claim() {
-            const { data, error } = await window.SecureAPI.call('claim_daily_streak', { p_telegram_id: window.ME.id });
+            const { data, error } = await sb.rpc('claim_daily_streak', { p_telegram_id: window.ME.id });
             if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return; }
             const r = data[0];
             window.App.balance = r.new_balance; window.App.updBalUI();
@@ -2094,7 +2094,7 @@
             if (!this.selectedInventoryId) return window.App.toast('Выбери гифт', 'error');
             const price = Math.floor(Number(document.getElementById('auction-start-price').value));
             if (!price || price <= 0) return window.App.toast('Укажи стартовую цену', 'error');
-            const { data, error } = await window.SecureAPI.call('create_auction', { p_telegram_id: window.ME.id, p_inventory_id: this.selectedInventoryId, p_starting_price: price });
+            const { data, error } = await sb.rpc('create_auction', { p_telegram_id: window.ME.id, p_inventory_id: this.selectedInventoryId, p_starting_price: price });
             if (error || !data || !data[0].success) return window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
             window.App.toast('Гифт выставлен на аукцион!', 'success');
             this.selectedInventoryId = null;
@@ -2128,14 +2128,14 @@
             }).join('');
         },
         async bid(auctionId, amount) {
-            const { data, error } = await window.SecureAPI.call('place_bid', { p_telegram_id: window.ME.id, p_auction_id: auctionId, p_amount: amount });
+            const { data, error } = await sb.rpc('place_bid', { p_telegram_id: window.ME.id, p_auction_id: auctionId, p_amount: amount });
             if (error || !data || !data[0].success) return window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
             window.App.balance = data[0].new_balance; window.App.updBalUI();
             window.App.toast('Ставка принята!', 'success');
             this.load();
         },
         async cancel(auctionId) {
-            const { data, error } = await window.SecureAPI.call('cancel_auction', { p_telegram_id: window.ME.id, p_auction_id: auctionId });
+            const { data, error } = await sb.rpc('cancel_auction', { p_telegram_id: window.ME.id, p_auction_id: auctionId });
             if (error || !data || !data[0].success) return window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
             window.App.toast('Лот снят с аукциона', 'success');
             if (window.Multiplayer) window.Multiplayer.ensureProfileGiftsLoaded();
@@ -2146,7 +2146,7 @@
     window.DailyGift = {
         async claim() {
             if (!window.Multiplayer || !window.ME) return;
-            const { data, error } = await window.SecureAPI.call('claim_daily_gift', { p_telegram_id: window.ME.id });
+            const { data, error } = await sb.rpc('claim_daily_gift', { p_telegram_id: window.ME.id });
             if (error || !data || !data[0].success) return window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
             window.App.balance = data[0].new_balance; window.App.updBalUI();
             window.App.toast(`🎁 ${data[0].message} +${data[0].reward}⭐`, data[0].reward > 0 ? 'success' : '');
@@ -2157,7 +2157,7 @@
     window.ReferralStats = {
         async load() {
             if (!window.Multiplayer || !window.ME) return;
-            const { data, error } = await window.SecureAPI.call('get_referral_stats', { p_telegram_id: window.ME.id });
+            const { data, error } = await sb.rpc('get_referral_stats', { p_telegram_id: window.ME.id });
             const el = document.getElementById('referrals-list'); if (!el) return;
             if (error || !data || !data.length) { el.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:12px; padding:14px 0;">Пока нет приглашённых</div>`; return; }
             el.innerHTML = data.map(r => `<div class="tx-row">
@@ -2178,7 +2178,7 @@
         KIND_LABEL: { purchase_gift: 'Покупка гифта', purchase_frame: 'Покупка рамки', check_create: 'Создан чек', donation: 'Донат', big_win: 'Крупный выигрыш', sell_gift: 'Продажа в банк', market_sale: 'Продажа на рынке' },
         async load() {
             if (!window.Multiplayer || !window.ME) return;
-            const { data, error } = await window.SecureAPI.call('get_transaction_history', { p_telegram_id: window.ME.id, p_limit: 30 });
+            const { data, error } = await sb.rpc('get_transaction_history', { p_telegram_id: window.ME.id, p_limit: 30 });
             const list = document.getElementById('tx-list'); if (!list) return;
             if (error || !data || !data.length) { list.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:12px; padding:14px 0;">Пока нет операций</div>`; return; }
             list.innerHTML = data.map(t => {
@@ -2264,7 +2264,7 @@
         async like(winId, el) {
             if (!window.ME) return;
             el.style.pointerEvents = 'none';
-            const { data, error } = await window.SecureAPI.call('like_big_win', { p_telegram_id: window.ME.id, p_win_id: winId });
+            const { data, error } = await sb.rpc('like_big_win', { p_telegram_id: window.ME.id, p_win_id: winId });
             el.style.pointerEvents = '';
             if (error || !data || !data[0]) return;
             const countEl = el.querySelector('.bigwin-like-count');
@@ -2528,7 +2528,7 @@
             localStorage.setItem('dydx_pending_delta', pending);
             if (!(window.sb && window.ME)) return;
             this._pendingSyncCount = (this._pendingSyncCount || 0) + 1;
-            window.SecureAPI.call('apply_balance_delta', { p_telegram_id: window.ME.id, p_delta: amount })
+            sb.rpc('apply_balance_delta', { p_telegram_id: window.ME.id, p_delta: amount })
                 .then(() => {
                     let p = parseInt(localStorage.getItem('dydx_pending_delta') || '0', 10); if (isNaN(p)) p = 0;
                     localStorage.setItem('dydx_pending_delta', p - amount);
@@ -2591,7 +2591,7 @@
             const btn = document.getElementById('tos-accept-btn'); if (btn) btn.disabled = true;
             try {
                 if (window.sb && window.ME) {
-                    await window.SecureAPI.call('accept_tos', { p_telegram_id: window.ME.id });
+                    await sb.rpc('accept_tos', { p_telegram_id: window.ME.id });
                 }
             } catch (e) { /* если функция ещё не создана — не блокируем игру навсегда */ }
             const modal = document.getElementById('tos-modal'); if (modal) modal.classList.remove('active');
@@ -2664,7 +2664,7 @@
         list: [], collapsed: true,
         async load() {
             if (!window.Multiplayer || !window.ME) return;
-            const { data, error } = await window.SecureAPI.call('get_my_frames', { p_telegram_id: window.ME.id });
+            const { data, error } = await sb.rpc('get_my_frames', { p_telegram_id: window.ME.id });
             if (error || !data) return;
             this.list = data;
             this.render();
@@ -2711,7 +2711,7 @@
             return map[cssClass] || 'var(--bg-panel)';
         },
         async buy(frameId) {
-            const { data, error } = await window.SecureAPI.call('buy_frame', { p_telegram_id: window.ME.id, p_frame_id: frameId });
+            const { data, error } = await sb.rpc('buy_frame', { p_telegram_id: window.ME.id, p_frame_id: frameId });
             if (error || !data || !data[0].success) return window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
             window.App.balance = data[0].new_balance; window.App.updBalUI();
             window.App.toast(data[0].message, 'success');
@@ -2719,7 +2719,7 @@
             this.load();
         },
         async equip(frameId) {
-            const { data, error } = await window.SecureAPI.call('equip_frame', { p_telegram_id: window.ME.id, p_frame_id: frameId });
+            const { data, error } = await sb.rpc('equip_frame', { p_telegram_id: window.ME.id, p_frame_id: frameId });
             if (error || !data || !data[0].success) return window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
             this.load();
         },
@@ -4348,7 +4348,7 @@
         },
         async loadHistory() {
             if (!window.Multiplayer || !window.ME) return;
-            const { data, error } = await window.SecureAPI.call('get_upgrader_history', { p_telegram_id: window.ME.id, p_limit: 10 });
+            const { data, error } = await sb.rpc('get_upgrader_history', { p_telegram_id: window.ME.id, p_limit: 10 });
             const el = document.getElementById('gu-history-list'); if (!el) return;
             if (error || !data || !data.length) { el.innerHTML = `<div style="font-size:11px; color:var(--text-muted); padding:6px 0;">Пока не было попыток</div>`; return; }
             el.innerHTML = data.map(h => {
@@ -4380,7 +4380,7 @@
             // без единого стыка фаз, потому что фаза буквально одна.
             if (wheelEl) { wheelEl.style.transition = 'none'; wheelEl.style.transform = 'rotate(0deg)'; }
 
-            const { data, error } = await window.SecureAPI.call('gift_upgrader_play_v2', {
+            const { data, error } = await sb.rpc('gift_upgrader_play_v2', {
                 p_telegram_id: window.ME.id,
                 p_stake_type: this.stakeType,
                 p_stake_inventory_id: this.stakeType === 'gift' ? this.stakeInventoryId : null,
@@ -4703,7 +4703,7 @@
             // (максимум +15%, начинает работать только с 5-го проигрыша подряд).
             // Считает и хранит сервер, клиент только применяет готовое число.
             if (!window.Multiplayer || !window.ME) return;
-            const { data } = await window.SecureAPI.call('peek_loss_streak_bonus', { p_telegram_id: window.ME.id });
+            const { data } = await sb.rpc('peek_loss_streak_bonus', { p_telegram_id: window.ME.id });
             if (data && data[0]) { this.pityBonus = Number(data[0].current_bonus_percent) || 0; this.updateDisplay(); }
         },
         setTarget(v) {
@@ -4750,7 +4750,7 @@
             // Бросок теперь реально кидает сервер (не Math.random() в браузере) —
             // раньше это можно было подделать через консоль, отправив серверу
             // произвольную "дельту" баланса минуя настоящую игру.
-            const rollPromise = window.SecureAPI.call('dice_play', { p_telegram_id: window.ME.id, p_bet: this.b, p_target: this.target, p_mode: this.mode });
+            const rollPromise = sb.rpc('dice_play', { p_telegram_id: window.ME.id, p_bet: this.b, p_target: this.target, p_mode: this.mode });
             const minDelay = new Promise(r => setTimeout(r, 900)); // не мелькает мгновенно, даже если сервер ответил быстро
             const [{ data, error }] = await Promise.all([rollPromise, minDelay]);
 
@@ -6212,6 +6212,6 @@
 <!-- МУЛЬТИПЛЕЕР: общий раунд Ракеты, Рулетки, Арены, промокоды, Дурак, маркетплейс -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="multiplayer-client.js?v=152"></script>
+<script src="multiplayer-client.js?v=153"></script>
 </body>
 </html>
