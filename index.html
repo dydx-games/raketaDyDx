@@ -2013,14 +2013,14 @@
             }).join('');
         },
         async buy(id) {
-            const { data, error } = await sb.rpc('buy_title', { p_telegram_id: window.ME.id, p_title_id: id });
+            const { data, error } = await window.SecureAPI.call('buy_title', { p_telegram_id: window.ME.id, p_title_id: id });
             if (error || !data || !data[0].success) return window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
             window.App.balance = data[0].new_balance; window.App.updBalUI();
             window.App.toast('Титул куплен!', 'success');
             this.load();
         },
         async equip(id) {
-            const { data, error } = await sb.rpc('equip_title', { p_telegram_id: window.ME.id, p_title_id: id });
+            const { data, error } = await window.SecureAPI.call('equip_title', { p_telegram_id: window.ME.id, p_title_id: id });
             if (error || !data || !data[0].success) return window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
             this.load();
         },
@@ -2264,7 +2264,7 @@
         async like(winId, el) {
             if (!window.ME) return;
             el.style.pointerEvents = 'none';
-            const { data, error } = await sb.rpc('like_big_win', { p_telegram_id: window.ME.id, p_win_id: winId });
+            const { data, error } = await window.SecureAPI.call('like_big_win', { p_telegram_id: window.ME.id, p_win_id: winId });
             el.style.pointerEvents = '';
             if (error || !data || !data[0]) return;
             const countEl = el.querySelector('.bigwin-like-count');
@@ -2528,7 +2528,7 @@
             localStorage.setItem('dydx_pending_delta', pending);
             if (!(window.sb && window.ME)) return;
             this._pendingSyncCount = (this._pendingSyncCount || 0) + 1;
-            window.sb.rpc('apply_balance_delta', { p_telegram_id: window.ME.id, p_delta: amount })
+            window.SecureAPI.call('apply_balance_delta', { p_telegram_id: window.ME.id, p_delta: amount })
                 .then(() => {
                     let p = parseInt(localStorage.getItem('dydx_pending_delta') || '0', 10); if (isNaN(p)) p = 0;
                     localStorage.setItem('dydx_pending_delta', p - amount);
@@ -2711,7 +2711,7 @@
             return map[cssClass] || 'var(--bg-panel)';
         },
         async buy(frameId) {
-            const { data, error } = await sb.rpc('buy_frame', { p_telegram_id: window.ME.id, p_frame_id: frameId });
+            const { data, error } = await window.SecureAPI.call('buy_frame', { p_telegram_id: window.ME.id, p_frame_id: frameId });
             if (error || !data || !data[0].success) return window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
             window.App.balance = data[0].new_balance; window.App.updBalUI();
             window.App.toast(data[0].message, 'success');
@@ -2719,7 +2719,7 @@
             this.load();
         },
         async equip(frameId) {
-            const { data, error } = await sb.rpc('equip_frame', { p_telegram_id: window.ME.id, p_frame_id: frameId });
+            const { data, error } = await window.SecureAPI.call('equip_frame', { p_telegram_id: window.ME.id, p_frame_id: frameId });
             if (error || !data || !data[0].success) return window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
             this.load();
         },
@@ -4763,7 +4763,7 @@
                 if (won) { window.App.win(Math.floor(this.b * mult), 'Кости'); }
                 else { window.App.toast('Мимо!', 'error'); }
 
-                if (window.Multiplayer && window.ME) sb.rpc('update_loss_streak', { p_telegram_id: window.ME.id, p_won: won }).then(({ data }) => { if (data && data[0]) this.pityBonus = Number(data[0].current_bonus_percent) || 0; });
+                if (window.Multiplayer && window.ME) window.SecureAPI.call('update_loss_streak', { p_telegram_id: window.ME.id, p_won: won }).then(({ data }) => { if (data && data[0]) this.pityBonus = Number(data[0].current_bonus_percent) || 0; });
 
                 this.pl = false;
                 document.getElementById('dice-btn').className = 'main-btn btn-green'; document.getElementById('dice-btn').innerText = '🎲 БРОСИТЬ';
@@ -6201,6 +6201,6 @@
 <!-- МУЛЬТИПЛЕЕР: общий раунд Ракеты, Рулетки, Арены, промокоды, Дурак, маркетплейс -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="multiplayer-client.js?v=150"></script>
+<script src="multiplayer-client.js?v=151"></script>
 </body>
 </html>
