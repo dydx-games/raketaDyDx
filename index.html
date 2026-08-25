@@ -2049,7 +2049,7 @@
             }).join('');
         },
         async claim() {
-            const { data, error } = await sb.rpc('claim_daily_streak', { p_telegram_id: window.ME.id });
+            const { data, error } = await window.SecureAPI.call('claim_daily_streak', { p_telegram_id: window.ME.id });
             if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return; }
             const r = data[0];
             window.App.balance = r.new_balance; window.App.updBalUI();
@@ -2094,7 +2094,7 @@
             if (!this.selectedInventoryId) return window.App.toast('Выбери гифт', 'error');
             const price = Math.floor(Number(document.getElementById('auction-start-price').value));
             if (!price || price <= 0) return window.App.toast('Укажи стартовую цену', 'error');
-            const { data, error } = await sb.rpc('create_auction', { p_telegram_id: window.ME.id, p_inventory_id: this.selectedInventoryId, p_starting_price: price });
+            const { data, error } = await window.SecureAPI.call('create_auction', { p_telegram_id: window.ME.id, p_inventory_id: this.selectedInventoryId, p_starting_price: price });
             if (error || !data || !data[0].success) return window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
             window.App.toast('Гифт выставлен на аукцион!', 'success');
             this.selectedInventoryId = null;
@@ -2128,14 +2128,14 @@
             }).join('');
         },
         async bid(auctionId, amount) {
-            const { data, error } = await sb.rpc('place_bid', { p_telegram_id: window.ME.id, p_auction_id: auctionId, p_amount: amount });
+            const { data, error } = await window.SecureAPI.call('place_bid', { p_telegram_id: window.ME.id, p_auction_id: auctionId, p_amount: amount });
             if (error || !data || !data[0].success) return window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
             window.App.balance = data[0].new_balance; window.App.updBalUI();
             window.App.toast('Ставка принята!', 'success');
             this.load();
         },
         async cancel(auctionId) {
-            const { data, error } = await sb.rpc('cancel_auction', { p_telegram_id: window.ME.id, p_auction_id: auctionId });
+            const { data, error } = await window.SecureAPI.call('cancel_auction', { p_telegram_id: window.ME.id, p_auction_id: auctionId });
             if (error || !data || !data[0].success) return window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
             window.App.toast('Лот снят с аукциона', 'success');
             if (window.Multiplayer) window.Multiplayer.ensureProfileGiftsLoaded();
@@ -2146,7 +2146,7 @@
     window.DailyGift = {
         async claim() {
             if (!window.Multiplayer || !window.ME) return;
-            const { data, error } = await sb.rpc('claim_daily_gift', { p_telegram_id: window.ME.id });
+            const { data, error } = await window.SecureAPI.call('claim_daily_gift', { p_telegram_id: window.ME.id });
             if (error || !data || !data[0].success) return window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
             window.App.balance = data[0].new_balance; window.App.updBalUI();
             window.App.toast(`🎁 ${data[0].message} +${data[0].reward}⭐`, data[0].reward > 0 ? 'success' : '');
@@ -2357,6 +2357,39 @@
             LS.s('dydx_settings', this.data);
             this.syncUI();
             if (lang === 'en') window.App.toast('Полный перевод пока в разработке — переключатель сохранён на будущее', '');
+        },
+    };
+
+    // ============================================================================
+    // SecureAPI — настоящая проверка через Telegram initData. Раньше ЛЮБАЯ
+    // функция базы просто верила telegram_id из параметров, и его можно было
+    // подделать через консоль браузера. Теперь для критичных по деньгам
+    // действий (дуэли, ставки, покупки, апгрейды) запрос идёт через отдельный
+    // проверочный слой — база берёт telegram_id ТОЛЬКО из подписи Telegram,
+    // не из того, что прислал клиент.
+    // ============================================================================
+    window.SecureAPI = {
+        async call(fnName, params) {
+            const initData = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData;
+            if (!initData) {
+                // Вне настоящего Telegram (например открыл в обычном браузере
+                // для теста) initData пустой — тогда падаем на старый способ,
+                // ЧЕСТНО предупредив в консоли, что это небезопасно.
+                console.warn('[SecureAPI] initData недоступен — используется обычный rpc без проверки подписи (нормально только вне Telegram, для разработки)');
+                return sb.rpc(fnName, params);
+            }
+            try {
+                const res = await fetch('https://kgtheatplbbknrddlqsq.supabase.co/functions/v1/verify-and-call', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ initData, fn: fnName, params }),
+                });
+                const json = await res.json();
+                if (!res.ok) return { data: null, error: { message: json.error || 'Ошибка проверки подлинности' } };
+                return { data: json.data, error: null };
+            } catch (e) {
+                return { data: null, error: { message: 'Сетевая ошибка проверки: ' + e } };
+            }
         },
     };
 
@@ -4347,7 +4380,7 @@
             // без единого стыка фаз, потому что фаза буквально одна.
             if (wheelEl) { wheelEl.style.transition = 'none'; wheelEl.style.transform = 'rotate(0deg)'; }
 
-            const { data, error } = await sb.rpc('gift_upgrader_play_v2', {
+            const { data, error } = await window.SecureAPI.call('gift_upgrader_play_v2', {
                 p_telegram_id: window.ME.id,
                 p_stake_type: this.stakeType,
                 p_stake_inventory_id: this.stakeType === 'gift' ? this.stakeInventoryId : null,
