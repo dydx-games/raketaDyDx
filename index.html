@@ -1998,7 +1998,7 @@
         list: [],
         async load() {
             if (!window.Multiplayer || !window.ME) return;
-            const { data, error } = await sb.rpc('get_my_titles', { p_telegram_id: window.ME.id });
+            const { data, error } = await window.SecureAPI.call('get_my_titles', { p_telegram_id: window.ME.id });
             if (error || !data) return;
             this.list = data;
             this.render();
@@ -2030,7 +2030,7 @@
         REWARDS: [50, 75, 100, 150, 250, 350, 500],
         async load() {
             if (!window.Multiplayer || !window.ME) return;
-            const { data, error } = await sb.rpc('get_daily_streak_status', { p_telegram_id: window.ME.id });
+            const { data, error } = await window.SecureAPI.call('get_daily_streak_status', { p_telegram_id: window.ME.id });
             const panel = document.getElementById('streak-panel'); if (!panel || error || !data || !data[0]) return;
             panel.style.display = '';
             const s = data[0];
@@ -2157,7 +2157,7 @@
     window.ReferralStats = {
         async load() {
             if (!window.Multiplayer || !window.ME) return;
-            const { data, error } = await sb.rpc('get_referral_stats', { p_telegram_id: window.ME.id });
+            const { data, error } = await window.SecureAPI.call('get_referral_stats', { p_telegram_id: window.ME.id });
             const el = document.getElementById('referrals-list'); if (!el) return;
             if (error || !data || !data.length) { el.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:12px; padding:14px 0;">Пока нет приглашённых</div>`; return; }
             el.innerHTML = data.map(r => `<div class="tx-row">
@@ -2178,7 +2178,7 @@
         KIND_LABEL: { purchase_gift: 'Покупка гифта', purchase_frame: 'Покупка рамки', check_create: 'Создан чек', donation: 'Донат', big_win: 'Крупный выигрыш', sell_gift: 'Продажа в банк', market_sale: 'Продажа на рынке' },
         async load() {
             if (!window.Multiplayer || !window.ME) return;
-            const { data, error } = await sb.rpc('get_transaction_history', { p_telegram_id: window.ME.id, p_limit: 30 });
+            const { data, error } = await window.SecureAPI.call('get_transaction_history', { p_telegram_id: window.ME.id, p_limit: 30 });
             const list = document.getElementById('tx-list'); if (!list) return;
             if (error || !data || !data.length) { list.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:12px; padding:14px 0;">Пока нет операций</div>`; return; }
             list.innerHTML = data.map(t => {
@@ -2591,7 +2591,7 @@
             const btn = document.getElementById('tos-accept-btn'); if (btn) btn.disabled = true;
             try {
                 if (window.sb && window.ME) {
-                    await window.sb.rpc('accept_tos', { p_telegram_id: window.ME.id });
+                    await window.SecureAPI.call('accept_tos', { p_telegram_id: window.ME.id });
                 }
             } catch (e) { /* если функция ещё не создана — не блокируем игру навсегда */ }
             const modal = document.getElementById('tos-modal'); if (modal) modal.classList.remove('active');
@@ -2664,7 +2664,7 @@
         list: [], collapsed: true,
         async load() {
             if (!window.Multiplayer || !window.ME) return;
-            const { data, error } = await sb.rpc('get_my_frames', { p_telegram_id: window.ME.id });
+            const { data, error } = await window.SecureAPI.call('get_my_frames', { p_telegram_id: window.ME.id });
             if (error || !data) return;
             this.list = data;
             this.render();
@@ -4348,7 +4348,7 @@
         },
         async loadHistory() {
             if (!window.Multiplayer || !window.ME) return;
-            const { data, error } = await sb.rpc('get_upgrader_history', { p_telegram_id: window.ME.id, p_limit: 10 });
+            const { data, error } = await window.SecureAPI.call('get_upgrader_history', { p_telegram_id: window.ME.id, p_limit: 10 });
             const el = document.getElementById('gu-history-list'); if (!el) return;
             if (error || !data || !data.length) { el.innerHTML = `<div style="font-size:11px; color:var(--text-muted); padding:6px 0;">Пока не было попыток</div>`; return; }
             el.innerHTML = data.map(h => {
@@ -4703,7 +4703,7 @@
             // (максимум +15%, начинает работать только с 5-го проигрыша подряд).
             // Считает и хранит сервер, клиент только применяет готовое число.
             if (!window.Multiplayer || !window.ME) return;
-            const { data } = await sb.rpc('peek_loss_streak_bonus', { p_telegram_id: window.ME.id });
+            const { data } = await window.SecureAPI.call('peek_loss_streak_bonus', { p_telegram_id: window.ME.id });
             if (data && data[0]) { this.pityBonus = Number(data[0].current_bonus_percent) || 0; this.updateDisplay(); }
         },
         setTarget(v) {
@@ -6201,6 +6201,6 @@
 <!-- МУЛЬТИПЛЕЕР: общий раунд Ракеты, Рулетки, Арены, промокоды, Дурак, маркетплейс -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="multiplayer-client.js?v=151"></script>
+<script src="multiplayer-client.js?v=152"></script>
 </body>
 </html>

@@ -49,7 +49,7 @@ window.Multiplayer = {
             { telegram_id: ME.id, username: ME.username, avatar_url: ME.avatar_url },
             { onConflict: 'telegram_id', ignoreDuplicates: true }
         );
-        await sb.rpc('update_profile', { p_telegram_id: ME.id, p_username: ME.username, p_avatar_url: ME.avatar_url });
+        await window.SecureAPI.call('update_profile', { p_telegram_id: ME.id, p_username: ME.username, p_avatar_url: ME.avatar_url });
 
         // Реферальная система: если игру открыли по ссылке вида t.me/бот?start=12345,
         // Telegram сам подставляет "12345" сюда — это telegram_id того, кто позвал.
@@ -59,7 +59,7 @@ window.Multiplayer = {
             const tgApp = window.Telegram.WebApp;
             const startParam = tgApp.initDataUnsafe && tgApp.initDataUnsafe.start_param;
             if (startParam && /^\d+$/.test(startParam) && startParam !== ME.id) {
-                await sb.rpc('set_referrer', { p_telegram_id: ME.id, p_referrer_id: startParam });
+                await window.SecureAPI.call('set_referrer', { p_telegram_id: ME.id, p_referrer_id: startParam });
             }
         } catch (e) {}
 
@@ -512,7 +512,7 @@ window.Multiplayer = {
     // проверка в одном месте, и её точно не забудут в новом коде.
     async logBigWin(amount, gameName) {
         if (amount < 1000 || !ME || !ME.id) return;
-        try { await sb.rpc('record_big_win', { p_telegram_id: ME.id, p_username: ME.username, p_avatar_url: ME.avatar_url, p_amount: amount, p_game_name: gameName }); } catch (e) {}
+        try { await window.SecureAPI.call('record_big_win', { p_telegram_id: ME.id, p_username: ME.username, p_avatar_url: ME.avatar_url, p_amount: amount, p_game_name: gameName }); } catch (e) {}
     },
     async syncBalanceFromServer() {
         if (window.App && window.App._pendingSyncCount > 0) return null; // не перебиваем ещё не долетевшую отправку
@@ -527,7 +527,7 @@ window.Multiplayer = {
 
     // ================= МАРКЕТПЛЕЙС УЛУЧШЕННЫХ ПОДАРКОВ =================
     async upgradeGiftServer(gift, cost, baseRarity) {
-        const { data, error } = await sb.rpc('upgrade_gift_server', {
+        const { data, error } = await window.SecureAPI.call('upgrade_gift_server', {
             p_telegram_id: ME.id, p_username: ME.username,
             p_gift_id: gift.id, p_gift_name: gift.name, p_gift_emoji: gift.emoji, p_base_rarity: baseRarity
         });
@@ -552,14 +552,14 @@ window.Multiplayer = {
         el.innerText = (!error && data) ? data.balance.toLocaleString() + ' звёзд' : '—';
     },
     async refreshCrypto() {
-        const { data, error } = await sb.rpc('crypto_get_state', { p_telegram_id: ME.id });
+        const { data, error } = await window.SecureAPI.call('crypto_get_state', { p_telegram_id: ME.id });
         if (error || !data) return;
         if (window.CryptoUI) window.CryptoUI.render(data);
     },
     _marketShopRequestId: 0,
     async refreshMarketShop() {
         const myRequestId = ++this._marketShopRequestId;
-        const { data, error } = await sb.rpc('get_market_state', { p_telegram_id: ME.id });
+        const { data, error } = await window.SecureAPI.call('get_market_state', { p_telegram_id: ME.id });
         // Если за время ожидания ответа успел уйти ещё один (более новый) запрос —
         // этот ответ устарел, применять его нельзя (иначе иногда "теряются" гифты,
         // если ответы приходят не в том порядке, в котором ушли запросы).
@@ -574,12 +574,12 @@ window.Multiplayer = {
     // что перестраивало ВСЮ витрину даже если она не видна на экране — выглядело
     // как "страница обновляется".
     async ensureProfileGiftsLoaded() {
-        const { data, error } = await sb.rpc('get_market_state', { p_telegram_id: ME.id });
+        const { data, error } = await window.SecureAPI.call('get_market_state', { p_telegram_id: ME.id });
         if (error || !data) return;
         if (window.ProfileGifts) window.ProfileGifts.setState(data);
     },
     async refreshReferrals() {
-        const { data, error } = await sb.rpc('get_referral_stats', { p_telegram_id: ME.id });
+        const { data, error } = await window.SecureAPI.call('get_referral_stats', { p_telegram_id: ME.id });
         if (error || !data) return;
         if (window.Referrals) window.Referrals.setState(data);
     },
@@ -639,11 +639,11 @@ window.Multiplayer = {
         this.refreshCrypto();
     },
     async cryptoGetMyTrades() {
-        const { data, error } = await sb.rpc('crypto_get_my_trades', { p_telegram_id: ME.id, p_limit: 30 });
+        const { data, error } = await window.SecureAPI.call('crypto_get_my_trades', { p_telegram_id: ME.id, p_limit: 30 });
         return (!error && data) ? data : [];
     },
     async refreshTycoon() {
-        const { data, error } = await sb.rpc('tycoon_get_state', { p_telegram_id: ME.id });
+        const { data, error } = await window.SecureAPI.call('tycoon_get_state', { p_telegram_id: ME.id });
         if (error || !data) return;
         if (window.TycoonUI) window.TycoonUI.render(data);
     },
