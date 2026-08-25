@@ -2121,7 +2121,9 @@
                             <div class="tx-date">Текущая ставка: ${Number(currentPrice).toLocaleString()}⭐ · осталось ${timeStr}</div>
                         </div>
                     </div>
-                    ${isMine ? '<span style="font-size:10px; color:var(--text-muted);">твой лот</span>' : `<button class="btn-claim" onclick="Auction.bid(${a.id}, ${currentPrice + 1})">Ставка ${(currentPrice+1).toLocaleString()}⭐</button>`}
+                    ${isMine
+                        ? (a.current_bid ? '<span style="font-size:10px; color:var(--text-muted);">есть ставка — ждём конца торгов</span>' : `<button class="btn-claim" style="background:var(--red);" onclick="Auction.cancel(${a.id})">Отменить</button>`)
+                        : `<button class="btn-claim" onclick="Auction.bid(${a.id}, ${currentPrice + 1})">Ставка ${(currentPrice+1).toLocaleString()}⭐</button>`}
                 </div>`;
             }).join('');
         },
@@ -2130,6 +2132,13 @@
             if (error || !data || !data[0].success) return window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
             window.App.balance = data[0].new_balance; window.App.updBalUI();
             window.App.toast('Ставка принята!', 'success');
+            this.load();
+        },
+        async cancel(auctionId) {
+            const { data, error } = await sb.rpc('cancel_auction', { p_telegram_id: window.ME.id, p_auction_id: auctionId });
+            if (error || !data || !data[0].success) return window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
+            window.App.toast('Лот снят с аукциона', 'success');
+            if (window.Multiplayer) window.Multiplayer.ensureProfileGiftsLoaded();
             this.load();
         },
     };
