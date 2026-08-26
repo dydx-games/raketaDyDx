@@ -404,6 +404,14 @@
         .tx-amount { font-size: 13px; font-weight: 800; flex-shrink: 0; }
         .tx-amount.plus { color: var(--green); }
         .tx-amount.minus { color: var(--red); }
+        .blindbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .blindbox-tile { background: linear-gradient(160deg, var(--bg-panel-light), var(--bg-panel)); border: 1.5px solid var(--border); border-radius: 18px;
+            padding: 20px 12px; text-align: center; cursor: pointer; transition: transform 0.15s; box-shadow: 0 4px 14px rgba(0,0,0,0.18); }
+        .blindbox-tile:active { transform: scale(0.96); }
+        .blindbox-tile-emoji { font-size: 44px; margin-bottom: 8px; }
+        .blindbox-tile-name { font-size: 14px; font-weight: 900; margin-bottom: 4px; }
+        .blindbox-tile-pool { font-size: 10px; color: var(--text-muted); margin-bottom: 10px; }
+        .blindbox-tile-price { font-size: 15px; font-weight: 900; color: var(--gold); background: rgba(215,180,93,0.1); border-radius: 10px; padding: 7px 0; }
         #balance-chart-wrap { width: 100%; height: 120px; background: var(--bg-panel-light); border-radius: 12px; padding: 8px; }
         #balance-chart { width: 100%; height: 100%; }
         .balance-chart-empty { text-align: center; color: var(--text-muted); font-size: 11px; padding: 40px 0; }
@@ -583,15 +591,23 @@
         /* ДУРАК */
         .durak-room-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: var(--bg-panel); border-radius: 10px; }
         .durak-room-row button { background: var(--gold); color: #000; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 800; font-size: 11px; cursor: pointer; }
-        .durak-opp-hand { display: flex; justify-content: center; gap: -10px; margin-bottom: 10px; height: 60px; }
-        .durak-opp-hand .card-back { width: 36px; height: 50px; background: linear-gradient(135deg,#1a1a2e,#16213e); border: 1px solid var(--gold); border-radius: 5px; margin-left: -14px; }
-        .durak-table-cards { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; min-height: 90px; align-items: center; background: rgba(255,255,255,0.03); border-radius: 10px; margin-bottom: 10px; padding: 8px; }
-        .durak-card-pair { position: relative; width: 46px; height: 64px; }
-        .durak-card { width: 46px; height: 64px; border-radius: 5px; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.4); cursor: pointer; user-select: none; transition: transform 0.15s; }
-        .durak-card:active { transform: translateY(-4px); }
+        .durak-opp-hand { display: flex; justify-content: center; gap: -10px; margin-bottom: 12px; height: 66px; perspective: 400px; }
+        .durak-opp-hand .card-back { width: 40px; height: 56px; background: linear-gradient(135deg,#2a2a4e,#1a1a2e); border: 1.5px solid var(--gold); border-radius: 7px; margin-left: -16px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.4); position: relative; animation: durak-deal-in 0.35s ease backwards; }
+        .durak-opp-hand .card-back::after { content: '★'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--gold); font-size: 14px; opacity: 0.5; }
+        @keyframes durak-deal-in { from { transform: translateY(-30px) rotate(-8deg); opacity: 0; } to { transform: translateY(0) rotate(0); opacity: 1; } }
+        .durak-table-cards { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; min-height: 100px; align-items: center;
+            background: radial-gradient(ellipse at center, rgba(52,211,153,0.06), rgba(255,255,255,0.02) 70%); border-radius: 14px; margin-bottom: 12px; padding: 12px; border: 1px solid var(--border); }
+        .durak-card-pair { position: relative; width: 52px; height: 72px; }
+        .durak-card { width: 52px; height: 72px; border-radius: 8px; background: linear-gradient(160deg, #fff, #f0f0f0); display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 17px; box-shadow: 0 4px 10px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.8); cursor: pointer; user-select: none;
+            transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s; animation: durak-deal-in 0.3s ease backwards; }
+        .durak-card:active { transform: translateY(-6px) scale(1.05); box-shadow: 0 8px 16px rgba(0,0,0,0.4); }
         .durak-card.red { color: var(--red); } .durak-card.black { color: #111; }
-        .durak-card.defend-overlay { position: absolute; top: 10px; left: 10px; transform: rotate(8deg); }
-        .durak-my-hand { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+        .durak-card.defend-overlay { position: absolute; top: 12px; left: 10px; transform: rotate(10deg); animation: durak-defend-slide 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+        @keyframes durak-defend-slide { from { transform: translate(30px, -20px) rotate(30deg); opacity: 0; } to { transform: rotate(10deg); opacity: 1; } }
+        .durak-my-hand { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+        .durak-my-hand .durak-card:hover { transform: translateY(-8px); }
 
         .shop-list { display: flex; flex-direction: column; gap: 6px; margin: 10px 10px 0; }
         .shop-row { display: flex; align-items: center; gap: 10px; background: var(--bg-panel); border-radius: 10px; padding: 8px 10px; border-left: 3px solid var(--card-color, #1f222b); }
@@ -702,7 +718,14 @@
         .hilo-tl { position: absolute; top: 5px; left: 8px; font-size: 16px; line-height: 1; }
         .hilo-br { position: absolute; bottom: 5px; right: 8px; font-size: 16px; line-height: 1; transform: rotate(180deg); }
 
-        .coinflip-board { display: flex; justify-content: center; align-items: center; height: 160px; margin: 10px 10px 0; background-color: var(--bg-panel); border-radius: var(--border-radius); border: 1px solid #1f222b; perspective: 1000px; position: relative; overflow: hidden; }
+        .coinflip-board { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 190px; margin: 10px 10px 0; background: radial-gradient(ellipse at center, rgba(243,156,18,0.08), var(--bg-panel) 70%); border-radius: var(--border-radius); border: 1px solid #1f222b; perspective: 1000px; position: relative; overflow: hidden; gap: 14px; }
+        .coinflip-board::before, .coinflip-board::after { content: ''; position: absolute; border-radius: 50%; background: radial-gradient(circle, rgba(243,156,18,0.15), transparent 70%); }
+        .coinflip-board::before { width: 140px; height: 140px; top: -40px; left: -30px; }
+        .coinflip-board::after { width: 100px; height: 100px; bottom: -30px; right: -20px; }
+        .coin-history { display: flex; gap: 6px; z-index: 2; }
+        .coin-history-item { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 900; }
+        .coin-history-item.win { background: rgba(52,211,153,0.2); color: var(--green); border: 1px solid rgba(52,211,153,0.4); }
+        .coin-history-item.lose { background: rgba(244,87,106,0.15); color: var(--red); border: 1px solid rgba(244,87,106,0.35); }
 
         .scratch-grid-5x5 { display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(5, 1fr);
             gap: 5px; width: 290px; height: 290px; margin: 0 auto; padding: 6px; background: #0a0b0f; border-radius: 16px;
@@ -874,14 +897,15 @@
         .upgrader-center .upg-pct { font-size: 26px; font-weight: 900; color: #fff; line-height: 1.1; }
         .upgrader-center .upg-pct-label { font-size: 8px; color: var(--text-muted); line-height: 1.3; margin-top: 2px; }
 
-        .tower-grid { display: flex; flex-direction: column-reverse; gap: 4px; margin: 10px 10px 0; background-color: var(--bg-panel); border-radius: var(--border-radius); padding: 10px; }
-        .tower-row { display: flex; gap: 4px; opacity: 0.5; pointer-events: none; transition: 0.3s; }
-        .tower-row.active { opacity: 1; pointer-events: auto; }
-        .tower-row.passed { opacity: 0.8; }
-        .tower-cell { flex: 1; height: 35px; background-color: var(--bg-panel-light); border-radius: 6px; display: flex; justify-content: center; align-items: center; font-size: 16px; cursor: pointer; transition: 0.2s; }
-        .tower-cell:hover { background-color: #2a2e3a; }
-        .tower-cell.gem { background-color: rgba(46, 204, 113, 0.2); border: 1px solid var(--green); }
-        .tower-cell.mine { background-color: rgba(231, 76, 60, 0.2); border: 1px solid var(--red); }
+        .tower-grid { display: flex; flex-direction: column-reverse; gap: 6px; margin: 10px 10px 0; background: linear-gradient(180deg, var(--bg-panel), #0d0f14); border-radius: var(--border-radius); padding: 12px; border: 1px solid var(--border); box-shadow: inset 0 2px 12px rgba(0,0,0,0.4); }
+        .tower-row { display: flex; gap: 6px; opacity: 0.35; filter: grayscale(0.6); pointer-events: none; transition: opacity 0.3s, filter 0.3s; }
+        .tower-row.active { opacity: 1; filter: none; pointer-events: auto; }
+        .tower-row.passed { opacity: 0.9; filter: none; }
+        .tower-cell { flex: 1; height: 38px; background: linear-gradient(160deg, var(--bg-panel-light), #1a1d26); border-radius: 8px; display: flex; justify-content: center; align-items: center;
+            font-size: 17px; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; box-shadow: 0 3px 0 #0a0b0e, 0 4px 8px rgba(0,0,0,0.3); }
+        .tower-row.active .tower-cell:active { transform: translateY(3px); box-shadow: 0 0 0 #0a0b0e; }
+        .tower-cell.gem { background: linear-gradient(160deg, rgba(52,211,153,0.28), rgba(46,204,113,0.08)); border: 1px solid var(--green); box-shadow: 0 0 12px rgba(52,211,153,0.35), 0 3px 0 #0a0b0e; }
+        .tower-cell.mine { background: linear-gradient(160deg, rgba(244,87,106,0.28), rgba(231,76,60,0.08)); border: 1px solid var(--red); box-shadow: 0 0 12px rgba(244,87,106,0.35); }
         .tower-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-weight: 700; font-size: 12px;}
 
         .mines-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin: 10px 10px 0; background-color: var(--bg-panel); border-radius: var(--border-radius); padding: 10px; }
@@ -1156,7 +1180,7 @@
 
         <!-- COINFLIP -->
         <div class="game-view" id="view-coin">
-            <div class="coinflip-board"><div class="coin-ui" id="coin-obj">?</div></div>
+            <div class="coinflip-board"><div class="coin-ui" id="coin-obj">?</div><div class="coin-history" id="coin-history"></div></div>
             <div class="panel" style="margin-bottom: 20px;">
                 <div class="tower-info"><span>Стрик: <span id="coin-streak" style="color:var(--gold)">0</span></span><span>Выигрыш: <span id="coin-win" style="color:var(--green)">0</span></span></div>
                 <div id="coin-game-controls" style="display:none; margin-bottom:10px;">
@@ -1191,6 +1215,13 @@
                 <div class="settings-row">
                     <div class="settings-row-label"><span class="settings-row-icon">🔊</span>Звук</div>
                     <label class="switch"><input type="checkbox" id="set-sound" onchange="Settings.toggle('soundEnabled', this.checked)"><span class="switch-slider"></span></label>
+                </div>
+                <div class="settings-row">
+                    <div class="settings-row-label"><span class="settings-row-icon">🎵</span>Тема звука</div>
+                    <div class="lang-switch">
+                        <button id="set-sound-theme-classic" onclick="Settings.setSoundTheme('classic')" class="active">Классика</button>
+                        <button id="set-sound-theme-arcade" onclick="Settings.setSoundTheme('arcade')">Аркада</button>
+                    </div>
                 </div>
                 <div class="settings-row">
                     <div class="settings-row-label"><span class="settings-row-icon">📳</span>Вибрация</div>
@@ -1237,7 +1268,7 @@
                 <div id="blindbox-list"></div>
             </div>
             <div class="panel" style="margin-bottom:20px; text-align:center;">
-                <div class="upg-gift-anim" id="blindbox-reveal-anim" style="margin:0 auto;"></div>
+                <div class="upg-gift-anim" id="blindbox-reveal-anim" style="margin:0 auto; width:150px; height:150px; font-size:60px;"></div>
                 <div id="blindbox-reveal-text" style="font-size:12px; color:var(--text-muted); margin-top:8px;"></div>
             </div>
         </div>
@@ -1661,6 +1692,7 @@
                     <div class="bet-row" style="margin-top:10px;">
                         <button class="main-btn btn-red" id="durak-take-btn" style="display:none;" onclick="DurakUI.take()">ВЗЯТЬ КАРТЫ</button>
                         <button class="main-btn btn-green" id="durak-pass-btn" style="display:none;" onclick="DurakUI.pass()">БИТО</button>
+                        <button class="main-btn" id="durak-transfer-btn" style="display:none; background:#9b59ff; color:#fff;" onclick="DurakUI.toggleTransfer()">🔄 ПЕРЕВЕСТИ</button>
                     </div>
                 </div>
             </div>
@@ -1975,6 +2007,8 @@
     // (не тащим чужую графику/аудио, не зависим от мёртвых ссылок или веса файлов).
     window.Sound = {
         ctx: null,
+        theme() { return (window.Settings && window.Settings.data.soundTheme) || 'classic'; },
+        oscType() { return this.theme() === 'arcade' ? 'square' : 'sine'; },
         getCtx() {
             // Браузеры блокируют звук до первого действия пользователя — контекст
             // создаём лениво и "будим", если он оказался приостановлен.
@@ -1989,7 +2023,7 @@
         explosion() {
             const ctx = this.getCtx(); if (!ctx) return;
             const t0 = ctx.currentTime;
-            const osc = ctx.createOscillator(); osc.type = 'sine';
+            const osc = ctx.createOscillator(); osc.type = this.oscType();
             osc.frequency.setValueAtTime(180, t0);
             osc.frequency.exponentialRampToValueAtTime(45, t0 + 0.22);
             const gain = ctx.createGain();
@@ -2008,7 +2042,7 @@
             const master = ctx.createBiquadFilter(); master.type = 'lowpass'; master.frequency.value = 4200; master.Q.value = 0.5;
             master.connect(ctx.destination);
             [2093, 2637, 3136].forEach((freq, i) => {
-                const osc = ctx.createOscillator(); osc.type = 'sine'; osc.frequency.value = freq;
+                const osc = ctx.createOscillator(); osc.type = this.oscType(); osc.frequency.value = freq;
                 const gain = ctx.createGain();
                 gain.gain.setValueAtTime(0.001, t0);
                 gain.gain.linearRampToValueAtTime(0.32 - i*0.06, t0 + 0.008);
@@ -2022,7 +2056,7 @@
         click() {
             const ctx = this.getCtx(); if (!ctx) return;
             const t0 = ctx.currentTime;
-            const osc = ctx.createOscillator(); osc.type = 'sine'; osc.frequency.setValueAtTime(920, t0); osc.frequency.exponentialRampToValueAtTime(600, t0+0.05);
+            const osc = ctx.createOscillator(); osc.type = this.oscType(); osc.frequency.setValueAtTime(920, t0); osc.frequency.exponentialRampToValueAtTime(600, t0+0.05);
             const gain = ctx.createGain();
             gain.gain.setValueAtTime(0.001, t0);
             gain.gain.linearRampToValueAtTime(0.14, t0 + 0.005);
@@ -2056,7 +2090,7 @@
             master.connect(ctx.destination);
             [1568, 2093, 2637, 3136].forEach((freq, i) => {
                 const t1 = t0 + i*0.07;
-                const osc = ctx.createOscillator(); osc.type = 'sine'; osc.frequency.value = freq;
+                const osc = ctx.createOscillator(); osc.type = this.oscType(); osc.frequency.value = freq;
                 const gain = ctx.createGain();
                 gain.gain.setValueAtTime(0.001, t1);
                 gain.gain.linearRampToValueAtTime(0.3, t1 + 0.008);
@@ -2169,16 +2203,13 @@
             const { data, error } = await sb.rpc('get_blind_boxes');
             const el = document.getElementById('blindbox-list'); if (!el) return;
             if (error || !data) { el.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:12px;">Ошибка загрузки</div>`; return; }
-            el.innerHTML = data.map(b => `<div class="tx-row">
-                <div class="tx-info">
-                    <div class="tx-icon plus">📦</div>
-                    <div>
-                        <div class="tx-desc">${b.name}</div>
-                        <div class="tx-date">${b.pool_size} возможных гифтов внутри</div>
-                    </div>
-                </div>
-                <button class="btn-claim" onclick="BlindBox.open('${b.id}')">${b.price.toLocaleString()}⭐</button>
-            </div>`).join('');
+            el.innerHTML = `<div class="blindbox-grid">` + data.map(b => `
+                <div class="blindbox-tile" onclick="BlindBox.open('${b.id}')">
+                    <div class="blindbox-tile-emoji">📦</div>
+                    <div class="blindbox-tile-name">${b.name}</div>
+                    <div class="blindbox-tile-pool">${b.pool_size} гифтов внутри</div>
+                    <div class="blindbox-tile-price">${b.price.toLocaleString()}⭐</div>
+                </div>`).join('') + `</div>`;
         },
         async open(boxId) {
             const revealAnim = document.getElementById('blindbox-reveal-anim');
@@ -2445,10 +2476,7 @@
             if (error || !data || !data.length) { list.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:12px; padding:14px 0;">Пока нет данных</div>`; return; }
 
             const updEl = document.getElementById('lb-updated');
-            if (updEl && data[0].updated_at) {
-                const mins = Math.max(0, Math.floor((Date.now() - new Date(data[0].updated_at).getTime()) / 60000));
-                updEl.innerText = mins <= 0 ? 'Обновлено только что' : `Обновлено ${mins} мин. назад · обновляется раз в 5 минут`;
-            }
+            if (updEl) updEl.innerText = 'Обновляется мгновенно, без задержки';
 
             list.innerHTML = data.map(p => {
                 const isMe = window.ME && p.telegram_id === window.ME.id;
@@ -2609,7 +2637,7 @@
     };
 
     window.Settings = {
-        data: { animationsEnabled: true, soundEnabled: true, vibrationEnabled: true, language: 'ru' },
+        data: { animationsEnabled: true, soundEnabled: true, vibrationEnabled: true, language: 'ru', soundTheme: 'classic' },
         init() {
             const saved = LS.g('dydx_settings', null);
             if (saved && typeof saved === 'object') this.data = Object.assign(this.data, saved);
@@ -2621,6 +2649,14 @@
             const v = document.getElementById('set-vibration'); if (v) v.checked = this.data.vibrationEnabled;
             const ru = document.getElementById('set-lang-ru'); const en = document.getElementById('set-lang-en');
             if (ru && en) { ru.classList.toggle('active', this.data.language === 'ru'); en.classList.toggle('active', this.data.language === 'en'); }
+            const tc = document.getElementById('set-sound-theme-classic'); const ta = document.getElementById('set-sound-theme-arcade');
+            if (tc && ta) { tc.classList.toggle('active', this.data.soundTheme !== 'arcade'); ta.classList.toggle('active', this.data.soundTheme === 'arcade'); }
+        },
+        setSoundTheme(theme) {
+            this.data.soundTheme = theme;
+            LS.s('dydx_settings', this.data);
+            this.syncUI();
+            if (window.Sound) window.Sound.coin(); // сразу даём услышать разницу
         },
         toggle(key, val) {
             this.data[key] = val;
@@ -4013,7 +4049,9 @@
             setTimeout(() => {
                 c.classList.remove('flipping'); let result = Math.random() < 0.49 ? 'head' : 'tail';
                 if(result === 'head') { c.innerText = 'О'; c.style.background = 'radial-gradient(circle at 30% 30%, var(--gold-bright), #D35400)'; } else { c.innerText = 'Р'; c.style.background = 'radial-gradient(circle at 30% 30%, #bdc3c7, #7f8c8d)'; }
-                if(choice === result) {
+                const won = choice === result;
+                this.pushHistory(won);
+                if(won) {
                     this.s++; this.m *= 1.96; if(this.m>MAX_MUL) this.m=MAX_MUL;
                     document.getElementById('coin-streak').innerText = this.s; document.getElementById('coin-win').innerText = Math.floor(this.b * this.m);
                     document.getElementById('coin-btn').className = 'main-btn btn-gold'; document.getElementById('coin-btn').innerText = `ЗАБРАТЬ ${Math.floor(this.b * this.m)}`;
@@ -4021,6 +4059,13 @@
                     if(this.m===MAX_MUL){window.App.win(Math.floor(this.b * this.m), 'Монетка');this.rUI();} else this.lk = false;
                 } else { window.App.toast('Мимо!', 'error'); setTimeout(() => this.rUI(), 2000); }
             }, 1000);
+        },
+        histList: [],
+        pushHistory(won) {
+            this.histList.push(won);
+            if (this.histList.length > 8) this.histList.shift();
+            const el = document.getElementById('coin-history'); if (!el) return;
+            el.innerHTML = this.histList.map(w => `<div class="coin-history-item ${w ? 'win' : 'lose'}">${w ? 'О' : 'Р'}</div>`).join('');
         }
     };
 
@@ -5333,7 +5378,13 @@
 
     // ---- ДУРАК: UI-обёртка, вся логика хода — на сервере (multiplayer-client.js) ----
     window.DurakUI = {
-        currentRoomId: null, myRole: null,
+        currentRoomId: null, myRole: null, transferMode: false,
+        toggleTransfer() {
+            this.transferMode = !this.transferMode;
+            window.App.toast(this.transferMode ? 'Выберите карту для перевода' : 'Перевод отменён', '');
+            const transferBtn = document.getElementById('durak-transfer-btn');
+            if (transferBtn) transferBtn.innerText = this.transferMode ? '❌ ОТМЕНИТЬ ПЕРЕВОД' : '🔄 ПЕРЕВЕСТИ';
+        },
         mod() {}, // не используется, ставка вводится напрямую
         async createRoom() {
             if (!window.Multiplayer) return window.App.toast('Дурак работает только в мультиплеере — см. инструкцию', 'error');
@@ -5389,7 +5440,7 @@
                 deckEl.innerHTML = `В колоде: ${deckCount} · Козырь: <span style="color:${trumpColor === 'red' ? 'var(--red)' : '#eee'}">${trumpSym}</span> · У соперника: ${(oppHand || []).length}`;
             }
 
-            document.getElementById('durak-opp-hand').innerHTML = (oppHand || []).map(() => `<div class="card-back"></div>`).join('');
+            document.getElementById('durak-opp-hand').innerHTML = (oppHand || []).map((_, i) => `<div class="card-back" style="animation-delay:${i * 0.04}s;"></div>`).join('');
 
             let tableEl = document.getElementById('durak-table-cards');
             tableEl.innerHTML = (room.table_cards || []).map(pair => `
@@ -5398,12 +5449,23 @@
                     ${pair.defend ? `<div class="durak-card ${this.suitColor(pair.defend)} defend-overlay">${this.rankOf(pair.defend)}${this.suitSym(pair.defend)}</div>` : ''}
                 </div>`).join('');
 
-            document.getElementById('durak-my-hand').innerHTML = (myHand || []).map(c => `
-                <div class="durak-card ${this.suitColor(c)}" onclick="DurakUI.playCard('${c}')">${this.rankOf(c)}${this.suitSym(c)}</div>`).join('');
+            document.getElementById('durak-my-hand').innerHTML = (myHand || []).map((c, i) => `
+                <div class="durak-card ${this.suitColor(c)}" style="animation-delay:${i * 0.04}s;" onclick="DurakUI.playCard('${c}')">${this.rankOf(c)}${this.suitSym(c)}</div>`).join('');
 
             let hasUndefended = (room.table_cards || []).some(p => !p.defend);
+            let anyDefended = (room.table_cards || []).some(p => p.defend);
             document.getElementById('durak-take-btn').style.display = (iAmDefender && hasUndefended) ? 'block' : 'none';
             document.getElementById('durak-pass-btn').style.display = (iAmAttacker && (room.table_cards||[]).length > 0 && !hasUndefended) ? 'block' : 'none';
+
+            // Кнопка перевода — видна только защищающемуся, только пока ни одна
+            // карта ещё не отбита, и только если в руке реально есть карта
+            // подходящего номинала (иначе кнопка вводила бы в заблуждение)
+            const tableRanks = (room.table_cards || []).map(p => this.rankOf(p.attack));
+            const canTransfer = iAmDefender && !anyDefended && (room.table_cards||[]).length > 0 &&
+                (myHand || []).some(c => tableRanks.includes(this.rankOf(c)));
+            const transferBtn = document.getElementById('durak-transfer-btn');
+            transferBtn.style.display = canTransfer ? 'block' : 'none';
+            transferBtn.innerText = this.transferMode ? '❌ ОТМЕНИТЬ ПЕРЕВОД' : '🔄 ПЕРЕВЕСТИ';
 
             if (room.status === 'finished') {
                 let iWon = room.winner_telegram_id && window.ME && room.winner_telegram_id === window.ME.id;
@@ -6538,6 +6600,6 @@
 <!-- МУЛЬТИПЛЕЕР: общий раунд Ракеты, Рулетки, Арены, промокоды, Дурак, маркетплейс -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="multiplayer-client.js?v=154"></script>
+<script src="multiplayer-client.js?v=155"></script>
 </body>
 </html>

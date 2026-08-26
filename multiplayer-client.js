@@ -395,7 +395,7 @@ window.Multiplayer = {
         }
     },
     async durakCreateRoom(bet) {
-        const { data, error } = await sb.rpc('durak_create_room', { p_host_id: ME.id, p_host_username: ME.username, p_bet: bet });
+        const { data, error } = await window.SecureAPI.call('durak_create_room', { p_host_id: ME.id, p_host_username: ME.username, p_bet: bet });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); return; }
         window.App.toast('Комната создана, ждём соперника', 'success');
         await this.syncBalanceFromServer();
@@ -403,7 +403,7 @@ window.Multiplayer = {
         this.subscribeDurakRoom(data[0].room_id);
     },
     async durakJoinRoom(roomId) {
-        const { data, error } = await sb.rpc('durak_join_room', { p_room_id: roomId, p_guest_id: ME.id, p_guest_username: ME.username });
+        const { data, error } = await window.SecureAPI.call('durak_join_room', { p_room_id: roomId, p_guest_id: ME.id, p_guest_username: ME.username });
         if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Не удалось войти', 'error'); return; }
         window.App.toast('Игра началась!', 'success');
         await this.syncBalanceFromServer();
@@ -444,22 +444,27 @@ window.Multiplayer = {
         const isAttacker = room.attacker === myRole;
         let res;
         if (isAttacker) {
-            res = await sb.rpc('durak_attack', { p_room_id: roomId, p_telegram_id: ME.id, p_card: card });
+            res = await window.SecureAPI.call('durak_attack', { p_room_id: roomId, p_telegram_id: ME.id, p_card: card });
+        } else if (window.DurakUI && window.DurakUI.transferMode) {
+            // Режим перевода активен — эта же карта не отбивает, а переводит
+            // всю кучу следующему игроку (см. durak_transfer)
+            res = await window.SecureAPI.call('durak_transfer', { p_room_id: roomId, p_telegram_id: ME.id, p_card: card });
+            if (window.DurakUI) window.DurakUI.transferMode = false;
         } else {
             const undefended = (room.table_cards || []).find(p => !p.defend);
             if (!undefended) { window.App.toast('Нет карты для отбоя', 'error'); return; }
-            res = await sb.rpc('durak_defend', { p_room_id: roomId, p_telegram_id: ME.id, p_attack_card: undefended.attack, p_defend_card: card });
+            res = await window.SecureAPI.call('durak_defend', { p_room_id: roomId, p_telegram_id: ME.id, p_attack_card: undefended.attack, p_defend_card: card });
         }
         const { data, error } = res;
         if (error || !data || !data[0].success) window.App.toast((data && data[0] && data[0].message) || 'Недопустимый ход', 'error');
     },
     async durakTake(roomId) {
-        const { data, error } = await sb.rpc('durak_take', { p_room_id: roomId, p_telegram_id: ME.id });
+        const { data, error } = await window.SecureAPI.call('durak_take', { p_room_id: roomId, p_telegram_id: ME.id });
         if (error || !data || !data[0].success) window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
         await this.syncBalanceFromServer();
     },
     async durakPass(roomId) {
-        const { data, error } = await sb.rpc('durak_pass', { p_room_id: roomId, p_telegram_id: ME.id });
+        const { data, error } = await window.SecureAPI.call('durak_pass', { p_room_id: roomId, p_telegram_id: ME.id });
         if (error || !data || !data[0].success) window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
         await this.syncBalanceFromServer();
     },
