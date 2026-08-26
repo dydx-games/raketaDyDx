@@ -435,14 +435,24 @@
             box-shadow: 0 0 40px rgba(215,180,93,0.25); }
 
         #big-win-overlay { position: fixed; inset: 0; z-index: 9998; display: flex; align-items: center; justify-content: center;
-            pointer-events: none; opacity: 0; transition: opacity 0.3s; }
+            pointer-events: none; opacity: 0; transition: opacity 0.3s; background: rgba(0,0,0,0.55); }
         #big-win-overlay.show { opacity: 1; }
         .big-win-card { text-align: center; transform: scale(0.7); transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1); }
         #big-win-overlay.show .big-win-card { transform: scale(1); }
-        .big-win-svg { width: 240px; height: 240px; }
-        .big-win-amount { font-size: 32px; font-weight: 900; color: var(--gold-bright); text-shadow: 0 0 20px rgba(215,180,93,0.8); margin-top: -20px; }
-        .big-win-label { font-size: 15px; font-weight: 900; color: #fff; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+        .big-win-svg { width: 240px; height: 240px; display: block; margin: 0 auto; overflow: visible; }
+        /* Все текстовые блоки теперь СНАРУЖИ SVG, с настоящими положительными
+           отступами — раньше текст рисовался у самого края круга внутри SVG,
+           а следующий блок ещё и с отрицательным отступом наезжал сверху,
+           получалось наложение. Плюс сильный тёмный контур (text-shadow в
+           несколько проходов) — читаемо на любом, даже светлом фоне. */
+        .big-win-label { font-size: 16px; font-weight: 900; color: #fff; text-transform: uppercase; letter-spacing: 1.5px; margin-top: 14px;
+            text-shadow: 0 0 3px #000, 0 0 3px #000, 0 2px 6px rgba(0,0,0,0.9); }
+        .big-win-amount { font-size: 34px; font-weight: 900; color: var(--gold-bright); margin-top: 6px;
+            text-shadow: 0 0 3px #000, 0 0 3px #000, 0 0 20px rgba(215,180,93,0.9), 0 2px 4px rgba(0,0,0,0.9); }
+        .big-win-game { font-size: 12px; font-weight: 700; color: var(--text-muted); margin-top: 6px;
+            text-shadow: 0 0 3px #000, 0 1px 3px rgba(0,0,0,0.9); }
         @keyframes big-win-burst-ray { 0% { transform: rotate(var(--r)) scaleY(0); opacity: 1; } 100% { transform: rotate(var(--r)) scaleY(1); opacity: 0; } }
+        @keyframes big-win-sparkle-twinkle { 0%,100% { opacity: 0.3; transform: scale(0.7) rotate(0deg); } 50% { opacity: 1; transform: scale(1.15) rotate(15deg); } }
         .welcome-emoji { font-size: 44px; margin-bottom: 10px; }
         .welcome-title { font-size: 19px; font-weight: 900; margin-bottom: 8px; }
         .welcome-text { font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 18px; }
@@ -2733,28 +2743,67 @@
     window.BigWinCelebration = {
         show(amount, gameName) {
             const el = document.getElementById('big-win-overlay'); if (!el) return;
-            // Лучи взрыва — генерируем SVG-разметку прямо тут, 12 лучей по кругу
+
+            // 16 лучей взрыва — тонкие и длинные, создают ощущение сияния
             let rays = '';
-            for (let i = 0; i < 12; i++) {
-                const angle = i * 30;
-                rays += `<rect x="118" y="10" width="4" height="70" rx="2" fill="var(--gold-bright)" style="transform-origin:120px 120px; --r:${angle}deg; animation: big-win-burst-ray 0.6s ease-out ${i * 0.02}s backwards;"/>`;
+            for (let i = 0; i < 16; i++) {
+                const angle = i * 22.5;
+                const long = i % 2 === 0;
+                rays += `<rect x="118.5" y="${long ? -10 : 8}" width="3" height="${long ? 100 : 82}" rx="1.5" fill="url(#rayGrad)" style="transform-origin:120px 120px; --r:${angle}deg; animation: big-win-burst-ray 0.7s ease-out ${i * 0.018}s backwards;"/>`;
             }
+            // Мелкие искры/звёздочки вразброс вокруг медали — то самое "много золотых элементов"
+            const sparklePositions = [[35,50],[205,45],[25,150],[210,165],[55,205],[180,210],[15,100],[220,110],[70,25],[160,20]];
+            let sparkles = sparklePositions.map(([x,y], i) => `
+                <g transform="translate(${x},${y})" style="animation: big-win-sparkle-twinkle 1.4s ease-in-out ${0.3 + i*0.12}s infinite;">
+                    <path d="M0,-7 L1.8,-1.8 L7,0 L1.8,1.8 L0,7 L-1.8,1.8 L-7,0 L-1.8,-1.8 Z" fill="var(--gold-bright)"/>
+                </g>`).join('');
+
             el.innerHTML = `
                 <div class="big-win-card">
                     <svg class="big-win-svg" viewBox="0 0 240 240">
-                        ${rays}
-                        <circle cx="120" cy="120" r="70" fill="url(#bwGrad)" stroke="var(--gold-bright)" stroke-width="3"/>
                         <defs>
-                            <radialGradient id="bwGrad" cx="50%" cy="40%" r="70%">
-                                <stop offset="0%" stop-color="#3a2f0a"/>
-                                <stop offset="100%" stop-color="#1a1508"/>
+                            <radialGradient id="rayGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="var(--gold-bright)" stop-opacity="0"/>
+                                <stop offset="100%" stop-color="var(--gold-bright)" stop-opacity="0.9"/>
                             </radialGradient>
+                            <radialGradient id="bwGrad" cx="50%" cy="35%" r="75%">
+                                <stop offset="0%" stop-color="#4a3a0f"/>
+                                <stop offset="60%" stop-color="#2a2008"/>
+                                <stop offset="100%" stop-color="#15100a"/>
+                            </radialGradient>
+                            <linearGradient id="medalGrad" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stop-color="#fff3c4"/>
+                                <stop offset="40%" stop-color="var(--gold-bright)"/>
+                                <stop offset="100%" stop-color="#a3781f"/>
+                            </linearGradient>
                         </defs>
-                        <text x="120" y="110" text-anchor="middle" font-size="40">🏆</text>
-                        <text x="120" y="150" text-anchor="middle" font-size="13" fill="var(--text-muted)" font-weight="700">${gameName || ''}</text>
+                        ${rays}
+                        <!-- Внешнее декоративное кольцо (пунктир) -->
+                        <circle cx="120" cy="120" r="88" fill="none" stroke="var(--gold-bright)" stroke-width="1.5" stroke-dasharray="3 5" opacity="0.5"/>
+                        <!-- Основной медальон в несколько слоёв -->
+                        <circle cx="120" cy="120" r="76" fill="url(#bwGrad)" stroke="var(--gold-bright)" stroke-width="2"/>
+                        <circle cx="120" cy="120" r="68" fill="none" stroke="var(--gold-bright)" stroke-width="1" opacity="0.5"/>
+                        ${sparkles}
+                        <!-- Лавровые ветви по бокам медальона -->
+                        <g opacity="0.85" stroke="var(--gold-bright)" stroke-width="1.5" fill="none" stroke-linecap="round">
+                            <path d="M60,150 Q45,130 55,105 Q48,95 58,80"/>
+                            <path d="M60,150 L48,148 M55,132 L43,128 M58,113 L46,107 M56,95 L45,88"/>
+                            <path d="M180,150 Q195,130 185,105 Q192,95 182,80"/>
+                            <path d="M180,150 L192,148 M185,132 L197,128 M182,113 L194,107 M184,95 L195,88"/>
+                        </g>
+                        <!-- Кубок, нарисованный векторно (не эмодзи — детальнее) -->
+                        <g transform="translate(120,112)">
+                            <path d="M-22,-18 L22,-18 L18,4 Q18,16 0,16 Q-18,16 -18,4 Z" fill="url(#medalGrad)" stroke="#a3781f" stroke-width="1"/>
+                            <path d="M-22,-14 Q-34,-14 -34,-2 Q-34,10 -20,10" fill="none" stroke="url(#medalGrad)" stroke-width="3"/>
+                            <path d="M22,-14 Q34,-14 34,-2 Q34,10 20,10" fill="none" stroke="url(#medalGrad)" stroke-width="3"/>
+                            <rect x="-6" y="16" width="12" height="10" fill="url(#medalGrad)"/>
+                            <rect x="-16" y="26" width="32" height="6" rx="2" fill="url(#medalGrad)"/>
+                            <path d="M-14,-14 L14,-14 L11,0 Q11,7 0,7 Q-11,7 -11,0 Z" fill="#fff3c4" opacity="0.4"/>
+                        </g>
                     </svg>
-                    <div class="big-win-label">Крупный выигрыш</div>
+                    <div class="big-win-label">🏆 Крупный выигрыш</div>
                     <div class="big-win-amount">+${Number(amount).toLocaleString()}⭐</div>
+                    ${gameName ? `<div class="big-win-game">${gameName}</div>` : ''}
                 </div>`;
             el.style.display = 'flex';
             requestAnimationFrame(() => el.classList.add('show'));
