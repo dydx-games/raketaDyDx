@@ -48,6 +48,14 @@
         .avatar-frame-wrap.frame-sapphire::after { bottom:-6px; left:50%; transform:translateX(-50%); }
 
         .avatar-frame-wrap.frame-gold { padding: 3px; background: linear-gradient(135deg, #f0c869, #a3781f, #f0c869); box-shadow: 0 0 14px rgba(215,180,93,0.6); animation: frame-gold-pulse 2s ease-in-out infinite; }
+        .avatar-frame-wrap.frame-neon { padding: 3px; background: linear-gradient(135deg, #ff2ee6, #00eaff, #ff2ee6); box-shadow: 0 0 16px rgba(255,46,230,0.6); animation: frame-neon-pulse 1.6s ease-in-out infinite; }
+        @keyframes frame-neon-pulse { 0%,100% { box-shadow: 0 0 10px rgba(0,234,255,0.5); } 50% { box-shadow: 0 0 22px rgba(255,46,230,0.9); } }
+        .avatar-frame-wrap.frame-crimson { padding: 3px; background: linear-gradient(135deg, #ff4d5e, #7a0e18, #ff4d5e); box-shadow: 0 0 14px rgba(255,77,94,0.55); }
+        .avatar-frame-wrap.frame-frost { padding: 3px; background: linear-gradient(135deg, #d6f3ff, #4fa8d8, #d6f3ff); box-shadow: 0 0 16px rgba(150,220,255,0.6); }
+        .avatar-frame-wrap.frame-galaxy { padding: 3px; background: linear-gradient(135deg, #6a3fd6, #1a0e3d, #b18aef, #1a0e3d); box-shadow: 0 0 18px rgba(155,89,255,0.55); background-size: 300% 300%; animation: frame-galaxy-shift 4s ease infinite; }
+        @keyframes frame-galaxy-shift { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+        .avatar-frame-wrap.frame-phoenix { padding: 3px; background: linear-gradient(135deg, #ff9a3d, #ff3d3d, #ffd23d, #ff3d3d); box-shadow: 0 0 20px rgba(255,120,50,0.7); background-size: 300% 300%; animation: frame-galaxy-shift 2.5s ease infinite; }
+        .avatar-frame-wrap.frame-diamond2 { padding: 3px; background: linear-gradient(135deg, #ffffff, #7cc4f5, #ffffff, #d6f3ff); box-shadow: 0 0 22px rgba(255,255,255,0.7); background-size: 300% 300%; animation: frame-galaxy-shift 3s ease infinite; }
         @keyframes frame-gold-pulse { 0%,100% { box-shadow: 0 0 10px rgba(215,180,93,0.5); } 50% { box-shadow: 0 0 20px rgba(215,180,93,0.85); } }
         .avatar-frame-wrap.frame-gold .fw-orbit { position:absolute; inset:-9px; animation: frame-orbit-spin 6s linear infinite; pointer-events:none; }
         .avatar-frame-wrap.frame-gold .fw-orbit span { position:absolute; top:0; left:50%; transform:translateX(-50%); font-size:11px; filter:drop-shadow(0 1px 2px rgba(0,0,0,0.6)); }
@@ -425,6 +433,16 @@
             display: flex; align-items: center; justify-content: center; padding: 20px; }
         .welcome-card { background: var(--bg-panel); border: 1px solid var(--gold); border-radius: 20px; padding: 28px 22px; max-width: 340px; text-align: center;
             box-shadow: 0 0 40px rgba(215,180,93,0.25); }
+
+        #big-win-overlay { position: fixed; inset: 0; z-index: 9998; display: flex; align-items: center; justify-content: center;
+            pointer-events: none; opacity: 0; transition: opacity 0.3s; }
+        #big-win-overlay.show { opacity: 1; }
+        .big-win-card { text-align: center; transform: scale(0.7); transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+        #big-win-overlay.show .big-win-card { transform: scale(1); }
+        .big-win-svg { width: 240px; height: 240px; }
+        .big-win-amount { font-size: 32px; font-weight: 900; color: var(--gold-bright); text-shadow: 0 0 20px rgba(215,180,93,0.8); margin-top: -20px; }
+        .big-win-label { font-size: 15px; font-weight: 900; color: #fff; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+        @keyframes big-win-burst-ray { 0% { transform: rotate(var(--r)) scaleY(0); opacity: 1; } 100% { transform: rotate(var(--r)) scaleY(1); opacity: 0; } }
         .welcome-emoji { font-size: 44px; margin-bottom: 10px; }
         .welcome-title { font-size: 19px; font-weight: 900; margin-bottom: 8px; }
         .welcome-text { font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 18px; }
@@ -964,6 +982,7 @@
             <button class="main-btn btn-gold" onclick="Welcome.close()">Понятно, погнали!</button>
         </div>
     </div>
+    <div id="big-win-overlay" style="display:none;"></div>
     <div class="modal-overlay" id="featured-gift-modal" onclick="if(event.target.id==='featured-gift-modal') FeaturedGift.close()">
         <div class="modal-content">
             <div class="upg-gift-anim" id="featured-gift-anim" style="width:100px; height:100px; margin:0 auto 14px;"></div>
@@ -2708,6 +2727,43 @@
             } catch (e) {
                 return { data: null, error: { message: 'Сетевая ошибка проверки: ' + e } };
             }
+        },
+    };
+
+    window.BigWinCelebration = {
+        show(amount, gameName) {
+            const el = document.getElementById('big-win-overlay'); if (!el) return;
+            // Лучи взрыва — генерируем SVG-разметку прямо тут, 12 лучей по кругу
+            let rays = '';
+            for (let i = 0; i < 12; i++) {
+                const angle = i * 30;
+                rays += `<rect x="118" y="10" width="4" height="70" rx="2" fill="var(--gold-bright)" style="transform-origin:120px 120px; --r:${angle}deg; animation: big-win-burst-ray 0.6s ease-out ${i * 0.02}s backwards;"/>`;
+            }
+            el.innerHTML = `
+                <div class="big-win-card">
+                    <svg class="big-win-svg" viewBox="0 0 240 240">
+                        ${rays}
+                        <circle cx="120" cy="120" r="70" fill="url(#bwGrad)" stroke="var(--gold-bright)" stroke-width="3"/>
+                        <defs>
+                            <radialGradient id="bwGrad" cx="50%" cy="40%" r="70%">
+                                <stop offset="0%" stop-color="#3a2f0a"/>
+                                <stop offset="100%" stop-color="#1a1508"/>
+                            </radialGradient>
+                        </defs>
+                        <text x="120" y="110" text-anchor="middle" font-size="40">🏆</text>
+                        <text x="120" y="150" text-anchor="middle" font-size="13" fill="var(--text-muted)" font-weight="700">${gameName || ''}</text>
+                    </svg>
+                    <div class="big-win-label">Крупный выигрыш</div>
+                    <div class="big-win-amount">+${Number(amount).toLocaleString()}⭐</div>
+                </div>`;
+            el.style.display = 'flex';
+            requestAnimationFrame(() => el.classList.add('show'));
+            if (window.Sound) window.Sound.coin();
+            window.App.haptic && window.App.haptic('win');
+            setTimeout(() => {
+                el.classList.remove('show');
+                setTimeout(() => { el.style.display = 'none'; }, 350);
+            }, 2800);
         },
     };
 
@@ -6600,6 +6656,6 @@
 <!-- МУЛЬТИПЛЕЕР: общий раунд Ракеты, Рулетки, Арены, промокоды, Дурак, маркетплейс -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="multiplayer-client.js?v=155"></script>
+<script src="multiplayer-client.js?v=156"></script>
 </body>
 </html>

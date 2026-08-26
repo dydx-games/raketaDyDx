@@ -533,6 +533,10 @@ window.Multiplayer = {
     // проверка в одном месте, и её точно не забудут в новом коде.
     async logBigWin(amount, gameName) {
         if (amount < 1000 || !ME || !ME.id) return;
+        // Показываем праздничный SVG-баннер ТОЛЬКО локально у самого выигравшего —
+        // остальные узнают о выигрыше только через таблицу/ленту крупных побед,
+        // никакой рассылки другим тут нет.
+        if (window.BigWinCelebration) window.BigWinCelebration.show(amount, gameName);
         try { await sb.rpc('record_big_win', { p_telegram_id: ME.id, p_username: ME.username, p_avatar_url: ME.avatar_url, p_amount: amount, p_game_name: gameName }); } catch (e) {}
     },
     async syncBalanceFromServer() {
