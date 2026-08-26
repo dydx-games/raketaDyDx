@@ -366,15 +366,19 @@
         .panel-title-row { display: flex; justify-content: space-between; align-items: center; }
         .panel-collapse-btn { background: none; border: none; color: var(--text-muted); font-size: 11px; font-weight: 700; cursor: pointer; padding: 4px 6px; }
 
-        .settings-nav-row { display: flex; justify-content: space-between; align-items: center; margin: 10px 10px 0; background: var(--bg-panel); border-radius: var(--border-radius); padding: 14px 16px; cursor: pointer; font-size: 14px; font-weight: 700; transition: background 0.15s; }
-        .settings-nav-row:active { background: var(--bg-panel-light); }
+        .settings-nav-row { display: flex; justify-content: space-between; align-items: center; margin: 10px 10px 0;
+            background: linear-gradient(160deg, var(--bg-panel), var(--bg-panel-light)); border: 1px solid var(--border); border-radius: 14px;
+            padding: 14px 16px; cursor: pointer; font-size: 14px; font-weight: 700; transition: transform 0.15s, background 0.15s; box-shadow: 0 3px 10px rgba(0,0,0,0.12); }
+        .settings-nav-row:active { transform: scale(0.98); background: var(--bg-panel-light); }
         .settings-nav-arrow { color: var(--text-muted); font-size: 20px; }
-        .settings-card { margin: 10px 10px 0; background: var(--bg-panel); border-radius: var(--border-radius); padding: 14px 16px; }
-        .settings-card-title { font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
-        .settings-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+        .settings-card { margin: 10px 10px 0; background: linear-gradient(160deg, var(--bg-panel), var(--bg-panel-light)); border: 1px solid var(--border); border-radius: 16px; padding: 6px 16px; box-shadow: 0 4px 14px rgba(0,0,0,0.15); }
+        .settings-card-title { font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; margin: 12px 0 2px; }
+        .settings-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
         .settings-row:last-of-type { border-bottom: none; }
-        .settings-row-label { display: flex; align-items: center; gap: 10px; }
-        .settings-row-icon { font-size: 17px; }
+        .settings-row-label { display: flex; align-items: center; gap: 11px; }
+        .settings-row-icon { font-size: 15px; width: 32px; height: 32px; border-radius: 10px; background: rgba(215,180,93,0.12);
+            display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .settings-row:last-of-type { border-bottom: none; }
         .settings-row-hint { font-size: 11px; color: var(--text-muted); line-height: 1.5; padding-bottom: 8px; margin-top: -4px; }
         .lb-row { display: flex; align-items: center; gap: 10px; padding: 10px 4px; border-bottom: 1px solid var(--border); }
         .lb-row:last-child { border-bottom: none; }
@@ -387,7 +391,8 @@
         .lb-name { flex: 1; min-width: 0; font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .lb-balance { font-size: 13px; font-weight: 800; color: var(--gold); flex-shrink: 0; }
         .lb-row.is-me { background: rgba(215,180,93,0.08); border-radius: 10px; }
-        .tx-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 4px; border-bottom: 1px solid var(--border); }
+        .tx-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 6px; border-bottom: 1px solid var(--border); transition: background 0.15s; border-radius: 10px; }
+        .tx-row:active { background: rgba(255,255,255,0.02); }
         .tx-row:last-child { border-bottom: none; }
         .tx-info { display: flex; align-items: center; gap: 10px; min-width: 0; }
         .tx-icon { width: 32px; height: 32px; min-width: 32px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 15px; }
@@ -407,6 +412,18 @@
         .gu-hist-badge.won { background: rgba(52,211,153,0.15); color: var(--green); }
         .gu-hist-badge.lost { background: rgba(244,87,106,0.15); color: var(--red); }
         .streak-panel { background: linear-gradient(135deg, rgba(255,140,60,0.1), rgba(255,90,30,0.02)); border: 1px solid rgba(255,140,60,0.25); }
+        #welcome-overlay { position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.85); backdrop-filter: blur(6px);
+            display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .welcome-card { background: var(--bg-panel); border: 1px solid var(--gold); border-radius: 20px; padding: 28px 22px; max-width: 340px; text-align: center;
+            box-shadow: 0 0 40px rgba(215,180,93,0.25); }
+        .welcome-emoji { font-size: 44px; margin-bottom: 10px; }
+        .welcome-title { font-size: 19px; font-weight: 900; margin-bottom: 8px; }
+        .welcome-text { font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 18px; }
+        .welcome-steps { text-align: left; margin-bottom: 20px; }
+        .welcome-step { display: flex; align-items: center; gap: 10px; font-size: 12.5px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+        .welcome-step:last-child { border-bottom: none; }
+        .welcome-step span { flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; background: var(--gold); color: #000; font-weight: 900; font-size: 12px;
+            display: flex; align-items: center; justify-content: center; }
         .streak-header { display: flex; justify-content: space-between; align-items: center; }
         .streak-title { font-size: 15px; font-weight: 900; }
         .streak-sub { font-size: 10.5px; color: var(--text-muted); margin-top: 2px; }
@@ -906,6 +923,19 @@
 <body>
 
 <div id="app">
+    <div id="welcome-overlay" style="display:none;">
+        <div class="welcome-card">
+            <div class="welcome-emoji">🎰</div>
+            <div class="welcome-title">Добро пожаловать в dy/dx!</div>
+            <div class="welcome-text">Здесь звёзды⭐ — твоя игровая валюта. Выигрывай, улучшай гифты, торгуйся с другими игроками.</div>
+            <div class="welcome-steps">
+                <div class="welcome-step"><span>1</span>Забери ежедневный бонус — кнопка справа снизу</div>
+                <div class="welcome-step"><span>2</span>Попробуй простую игру — например Кости или Монетку</div>
+                <div class="welcome-step"><span>3</span>Копи звёзды на улучшение гифтов в Апгрейдере</div>
+            </div>
+            <button class="main-btn btn-gold" onclick="Welcome.close()">Понятно, погнали!</button>
+        </div>
+    </div>
     <div class="toast-container" id="toast-container"></div>
     <div class="task-notify-container" id="task-notify-container"></div>
     <div id="daily-bonus-fab" onclick="if(window.Multiplayer) Multiplayer.claimDaily(); else App.toast('Мультиплеер не подключён', 'error')">🎁 +20</div>
@@ -2581,6 +2611,18 @@
         },
     };
 
+    window.Welcome = {
+        check() {
+            if (!localStorage.getItem('dydx_welcome_seen')) {
+                document.getElementById('welcome-overlay').style.display = 'flex';
+            }
+        },
+        close() {
+            localStorage.setItem('dydx_welcome_seen', '1');
+            document.getElementById('welcome-overlay').style.display = 'none';
+        },
+    };
+
     window.App = {
         balance: 10000,
         // Вибрация через нативный Telegram HapticFeedback — работает по-настоящему
@@ -2645,6 +2687,7 @@
             window.LuckyHour.load();
             setInterval(() => window.LuckyHour.load(), 60000);
             this.updBalUI();
+            window.Welcome.check();
         },
         updBalUI() {
             if(isNaN(this.balance)) this.balance = 0;
