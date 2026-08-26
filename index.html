@@ -479,6 +479,8 @@
         .daily-gift-btn:active { transform: scale(0.97); }
         .lucky-hour-banner { margin: 10px 10px 0; background: linear-gradient(135deg, rgba(80,220,140,0.18), rgba(80,220,140,0.03));
             border: 1px solid rgba(80,220,140,0.4); border-radius: var(--border-radius); padding: 10px 14px; font-size: 12px; font-weight: 800; color: var(--green); text-align: center; }
+        .featured-gift-banner { margin: 10px 10px 0; background: linear-gradient(135deg, rgba(155,89,255,0.18), rgba(155,89,255,0.03));
+            border: 1px solid rgba(155,89,255,0.4); border-radius: var(--border-radius); padding: 10px 14px; font-size: 12px; font-weight: 800; color: #b18aef; text-align: center; cursor: pointer; }
         .bigwin-banner { margin: 10px 10px 0; background: linear-gradient(135deg, rgba(215,180,93,0.16), rgba(215,180,93,0.03));
             border: 1px solid rgba(215,180,93,0.35); border-radius: var(--border-radius); padding: 12px 0 12px 14px; overflow: hidden; }
         .bigwin-banner-label { font-size: 12px; font-weight: 800; color: var(--gold); margin-bottom: 8px; padding-right: 14px; }
@@ -938,6 +940,19 @@
             <button class="main-btn btn-gold" onclick="Welcome.close()">Понятно, погнали!</button>
         </div>
     </div>
+    <div class="modal-overlay" id="featured-gift-modal" onclick="if(event.target.id==='featured-gift-modal') FeaturedGift.close()">
+        <div class="modal-content">
+            <div class="upg-gift-anim" id="featured-gift-anim" style="width:100px; height:100px; margin:0 auto 14px;"></div>
+            <div style="font-weight:900; font-size:16px;" id="featured-gift-name"></div>
+            <div style="margin:10px 0;">
+                <span style="text-decoration:line-through; color:var(--text-muted); font-size:13px;" id="featured-gift-old-price"></span>
+                <span style="color:var(--green); font-weight:900; font-size:20px; margin-left:8px;" id="featured-gift-new-price"></span>
+            </div>
+            <div style="font-size:11px; color:var(--text-muted); margin-bottom:14px;" id="featured-gift-timer"></div>
+            <button class="main-btn btn-gold" onclick="FeaturedGift.buy()">Купить со скидкой</button>
+            <button class="main-btn" style="margin-top:8px; background:var(--bg-panel-light); color:var(--text-muted);" onclick="FeaturedGift.close()">Закрыть</button>
+        </div>
+    </div>
     <div class="toast-container" id="toast-container"></div>
     <div class="task-notify-container" id="task-notify-container"></div>
     <div id="daily-bonus-fab" onclick="if(window.Multiplayer) Multiplayer.claimDaily(); else App.toast('Мультиплеер не подключён', 'error')">🎁 +20</div>
@@ -965,6 +980,7 @@
         <div class="game-view active" id="view-games">
             <div class="daily-gift-btn" id="daily-gift-btn" style="display:none;" onclick="DailyGift.claim()">🎁 Подарок дня</div>
             <div class="lucky-hour-banner" id="lucky-hour-banner" style="display:none;"></div>
+            <div class="featured-gift-banner" id="featured-gift-banner" style="display:none;" onclick="FeaturedGift.open()"></div>
             <div class="bigwin-banner" id="bigwin-banner">
                 <div class="bigwin-banner-label">🏆 Крупные выигрыши</div>
                 <div class="bigwin-banner-track" id="bigwin-track"></div>
@@ -2455,6 +2471,50 @@
         },
     };
 
+    window.FeaturedGift = {
+        active: false, catalogId: null, giftName: null, animFile: null, discountPercent: 0,
+        originalPrice: 0, discountedPrice: 0, endsAt: null,
+        async load() {
+            if (!window.Multiplayer) return;
+            const { data, error } = await sb.rpc('get_featured_gift_state');
+            if (error || !data || !data[0]) return;
+            const s = data[0];
+            this.active = s.active; this.catalogId = s.catalog_id; this.giftName = s.gift_name; this.animFile = s.anim_file;
+            this.discountPercent = s.discount_percent; this.originalPrice = s.original_price; this.discountedPrice = s.discounted_price; this.endsAt = s.ends_at;
+            this.renderBanner();
+        },
+        renderBanner() {
+            const el = document.getElementById('featured-gift-banner'); if (!el) return;
+            if (!this.active) { el.style.display = 'none'; return; }
+            el.style.display = '';
+            const hrs = Math.max(0, Math.ceil((new Date(this.endsAt).getTime() - Date.now()) / 3600000));
+            el.innerHTML = `🛍 Витрина недели: «${this.giftName}» со скидкой ${this.discountPercent}%! Осталось ~${hrs} ч.`;
+        },
+        open() {
+            if (!this.active) return;
+            document.getElementById('featured-gift-name').innerText = this.giftName;
+            document.getElementById('featured-gift-old-price').innerText = Number(this.originalPrice).toLocaleString() + '⭐';
+            document.getElementById('featured-gift-new-price').innerText = Number(this.discountedPrice).toLocaleString() + '⭐';
+            const hrs = Math.max(0, Math.ceil((new Date(this.endsAt).getTime() - Date.now()) / 3600000));
+            document.getElementById('featured-gift-timer').innerText = `Акция действует ещё ~${hrs} ч.`;
+            const animEl = document.getElementById('featured-gift-anim');
+            animEl.innerHTML = '🎁'; animEl.classList.add('placeholder');
+            if (window.Showcase) window.Showcase.playCard(this.catalogId, animEl, undefined, 'featured-gift-modal::' + this.catalogId);
+            document.getElementById('featured-gift-modal').classList.add('active');
+        },
+        close() { document.getElementById('featured-gift-modal').classList.remove('active'); },
+        async buy() {
+            const { data, error } = await sb.rpc('buy_featured_gift', { p_telegram_id: window.ME.id });
+            if (error || !data || !data[0].success) return window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
+            window.App.balance = data[0].new_balance; window.App.updBalUI();
+            window.App.toast('Куплено со скидкой!', 'success');
+            if (window.Sound) window.Sound.coin();
+            window.App.haptic && window.App.haptic('win');
+            this.close();
+            if (window.Multiplayer) window.Multiplayer.ensureProfileGiftsLoaded();
+        },
+    };
+
     window.LuckyHour = {
         active: false, gameName: null, bonusPercent: 0, endsAt: null,
         async load() {
@@ -2690,6 +2750,8 @@
             if (window.Multiplayer) window.Multiplayer.refreshMarketShop();
             window.LuckyHour.load();
             setInterval(() => window.LuckyHour.load(), 60000);
+            window.FeaturedGift.load();
+            setInterval(() => window.FeaturedGift.load(), 60000);
             this.updBalUI();
             window.Welcome.check();
         },
