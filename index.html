@@ -2344,15 +2344,16 @@
             const labelsEl = document.getElementById('balance-chart-labels');
             if (!svg) return;
             if (error || !data || !data.length) {
-                svg.innerHTML = '';
-                labelsEl.innerHTML = `<span class="balance-chart-empty" style="width:100%;">Пока нет данных</span>`;
+                svg.innerHTML = `<foreignObject x="0" y="0" width="300" height="100"><div xmlns="http://www.w3.org/1999/xhtml" style="display:flex; align-items:center; justify-content:center; height:100%; font-size:11px; color:var(--text-muted); text-align:center;">Пока нет данных</div></foreignObject>`;
+                labelsEl.innerHTML = '';
                 return;
             }
             if (data.length === 1) {
                 // Только одна точка (сегодняшняя) — рисовать линию не из чего,
-                // просто честно показываем текущее значение, не пугаем пустотой
-                svg.innerHTML = '';
-                labelsEl.innerHTML = `<span class="balance-chart-empty" style="width:100%;">Сегодня: <b style="color:var(--gold);">${Number(data[0].balance).toLocaleString()}⭐</b><br>История начнёт копиться с завтрашнего дня</span>`;
+                // просто честно показываем текущее значение прямо в самом поле
+                // графика, а не в отдельном, визуально не связанном блоке под ним
+                svg.innerHTML = `<foreignObject x="0" y="0" width="300" height="100"><div xmlns="http://www.w3.org/1999/xhtml" style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; font-size:11px; color:var(--text-muted); text-align:center; line-height:1.6;">Сегодня: <b style="color:var(--gold); font-size:15px;">${Number(data[0].balance).toLocaleString()}⭐</b><span>История начнёт копиться с завтрашнего дня</span></div></foreignObject>`;
+                labelsEl.innerHTML = '';
                 return;
             }
             const values = data.map(d => Number(d.balance));
