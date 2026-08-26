@@ -1253,6 +1253,11 @@
                     </div>
                 </div>
                 <div class="settings-row">
+                    <div class="settings-row-label"><span class="settings-row-icon">🔕</span>Тихий режим</div>
+                    <label class="switch"><input type="checkbox" id="set-quiet-mode" onchange="Settings.toggleQuietMode(this.checked)"><span class="switch-slider"></span></label>
+                </div>
+                <div class="settings-row-hint">Отключает рутинные напоминания в личке бота (стрик, ежемесячный отчёт). Важные события — выигрыш аукциона, результат обмена — приходят всегда.</div>
+                <div class="settings-row">
                     <div class="settings-row-label"><span class="settings-row-icon">📳</span>Вибрация</div>
                     <label class="switch"><input type="checkbox" id="set-vibration" onchange="Settings.toggle('vibrationEnabled', this.checked)"><span class="switch-slider"></span></label>
                 </div>
@@ -2080,6 +2085,41 @@
                 osc.start(t0); osc.stop(t0 + 0.4);
             });
         },
+        // Классическая казино-трель "ту-ту-ту-ту" — для по-настоящему крупных
+        // выигрышей (100.000+). Быстрая восходящая россыпь нот (как каскад
+        // монет в реальном игровом автомате), потом торжественный финальный аккорд.
+        jackpot() {
+            const ctx = this.getCtx(); if (!ctx) return;
+            const t0 = ctx.currentTime;
+            const master = ctx.createBiquadFilter(); master.type = 'lowpass'; master.frequency.value = 5000; master.Q.value = 0.6;
+            master.connect(ctx.destination);
+
+            // Пентатоника вверх — звучит "выигрышно" на любом наборе нот, без диссонансов
+            const scale = [1046, 1175, 1318, 1568, 1760, 2093, 2349, 2637];
+            const noteDur = 0.09;
+            for (let i = 0; i < 16; i++) {
+                const freq = scale[i % scale.length] * (1 + Math.floor(i / scale.length) * 0.5);
+                const t1 = t0 + i * noteDur;
+                const osc = ctx.createOscillator(); osc.type = this.oscType(); osc.frequency.value = freq;
+                const gain = ctx.createGain();
+                gain.gain.setValueAtTime(0.001, t1);
+                gain.gain.linearRampToValueAtTime(0.26, t1 + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.001, t1 + noteDur * 1.8);
+                osc.connect(gain); gain.connect(master);
+                osc.start(t1); osc.stop(t1 + noteDur * 1.8);
+            }
+            // Финальный торжественный аккорд — три ноты разом, долгое затухание
+            const chordStart = t0 + 16 * noteDur + 0.05;
+            [1568, 1976, 2349, 3136].forEach((freq, i) => {
+                const osc = ctx.createOscillator(); osc.type = this.oscType(); osc.frequency.value = freq;
+                const gain = ctx.createGain();
+                gain.gain.setValueAtTime(0.001, chordStart);
+                gain.gain.linearRampToValueAtTime(0.28 - i*0.03, chordStart + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.001, chordStart + 1.1);
+                osc.connect(gain); gain.connect(master);
+                osc.start(chordStart); osc.stop(chordStart + 1.1);
+            });
+        },
         // Лёгкий короткий "тик" — для обычных нажатий на кнопки-модификаторы
         // ставки (1/2, 2x, MAX и т.п.), раньше таких мелких тапов вообще не было
         click() {
@@ -2687,6 +2727,17 @@
             this.syncUI();
             if (window.Sound) window.Sound.coin(); // сразу даём услышать разницу
         },
+        async toggleQuietMode(val) {
+            if (window.ME && window.Multiplayer) {
+                await sb.rpc('set_quiet_mode', { p_telegram_id: window.ME.id, p_enabled: val });
+            }
+            window.App.toast(val ? 'Тихий режим включён' : 'Тихий режим выключен', '');
+        },
+        async loadQuietMode() {
+            if (!window.ME || !window.Multiplayer) return;
+            const { data } = await sb.rpc('is_quiet_mode', { p_telegram_id: window.ME.id });
+            const el = document.getElementById('set-quiet-mode'); if (el) el.checked = !!data;
+        },
         toggle(key, val) {
             this.data[key] = val;
             LS.s('dydx_settings', this.data);
@@ -2807,12 +2858,12 @@
                 </div>`;
             el.style.display = 'flex';
             requestAnimationFrame(() => el.classList.add('show'));
-            if (window.Sound) window.Sound.coin();
+            if (window.Sound) { Number(amount) >= 100000 ? window.Sound.jackpot() : window.Sound.coin(); }
             window.App.haptic && window.App.haptic('win');
             setTimeout(() => {
                 el.classList.remove('show');
                 setTimeout(() => { el.style.display = 'none'; }, 350);
-            }, 2800);
+            }, Number(amount) >= 100000 ? 3400 : 2800);
         },
     };
 
@@ -3055,7 +3106,7 @@
             if(id === 'profile' && window.Frames) window.Frames.load();
             if(id === 'profile' && window.Streak) window.Streak.load();
             if(id === 'profile' && window.Titles) window.Titles.load();
-            if(id === 'settings' && window.Settings) window.Settings.syncUI();
+            if(id === 'settings' && window.Settings) { window.Settings.syncUI(); window.Settings.loadQuietMode(); }
             if(id === 'leaderboard' && window.Leaderboard) window.Leaderboard.load();
             if(id === 'history' && window.TxHistory) window.TxHistory.load();
             if(id === 'history' && window.BalanceChart) window.BalanceChart.load();
