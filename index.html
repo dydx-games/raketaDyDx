@@ -4115,16 +4115,30 @@
             document.getElementById('hilo-btn').innerText = '🃏 ИГРАТЬ'; document.getElementById('hilo-btn').className = 'main-btn btn-green';
             this.lk = false; this.pl = false;
         },
-        action() {
+        roundId: null,
+        async action() {
             if(!this.pl) {
                 if(this.lk) return; if(this.rTmr) clearTimeout(this.rTmr);
                 this.b = Math.floor(Number(document.getElementById('hilo-bet').value));
                 if(!this.b || isNaN(this.b) || this.b<=0) return window.App.toast('Неверная ставка','error'); if(this.b>window.App.balance) return window.App.toast('Недостаточно звёзд', 'error');
-                window.App.chgBal(-this.b, 'Hi-Lo'); window.Stats.addBet(); this.pl = true; this.m = 1; this.s = 0;
+                this.lk = true;
+                const { data, error } = await sb.rpc('hilo_start', { p_telegram_id: window.ME.id, p_bet: this.b });
+                this.lk = false;
+                if (error || !data || !data[0].success) return window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
+                window.App.balance = data[0].new_balance; window.App.updBalUI(); window.Stats.addBet();
+                this.roundId = data[0].round_id;
+                this.pl = true; this.m = 1; this.s = 0;
                 document.getElementById('hilo-start-controls').style.display = 'none'; document.getElementById('hilo-game-controls').style.display = 'block';
                 document.getElementById('hilo-btn').className = 'main-btn btn-gold'; document.getElementById('hilo-btn').innerText = `ЗАБРАТЬ ${this.b}`;
-                this.nT(this.fC); this.fC = this.dC();
-            } else { if(this.lk) return; this.lk = true; let win = Math.floor(this.b * this.m); window.App.win(win, 'Hi-Lo'); this.rUI(); }
+                this.nT(data[0].first_card);
+            } else {
+                if(this.lk) return; this.lk = true;
+                const { data, error } = await sb.rpc('hilo_cashout', { p_telegram_id: window.ME.id, p_round_id: this.roundId });
+                if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); this.lk = false; return; }
+                window.App.balance = data[0].new_balance; window.App.updBalUI();
+                if (data[0].win_amount > this.b) { window.App.toast(`+${data[0].win_amount}`, 'success'); if(window.Sound) window.Sound.coin(); if (window.Multiplayer) window.Multiplayer.logBigWin(data[0].win_amount, 'Hi-Lo'); }
+                this.rUI();
+            }
         },
         nT(val) {
             this.cV = val; let s = this.gS(); let cEl = document.getElementById('hilo-card-view');
@@ -4135,22 +4149,27 @@
             document.getElementById('hilo-c-high').innerText = this.nmH.toFixed(2)+'x'; document.getElementById('hilo-c-low').innerText = this.nmL.toFixed(2)+'x';
             document.getElementById('hilo-mult').innerText = this.m.toFixed(2)+'x'; document.getElementById('hilo-win').innerText = Math.floor(this.b * this.m); document.getElementById('hilo-btn').innerText = `ЗАБРАТЬ ${Math.floor(this.b * this.m)}`;
         },
-        guess(type) {
+        async guess(type) {
             if(!this.pl || this.lk) return; this.lk = true;
-            let nV = this.fC; this.fC = this.dC();
-            let won = false; if(type === 'high' && nV >= this.cV) won = true; if(type === 'low' && nV <= this.cV) won = true;
             let cEl = document.getElementById('hilo-card-view'); cEl.classList.add('flip');
-            setTimeout(() => {
-                cEl.classList.remove('flip');
-                if(won) {
-                    this.m *= (type === 'high' ? this.nmH : this.nmL);
-                    if (this.m >= MAX_MUL) { this.m = MAX_MUL; window.App.win(Math.floor(this.b * this.m), 'Hi-Lo'); window.App.toast('Максимальный множитель!', 'success'); this.rUI(); }
-                    else { this.s++; window.Tasks.chk('psychic', this.s); this.nT(nV); this.lk = false; }
-                } else {
-                    let s = this.gS(); cEl.className = `hilo-card-ui ${(s==='♥'||s==='♦')?'red':'black'}`; cEl.innerHTML = `<div class="hilo-tl">${this.cA[nV]}<br>${s}</div>❌<div class="hilo-br">${this.cA[nV]}<br>${s}</div>`;
-                    window.App.toast('Не угадал!', 'error'); this.rTmr = setTimeout(() => this.rUI(), 2000);
-                }
-            }, 150);
+
+            const resultPromise = sb.rpc('hilo_guess', { p_telegram_id: window.ME.id, p_round_id: this.roundId, p_guess_type: type });
+            const minDelay = new Promise(r => setTimeout(r, 400));
+            const [{ data, error }] = await Promise.all([resultPromise, minDelay]);
+
+            cEl.classList.remove('flip');
+            if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); this.lk = false; return; }
+            const r = data[0];
+            window.App.balance = r.new_balance; window.App.updBalUI();
+
+            if(r.won) {
+                this.m = r.multiplier; this.s = r.streak;
+                if (!r.round_active) { window.App.toast(`Максимальный множитель! +${r.cashout_amount}`, 'success'); if (window.Multiplayer) window.Multiplayer.logBigWin(r.cashout_amount, 'Hi-Lo'); this.rUI(); }
+                else { window.Tasks.chk('psychic', this.s); this.nT(r.next_card); this.lk = false; }
+            } else {
+                let nV = r.next_card; let s = this.gS(); cEl.className = `hilo-card-ui ${(s==='♥'||s==='♦')?'red':'black'}`; cEl.innerHTML = `<div class="hilo-tl">${this.cA[nV]}<br>${s}</div>❌<div class="hilo-br">${this.cA[nV]}<br>${s}</div>`;
+                window.App.toast('Не угадал!', 'error'); this.rTmr = setTimeout(() => this.rUI(), 2000);
+            }
         }
     };
 
@@ -4167,41 +4186,54 @@
             document.getElementById('coin-btn').innerText = '🪙 ИГРАТЬ'; document.getElementById('coin-btn').className = 'main-btn btn-green';
             this.lk = false; this.pl = false;
         },
-        action() {
+        roundId: null,
+        async action() {
             if(!this.pl) {
                 if(this.lk) return; this.b = Math.floor(Number(document.getElementById('coin-bet').value));
                 if(!this.b || isNaN(this.b) || this.b<=0) return window.App.toast('Неверная ставка','error'); if(this.b>window.App.balance) return window.App.toast('Недостаточно звёзд', 'error');
-                window.App.chgBal(-this.b, 'Монетка'); window.Stats.addBet(); this.pl = true; this.m = 1; this.s = 0;
+                this.lk = true;
+                const { data, error } = await sb.rpc('coin_start', { p_telegram_id: window.ME.id, p_bet: this.b });
+                this.lk = false;
+                if (error || !data || !data[0].success) return window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
+                window.App.balance = data[0].new_balance; window.App.updBalUI(); window.Stats.addBet();
+                this.roundId = data[0].round_id;
+                this.pl = true; this.m = 1; this.s = 0;
                 document.getElementById('coin-start-controls').style.display = 'none'; document.getElementById('coin-game-controls').style.display = 'block';
-                // Кнопка "Забрать" появляется только ПОСЛЕ первого удачного броска (см. guess()) —
-                // до этого множитель ещё 1x, забирать нечего (это были бы просто свои же деньги
-                // обратно), а раньше клик по ней сразу же засчитывался как "победа" с полным
-                // опытом и шансом дропа подарка — можно было бесконечно фармить и то, и другое
-                // без всякого риска.
                 document.getElementById('coin-btn').className = 'main-btn btn-disabled'; document.getElementById('coin-btn').innerText = 'Выберите орёл или решку';
             } else {
-                // Защита и здесь тоже (не только в интерфейсе) — даже если кнопка почему-то
-                // осталась кликабельной, без хотя бы одного успешного броска выигрыша не начисляем.
                 if(this.lk) return;
-                if(this.s === 0) { this.lk = true; window.App.chgBal(this.b); this.rUI(); return; }
-                this.lk = true; let win = Math.floor(this.b * this.m); window.App.win(win, 'Монетка'); this.rUI();
+                this.lk = true;
+                const { data, error } = await sb.rpc('coin_cashout', { p_telegram_id: window.ME.id, p_round_id: this.roundId });
+                if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); this.lk = false; return; }
+                window.App.balance = data[0].new_balance; window.App.updBalUI();
+                if (data[0].win_amount > this.b) { window.App.toast(`+${data[0].win_amount}`, 'success'); if(window.Sound) window.Sound.coin(); if (window.Multiplayer) window.Multiplayer.logBigWin(data[0].win_amount, 'Монетка'); }
+                this.rUI();
             }
         },
-        guess(choice) {
+        async guess(choice) {
             if(!this.pl||this.lk) return; this.lk = true; let c = document.getElementById('coin-obj'); c.classList.add('flipping');
-            setTimeout(() => {
-                c.classList.remove('flipping'); let result = Math.random() < 0.49 ? 'head' : 'tail';
-                if(result === 'head') { c.innerText = 'О'; c.style.background = 'radial-gradient(circle at 30% 30%, var(--gold-bright), #D35400)'; } else { c.innerText = 'Р'; c.style.background = 'radial-gradient(circle at 30% 30%, #bdc3c7, #7f8c8d)'; }
-                const won = choice === result;
-                this.pushHistory(won);
-                if(won) {
-                    this.s++; this.m *= 1.96; if(this.m>MAX_MUL) this.m=MAX_MUL;
-                    document.getElementById('coin-streak').innerText = this.s; document.getElementById('coin-win').innerText = Math.floor(this.b * this.m);
-                    document.getElementById('coin-btn').className = 'main-btn btn-gold'; document.getElementById('coin-btn').innerText = `ЗАБРАТЬ ${Math.floor(this.b * this.m)}`;
-                    window.Tasks.chk('coinflip', this.s);
-                    if(this.m===MAX_MUL){window.App.win(Math.floor(this.b * this.m), 'Монетка');this.rUI();} else this.lk = false;
-                } else { window.App.toast('Мимо!', 'error'); setTimeout(() => this.rUI(), 2000); }
-            }, 1000);
+
+            const resultPromise = sb.rpc('coin_guess', { p_telegram_id: window.ME.id, p_round_id: this.roundId, p_choice: choice });
+            const minDelay = new Promise(r => setTimeout(r, 1000));
+            const [{ data, error }] = await Promise.all([resultPromise, minDelay]);
+
+            c.classList.remove('flipping');
+            if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); this.lk = false; return; }
+            const r = data[0];
+            window.App.balance = r.new_balance; window.App.updBalUI();
+
+            if(r.won) { c.innerText = choice === 'head' ? 'О' : 'Р'; c.style.background = choice==='head' ? 'radial-gradient(circle at 30% 30%, var(--gold-bright), #D35400)' : 'radial-gradient(circle at 30% 30%, #bdc3c7, #7f8c8d)'; }
+            else { c.innerText = choice === 'head' ? 'Р' : 'О'; c.style.background = choice==='head' ? 'radial-gradient(circle at 30% 30%, #bdc3c7, #7f8c8d)' : 'radial-gradient(circle at 30% 30%, var(--gold-bright), #D35400)'; }
+            this.pushHistory(r.won);
+
+            if(r.won) {
+                this.s = r.streak; this.m = r.multiplier;
+                document.getElementById('coin-streak').innerText = this.s; document.getElementById('coin-win').innerText = Math.floor(this.b * this.m);
+                document.getElementById('coin-btn').className = 'main-btn btn-gold'; document.getElementById('coin-btn').innerText = `ЗАБРАТЬ ${Math.floor(this.b * this.m)}`;
+                window.Tasks.chk('coinflip', this.s);
+                if (!r.round_active) { window.App.toast(`Максимальный множитель! +${r.cashout_amount}`, 'success'); if (window.Multiplayer) window.Multiplayer.logBigWin(r.cashout_amount, 'Монетка'); this.rUI(); }
+                else this.lk = false;
+            } else { window.App.toast('Мимо!', 'error'); setTimeout(() => this.rUI(), 2000); }
         },
         histList: [],
         pushHistory(won) {
@@ -4974,16 +5006,28 @@
         setTarget(m, btn) { this.sT(m, btn); },
         sT(m, btn) { if(this.pl) return; this.t = m; this.ch = (0.98/m)*100; document.getElementById('upg-chance').innerText = this.ch.toFixed(0)+'%'; document.getElementById('upg-center').innerText = this.ch.toFixed(1)+'%'; document.getElementById('upg-side-target-amt').innerText = 'x'+m.toFixed(2); if(btn) {document.querySelectorAll('#upg-selectors .btn-small').forEach(b => b.classList.remove('active')); btn.classList.add('active');} document.getElementById('upg-wheel').style.background = `conic-gradient(var(--green) 0% ${this.ch}%, var(--red) ${this.ch}% 100%)`; document.getElementById('upg-wheel').style.transform = `rotate(0deg)`; this.updSideBet(); },
         updSideBet() { const bet = Math.floor(Number(document.getElementById('upg-bet').value)) || 0; const el = document.getElementById('upg-side-bet-amt'); if (el) el.innerText = bet.toLocaleString()+'⭐'; },
-        play() {
+        async play() {
             if(this.pl || this.lk) return; let bet = Math.floor(Number(document.getElementById('upg-bet').value));
             if(!bet || isNaN(bet) || bet<=0) return window.App.toast('Неверная ставка', 'error'); if(bet>window.App.balance) return window.App.toast('Недостаточно звёзд', 'error');
 
-            this.pl=true; this.lk=true; window.App.chgBal(-bet, 'Апгрейдер'); window.Stats.addBet(); document.getElementById('upg-btn').className='main-btn btn-disabled'; document.getElementById('upg-btn').innerText='КРУТИМ...';
-            let win = Math.random()*100 < this.ch;
-            let td = win ? Math.random()*(this.ch*3.6) : (this.ch*3.6)+Math.random()*(360-this.ch*3.6); let fr = (5*360)+(360-td); let w = document.getElementById('upg-wheel'); w.style.transition='none'; w.style.transform='rotate(0deg)'; void w.offsetWidth; w.style.transition='transform 3s cubic-bezier(0.2,0.8,0.2,1)'; w.style.transform=`rotate(${fr}deg)`;
+            this.pl=true; this.lk=true; window.Stats.addBet(); document.getElementById('upg-btn').className='main-btn btn-disabled'; document.getElementById('upg-btn').innerText='КРУТИМ...';
+
+            // Реальный исход + списание + начисление — одно атомарное серверное
+            // действие. Колесо крутится ЖДЁТ ответа сервера и потом крутится
+            // ТОЧНО до честной зоны, а не решает исход само в браузере.
+            const { data, error } = await sb.rpc('upgrader_play', { p_telegram_id: window.ME.id, p_bet: bet, p_target_mult: this.t });
+            if (error || !data || !data[0].success) {
+                window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
+                this.pl=false; this.lk=false; document.getElementById('upg-btn').className='main-btn btn-green'; document.getElementById('upg-btn').innerHTML=`⚙️ АПГРЕЙД (<span id="upg-chance">${this.ch.toFixed(0)}%</span>)`;
+                return;
+            }
+            const r = data[0];
+            window.App.balance = r.new_balance; window.App.updBalUI();
+
+            let td = r.won ? Math.random()*(this.ch*3.6) : (this.ch*3.6)+Math.random()*(360-this.ch*3.6); let fr = (5*360)+(360-td); let w = document.getElementById('upg-wheel'); w.style.transition='none'; w.style.transform='rotate(0deg)'; void w.offsetWidth; w.style.transition='transform 3s cubic-bezier(0.2,0.8,0.2,1)'; w.style.transform=`rotate(${fr}deg)`;
 
             this.tmr = setTimeout(()=>{
-                if(win){let winAmt = Math.floor(bet*this.t); window.App.win(winAmt, 'Апгрейдер'); if(this.t===50)window.Tasks.chk('risk');}else{window.App.toast('Сгорело','error');}
+                if(r.won){ window.App.toast(`Победа! +${r.win_amount}`, 'success'); if(window.Sound) window.Sound.coin(); window.App.haptic('win'); window.Tasks.chk('win', r.win_amount); window.Levels.addWin(r.win_amount); if (window.Multiplayer) window.Multiplayer.logBigWin(r.win_amount, 'Апгрейдер'); if(this.t===50)window.Tasks.chk('risk');}else{window.App.toast('Сгорело','error');}
                 this.pl=false; this.lk=false; document.getElementById('upg-btn').className='main-btn btn-green'; document.getElementById('upg-btn').innerHTML=`⚙️ АПГРЕЙД (<span id="upg-chance">${this.ch.toFixed(0)}%</span>)`;
             },3100);
         }
@@ -5042,52 +5086,60 @@
         setCount(c) { if(!this.pl) document.getElementById('mines-count').value = c; },
         set(v) { if(!this.pl) document.getElementById('mines-bet').value=v; },
         dG() { const gr = document.getElementById('mines-grid'); gr.innerHTML=''; for(let i=0; i<25; i++){ let cl = document.createElement('div'); cl.className='mines-cell'; cl.onclick=()=>this.cC(i,cl); gr.appendChild(cl); } },
-        action() {
+        roundId: null, mineSet: null,
+        async action() {
             let btn = document.getElementById('mines-btn');
             if(!this.pl){
                 this.b = Math.floor(Number(document.getElementById('mines-bet').value)); this.c = parseInt(document.getElementById('mines-count').value);
                 if(!this.b || isNaN(this.b) || this.b<=0) return window.App.toast('Неверная ставка', 'error'); if(this.b>window.App.balance) return window.App.toast('Недостаточно звёзд', 'error');
                 if(isNaN(this.c) || this.c<1 || this.c>24) { this.c=3; document.getElementById('mines-count').value=3; }
-
-                // ЭКСПЛОЙТ (найден и починен): при маленьком числе мин даже ПЕРВЫЙ
-                // безопасный клик даёт множитель, который на большой ставке уже сам
-                // по себе превышает потолок MAX_WIN — раунд завершается мгновенно с
-                // максимальной выплатой, без реального риска. Блокируем такие ставки
-                // заранее, до старта раунда.
-                const firstClickChance = (25 - this.c) / 25;
-                const firstClickMult = 0.98 / firstClickChance;
-                if (this.b * firstClickMult >= MAX_WIN) {
-                    const maxSafeBet = Math.floor(MAX_WIN / firstClickMult) - 1;
-                    return window.App.toast(`Слишком крупная ставка для ${this.c} мин(ы) — максимум ${Math.max(1, maxSafeBet)}⭐`, 'error');
-                }
-
-                window.App.chgBal(-this.b, 'Мины'); window.Stats.addBet(); this.pl=true; this.o=0; this.m=1; this.g=Array(25).fill(0); let mt=this.c;
-                while(mt>0){ let x=Math.floor(Math.random()*25); if(this.g[x]===0){this.g[x]=1; mt--;} }
+                if(this.lk) return; this.lk = true;
+                const { data, error } = await sb.rpc('mines_start', { p_telegram_id: window.ME.id, p_bet: this.b, p_mine_count: this.c });
+                this.lk = false;
+                if (error || !data || !data[0].success) return window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error');
+                window.App.balance = data[0].new_balance; window.App.updBalUI(); window.Stats.addBet();
+                this.roundId = data[0].round_id; this.mineSet = null;
+                this.pl=true; this.o=0; this.m=1; this.g=Array(25).fill(0);
                 this.dG(); document.getElementById('mines-btn').className='main-btn btn-gold'; document.getElementById('mines-btn').innerText=`ЗАБРАТЬ ${this.b}`; document.getElementById('mines-count').disabled=true;
             } else {
-                if(this.lk) return; this.lk = true; window.App.win(Math.floor(this.b*this.m), 'Мины'); window.Tasks.chk('sapper', this.c); this.eG();
+                if(this.lk) return; this.lk = true;
+                const { data, error } = await sb.rpc('mines_cashout', { p_telegram_id: window.ME.id, p_round_id: this.roundId });
+                if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); this.lk = false; return; }
+                window.App.balance = data[0].new_balance; window.App.updBalUI();
+                window.App.toast(`+${data[0].win_amount}`, 'success'); if(window.Sound) window.Sound.coin(); if (window.Multiplayer) window.Multiplayer.logBigWin(data[0].win_amount, 'Мины');
+                window.Tasks.chk('sapper', this.c);
+                this.mineSet = data[0].all_mines || [];
+                this.eG();
             }
         },
-        cC(i, el) {
-            if(!this.pl || this.lk || el.classList.contains('revealed')) return; el.classList.add('revealed');
-            if(this.g[i]===1){
-                this.lk = true; el.classList.add('mine'); el.innerText='💣'; this.eG(); window.App.toast('Бум!','error');
+        async cC(i, el) {
+            if(!this.pl || this.lk || el.classList.contains('revealed')) return; this.lk = true;
+            const { data, error } = await sb.rpc('mines_reveal', { p_telegram_id: window.ME.id, p_round_id: this.roundId, p_cell: i });
+            if (error || !data || !data[0].success) { window.App.toast((data && data[0] && data[0].message) || 'Ошибка', 'error'); this.lk = false; return; }
+            const r = data[0];
+            window.App.balance = r.new_balance; window.App.updBalUI();
+            el.classList.add('revealed');
+
+            if (r.hit_mine) {
+                el.classList.add('mine'); el.innerText='💣'; this.mineSet = r.all_mines; this.eG(); window.App.toast('Бум!','error');
             } else {
                 el.classList.add('gem'); el.innerText='💎'; this.o++;
-                let chance = window.App.mCb(25-this.c, this.o) / window.App.mCb(25, this.o); this.m = 0.98 / chance;
-
-                let capL = this.c * 1000; let capped = false;
-                if (this.m > capL) { this.m = capL; capped = true; }
-                let pW = Math.floor(this.b * this.m); if (pW > MAX_WIN) { pW = MAX_WIN; this.m = MAX_WIN / this.b; capped = true; }
-
+                this.m = r.multiplier;
                 document.getElementById('mines-mult').innerText=this.m.toFixed(2)+'x'; document.getElementById('mines-btn').innerText=`ЗАБРАТЬ ${Math.floor(this.b*this.m)}`;
 
-                if(this.o===25-this.c || capped){
-                    this.lk = true; window.App.win(Math.floor(this.b*this.m), 'Мины'); window.Tasks.chk('sapper', this.c); if(this.o>=15) window.Tasks.chk('diamond', this.o); if(this.c===24) window.Tasks.chk('madminer'); if(capped) window.App.toast('Максимальный выигрыш!', 'success'); this.eG();
-                }
+                if(!r.round_active){
+                    window.App.toast(`+${r.cashout_amount}`, 'success'); if(window.Sound) window.Sound.coin(); if (window.Multiplayer) window.Multiplayer.logBigWin(r.cashout_amount, 'Мины');
+                    window.Tasks.chk('sapper', this.c); if(this.o>=15) window.Tasks.chk('diamond', this.o); if(this.c===24) window.Tasks.chk('madminer'); if(r.capped) window.App.toast('Максимальный выигрыш!', 'success');
+                    this.mineSet = r.all_mines; this.eG();
+                } else { this.lk = false; }
             }
         },
-        eG() { this.pl=false; this.lk=false; document.getElementById('mines-btn').className='main-btn btn-green'; document.getElementById('mines-btn').innerText='💣 ИГРАТЬ'; document.getElementById('mines-count').disabled=false; const cs = document.getElementById('mines-grid').children; for(let i=0; i<25; i++){ if(!cs[i].classList.contains('revealed')){ cs[i].classList.add('revealed'); cs[i].style.opacity='0.5'; cs[i].innerText=this.g[i]===1?'💣':'💎'; } } }
+        eG() {
+            this.pl=false; this.lk=false; document.getElementById('mines-btn').className='main-btn btn-green'; document.getElementById('mines-btn').innerText='💣 ИГРАТЬ'; document.getElementById('mines-count').disabled=false;
+            const cs = document.getElementById('mines-grid').children;
+            const mines = this.mineSet || [];
+            for(let i=0; i<25; i++){ if(!cs[i].classList.contains('revealed')){ cs[i].classList.add('revealed'); cs[i].style.opacity='0.5'; cs[i].innerText = mines.includes(i) ? '💣' : '💎'; } }
+        }
     };
 
     window.Shells = {
