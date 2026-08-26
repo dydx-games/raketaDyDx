@@ -1263,6 +1263,16 @@
                 </div>
                 <div class="settings-row-hint">Отключает рутинные напоминания в личке бота (стрик, ежемесячный отчёт). Важные события — выигрыш аукциона, результат обмена — приходят всегда.</div>
                 <div class="settings-row">
+                    <div class="settings-row-label"><span class="settings-row-icon">📨</span>Уведомлять о ставках</div>
+                    <label class="switch"><input type="checkbox" id="set-bet-notify" onchange="Settings.toggleBetNotify(this.checked)"><span class="switch-slider"></span></label>
+                </div>
+                <div class="settings-row-hint">Бот пишет в личку результат каждой ставки (Кости пока, остальные игры — позже) — можно не смотреть анимацию и закрыть приложение сразу.</div>
+                <div class="settings-row">
+                    <div class="settings-row-label"><span class="settings-row-icon">🎨</span>Тема фона на играх</div>
+                    <label class="switch"><input type="checkbox" id="set-bg-everywhere" onchange="Settings.toggle('bgEverywhere', this.checked); ProfileBg.apply();"><span class="switch-slider"></span></label>
+                </div>
+                <div class="settings-row-hint">Применяет купленный фон профиля мягким фоном ко всем игровым экранам, не только к профилю. По умолчанию выключено.</div>
+                <div class="settings-row">
                     <div class="settings-row-label"><span class="settings-row-icon">📳</span>Вибрация</div>
                     <label class="switch"><input type="checkbox" id="set-vibration" onchange="Settings.toggle('vibrationEnabled', this.checked)"><span class="switch-slider"></span></label>
                 </div>
@@ -1734,6 +1744,7 @@
                     <div id="profile-title-chip" style="display:none;"></div>
                     <div class="profile-sub" id="profile-sub">Уровень 1 · 0 подарков</div>
                 </div>
+                <div id="luck-temp-badge" style="margin-left:auto; text-align:center; flex-shrink:0;"></div>
             </div>
 
             <div class="profile-quicknav">
@@ -2698,7 +2709,7 @@
     };
 
     window.Settings = {
-        data: { animationsEnabled: true, soundEnabled: true, vibrationEnabled: true, language: 'ru', soundTheme: 'classic' },
+        data: { animationsEnabled: true, soundEnabled: true, vibrationEnabled: true, language: 'ru', soundTheme: 'classic', bgEverywhere: false },
         init() {
             const saved = LS.g('dydx_settings', null);
             if (saved && typeof saved === 'object') this.data = Object.assign(this.data, saved);
@@ -2712,6 +2723,7 @@
             if (ru && en) { ru.classList.toggle('active', this.data.language === 'ru'); en.classList.toggle('active', this.data.language === 'en'); }
             const tc = document.getElementById('set-sound-theme-classic'); const ta = document.getElementById('set-sound-theme-arcade');
             if (tc && ta) { tc.classList.toggle('active', this.data.soundTheme !== 'arcade'); ta.classList.toggle('active', this.data.soundTheme === 'arcade'); }
+            const bge = document.getElementById('set-bg-everywhere'); if (bge) bge.checked = !!this.data.bgEverywhere;
         },
         setSoundTheme(theme) {
             this.data.soundTheme = theme;
@@ -2729,6 +2741,15 @@
             if (!window.ME || !window.Multiplayer) return;
             const { data } = await sb.rpc('is_quiet_mode', { p_telegram_id: window.ME.id });
             const el = document.getElementById('set-quiet-mode'); if (el) el.checked = !!data;
+        },
+        async toggleBetNotify(val) {
+            if (window.ME && window.Multiplayer) await sb.rpc('set_bet_notify', { p_telegram_id: window.ME.id, p_enabled: val });
+            window.App.toast(val ? 'Уведомления о ставках включены' : 'Уведомления о ставках выключены', '');
+        },
+        async loadBetNotify() {
+            if (!window.ME || !window.Multiplayer) return;
+            const { data } = await sb.from('users').select('notify_bet_results').eq('telegram_id', window.ME.id).maybeSingle();
+            const el = document.getElementById('set-bet-notify'); if (el) el.checked = !!(data && data.notify_bet_results);
         },
         toggle(key, val) {
             this.data[key] = val;
@@ -2780,6 +2801,23 @@
             } catch (e) {
                 return { data: null, error: { message: 'Сетевая ошибка проверки: ' + e } };
             }
+        },
+    };
+
+    window.LuckTemp = {
+        async load() {
+            if (!window.Multiplayer || !window.ME) return;
+            const { data, error } = await sb.rpc('get_luck_temperature', { p_telegram_id: window.ME.id });
+            const el = document.getElementById('luck-temp-badge'); if (!el || error || !data || !data[0]) return;
+            const pct = Number(data[0].change_pct);
+            let emoji, label, color;
+            if (pct >= 20) { emoji = '🔥'; label = 'В огне'; color = 'var(--gold-bright)'; }
+            else if (pct >= 5) { emoji = '📈'; label = 'В плюсе'; color = 'var(--green)'; }
+            else if (pct > -5) { emoji = '😐'; label = 'Ровно'; color = 'var(--text-muted)'; }
+            else if (pct > -20) { emoji = '📉'; label = 'В минусе'; color = 'var(--red)'; }
+            else { emoji = '🥶'; label = 'Холодно'; color = '#4fb3f0'; }
+            el.innerHTML = `<div style="font-size:22px;">${emoji}</div><div style="font-size:9px; color:${color}; font-weight:800;">${label}</div>`;
+            el.title = 'Чисто визуальный показатель, за 24ч — ни на что не влияет';
         },
     };
 
@@ -3098,7 +3136,8 @@
             if(id === 'profile' && window.Frames) window.Frames.load();
             if(id === 'profile' && window.Streak) window.Streak.load();
             if(id === 'profile' && window.Titles) window.Titles.load();
-            if(id === 'settings' && window.Settings) { window.Settings.syncUI(); window.Settings.loadQuietMode(); }
+            if(id === 'profile' && window.LuckTemp) window.LuckTemp.load();
+            if(id === 'settings' && window.Settings) { window.Settings.syncUI(); window.Settings.loadQuietMode(); window.Settings.loadBetNotify(); }
             if(id === 'leaderboard' && window.Leaderboard) window.Leaderboard.load();
             if(id === 'history' && window.TxHistory) window.TxHistory.load();
             if(id === 'history' && window.BalanceChart) window.BalanceChart.load();
@@ -3316,6 +3355,26 @@
             header.style.backgroundRepeat = patternLayer ? 'repeat' : '';
             const baseSize = item.anim ? (patternLayer ? '300% 300%' : '250% 250%') : 'cover';
             header.style.backgroundSize = patternLayer ? `46px 46px, ${baseSize}` : baseSize;
+
+            // НОВОЕ: мягкое применение той же темы ко всем игровым экранам —
+            // только если явно включено в Настройках (по умолчанию выключено,
+            // чтобы не перегружать интерфейс игр без явного согласия).
+            const container = document.querySelector('.view-container');
+            const wantsEverywhere = window.Settings && window.Settings.data.bgEverywhere;
+            if (container) {
+                if (wantsEverywhere && item.id !== 'default') {
+                    container.style.backgroundImage = baseLayer;
+                    container.style.backgroundSize = baseSize;
+                    container.style.backgroundAttachment = 'fixed';
+                    container.style.opacity = ''; // на случай если раньше что-то сбросили
+                    // Лёгкая, приглушённая версия — не должна спорить с самим игровым UI
+                    container.style.backgroundBlendMode = 'soft-light';
+                } else {
+                    container.style.backgroundImage = '';
+                    container.style.backgroundAttachment = '';
+                    container.style.backgroundBlendMode = '';
+                }
+            }
         },
         render() {
             const el = document.getElementById('profile-bg-shop'); if (!el) return;
@@ -4637,7 +4696,7 @@
         mod(act) { if(this.pl) return; window.Sound && window.Sound.click(); let v = Math.floor(Number(document.getElementById('slots-bet').value)) || 0; if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById('slots-bet').value = Math.max(0, Math.min(v, window.App.balance)); },
         set(v) { if(!this.pl) document.getElementById('slots-bet').value=v; },
         emojiFor(sym) {
-            const map = { cherry:'🍒', lemon:'🍋', star:'⭐', diamond:'💎', grape:'🍇', pepe:'🐸', bomb:'💣' };
+            const map = { cherry:'🍒', lemon:'🍋', star:'⭐', diamond:'💎', grape:'🍇', pepe:'🐸', bomb:'💣', blank1:'◽', blank2:'▫️' };
             if (sym === 'seven') return window.sevenSvg();
             return map[sym] || '❔';
         },
@@ -4671,8 +4730,9 @@
             document.getElementById('slots-result-line').innerText = '';
             window.Stats.addBet();
 
-            // Мелькаем случайными символами, пока идёт запрос к серверу
-            const symbols = ['cherry','lemon','star','diamond','grape','seven','pepe','bomb'];
+            // Мелькаем случайными символами, пока идёт запрос к серверу — дольше
+            // и заметно плавнее, чем раньше (было слишком быстро и резко)
+            const symbols = ['blank1','blank2','cherry','lemon','star','diamond','grape','seven','pepe','bomb'];
             for (let i = 0; i < 25; i++) {
                 const cell = document.getElementById('slots-cell-' + i);
                 if (cell) { cell.classList.add('spinning'); cell.classList.remove('matched','bomb-cell'); cell.innerHTML = this.emojiFor(symbols[Math.floor(Math.random()*symbols.length)]); }
@@ -4682,10 +4742,10 @@
                     const cell = document.getElementById('slots-cell-' + i);
                     if (cell) cell.innerHTML = this.emojiFor(symbols[Math.floor(Math.random()*symbols.length)]);
                 }
-            }, 80);
+            }, 110);
 
             const resultPromise = sb.rpc('slots_spin_v2', { p_telegram_id: window.ME.id, p_bet: bet });
-            const minDelay = new Promise(r => setTimeout(r, 1100));
+            const minDelay = new Promise(r => setTimeout(r, 2000));
             const [{ data, error }] = await Promise.all([resultPromise, minDelay]);
             clearInterval(cycleTimer);
 
@@ -4698,19 +4758,25 @@
             const res = data[0];
             window.App.balance = res.new_balance; window.App.updBalUI();
 
-            // Раскрываем клетки волной, слева направо сверху вниз, с небольшой
-            // ступенчатой задержкой — красивее, чем всё разом
+            // Раскрываем клетки волной, слева направо сверху вниз — заметно
+            // медленнее и с плавным затуханием/проявлением на каждой клетке
+            // (было резко и слишком быстро)
             for (let i = 0; i < 25; i++) {
                 const cell = document.getElementById('slots-cell-' + i);
                 if (!cell) continue;
                 cell.classList.remove('spinning');
                 const sym = res.grid[i];
                 setTimeout(() => {
-                    if (sym === 'pepe') { cell.innerHTML = ''; this.loadFrozenPepe(cell); }
-                    else cell.innerHTML = this.emojiFor(sym);
-                    if (sym === res.matched_symbol && res.matched_count >= 3) cell.classList.add('matched');
-                    if (sym === 'bomb') cell.classList.add('bomb-cell');
-                }, i * 18);
+                    cell.style.transition = 'opacity 0.18s ease';
+                    cell.style.opacity = '0';
+                    setTimeout(() => {
+                        if (sym === 'pepe') { cell.innerHTML = ''; this.loadFrozenPepe(cell); }
+                        else cell.innerHTML = this.emojiFor(sym);
+                        if (sym === res.matched_symbol && res.matched_count >= 3) cell.classList.add('matched');
+                        if (sym === 'bomb') cell.classList.add('bomb-cell');
+                        cell.style.opacity = '1';
+                    }, 180);
+                }, i * 55);
             }
 
             setTimeout(() => {
@@ -4734,7 +4800,7 @@
                 window.Tasks.chk('win', res.win_amount);
                 this.pl = false; this.lk = false;
                 btn.className = 'main-btn btn-green'; btn.innerText = '🎰 КРУТИТЬ';
-            }, 25 * 18 + 400);
+            }, 25 * 55 + 500);
         }
     };
 
