@@ -35,7 +35,8 @@
 
         /* ПРОФИЛЬ / ПОДАРКИ */
         :root { --r-common: #8E93A3; --r-rare: #3498db; --r-epic: #9b59b6; --r-legendary: var(--gold); }
-        .profile-header { display: flex; align-items: center; gap: 12px; margin: 10px 10px 0; background: var(--bg-panel); border-radius: var(--border-radius); padding: 14px; }
+        .profile-header { display: flex; align-items: center; gap: 12px; margin: 10px 10px 0; background: var(--bg-panel); border-radius: var(--border-radius); padding: 14px; position: relative; }
+        .profile-header > *:not(.pepe-swarm-layer) { position: relative; z-index: 1; }
         .profile-avatar { width: 54px; height: 54px; border-radius: 50%; background: linear-gradient(135deg, var(--gold), var(--gold-bright)); display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 900; color: #000; flex-shrink: 0; position: relative; }
 
         /* Рамки профиля — оборачиваем аватар в обёртку с padding, рамка рисуется по краю обёртки */
@@ -113,7 +114,14 @@
         .profile-name { font-weight: 800; font-size: 15px; }
         /* Купленные фоны профиля бывают яркими/пёстрыми и перекрывали текст —
            подложка под весь текстовый блок делает его читаемым при ЛЮБОМ фоне */
-        .profile-text-block { background: rgba(0,0,0,0.35); backdrop-filter: blur(2px); border-radius: 10px; padding: 6px 10px; }
+        .profile-text-block { background: rgba(0,0,0,0.55); backdrop-filter: blur(4px); border-radius: 10px; padding: 7px 11px; }
+        /* Раньше подложка была слишком светлой (35% непрозрачности) — на ярких
+           фонах (Бриллиант, Аврора и т.п.) текст всё равно терялся. Плюс
+           теневой контур на каждую строку отдельно, на случай если подложка
+           почему-то не подхватится (например пока фон ещё грузится). */
+        .profile-text-block .profile-name, .profile-text-block .profile-sub {
+            text-shadow: 0 1px 2px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.6);
+        }
         .profile-text-block .profile-sub { color: rgba(255,255,255,0.9) !important; }
         .profile-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 
@@ -538,7 +546,7 @@
         .bigwin-like-count { font-size: 10px; font-weight: 800; color: var(--text-muted); }
         .bigwin-banner-empty { font-size: 11px; color: var(--text-muted); padding-right: 14px; }
         .hub-grid { display: flex; flex-direction: column; gap: 12px; padding: 0 12px; }
-        .hub-card { display: flex; align-items: center; gap: 14px; background: linear-gradient(155deg, var(--bg-panel) 0%, var(--bg-panel-light) 140%); border: 1px solid #1f222b; border-radius: 18px; padding: 14px; cursor: pointer; position: relative; overflow: hidden; box-shadow: 0 4px 14px rgba(0,0,0,0.22); transition: transform 0.18s var(--ease), box-shadow 0.18s var(--ease), border-color 0.18s; }
+        .hub-card { display: flex; align-items: center; gap: 14px; background: linear-gradient(155deg, rgba(20,22,28,0.92) 0%, rgba(30,33,42,0.92) 140%); border: 1.5px solid rgba(255,255,255,0.08); border-radius: 18px; padding: 14px; cursor: pointer; position: relative; overflow: hidden; box-shadow: 0 4px 14px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.04); transition: transform 0.18s var(--ease), box-shadow 0.18s var(--ease), border-color 0.18s; backdrop-filter: blur(6px); }
         .hub-card:nth-of-type(5n+2) { background: linear-gradient(155deg, rgba(79,179,240,0.09) 0%, var(--bg-panel-light) 140%); }
         .hub-card:nth-of-type(5n+3) { background: linear-gradient(155deg, rgba(177,138,239,0.09) 0%, var(--bg-panel-light) 140%); }
         .hub-card:nth-of-type(5n+4) { background: linear-gradient(155deg, rgba(52,211,153,0.08) 0%, var(--bg-panel-light) 140%); }
@@ -591,7 +599,7 @@
         .gift-card-sell-btn { margin-top: 2px; background: var(--bg-panel-light); border: 1px solid var(--green); color: var(--green); font-size: 8px; font-weight: 900; padding: 2px 6px; border-radius: 6px; cursor: pointer; text-transform: uppercase; }
 
         /* АРЕНА */
-        .arena-wrap { margin: 10px 10px 0; background: var(--bg-panel); border-radius: var(--border-radius); padding: 14px; display: flex; flex-direction: column; align-items: center; }
+        .arena-wrap { margin: 10px 10px 0; background: rgba(18,20,26,0.9); backdrop-filter: blur(6px); border-radius: var(--border-radius); padding: 14px; display: flex; flex-direction: column; align-items: center; border: 1.5px solid rgba(255,255,255,0.07); box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
         .arena-wheel-wrap { position: relative; width: 220px; height: 220px; margin-bottom: 8px; }
         .arena-countdown-ring { position: absolute; inset: -8px; width: 236px; height: 236px; z-index: 20; pointer-events: none;
             transform: rotate(-90deg); /* начинаем с 12 часов */ }
@@ -673,7 +681,7 @@
         .game-view.active { display: flex; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .panel { margin: 10px 10px 0; background-color: var(--bg-panel); border-radius: var(--border-radius); padding: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.25); transition: transform 0.2s var(--ease); position: relative; background-image:
+        .panel { margin: 10px 10px 0; background-color: rgba(18,20,26,0.88); border-radius: var(--border-radius); padding: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03); transition: transform 0.2s var(--ease); position: relative; backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,0.06); background-image:
             repeating-linear-gradient(135deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 22px); }
         .panel-title { font-weight: 800; color: var(--text-muted); font-size: 10px; text-transform: uppercase; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;}
 
@@ -705,7 +713,7 @@
         .history-item.green { color: var(--green); border-color: var(--green); background-color: rgba(46, 204, 113, 0.15); }
         .history-item.red { color: var(--red); border-color: var(--red); background-color: rgba(231, 76, 60, 0.15); }
 
-        .crash-card { margin: 10px 10px 0; background-color: var(--bg-panel); border-radius: var(--border-radius); height: 200px; position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid #1f222b; }
+        .crash-card { margin: 10px 10px 0; background-color: rgba(18,20,26,0.9); backdrop-filter: blur(6px); border-radius: var(--border-radius); height: 200px; position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1.5px solid rgba(255,255,255,0.07); box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
         .space-bg { position: absolute; inset: 0; background: radial-gradient(circle at top, #1E212B 0%, var(--bg-panel) 100%); z-index: 1; }
         .stars { position: absolute; inset: -50% 0; background-image: radial-gradient(1px 1px at 20px 30px, #eee, transparent), radial-gradient(1px 1px at 50px 160px, #ddd, transparent); background-size: 150px 150px; opacity: 0.3; z-index: 2; }
         .scale-container { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
@@ -3325,6 +3333,12 @@
             { id: 'phoenix', name: 'Феникс', price: 1500, css: 'linear-gradient(135deg, #ffd200, #f7971e, #a80000)', anim: true },
             { id: 'diamond_elite', name: 'Бриллиант', price: 2300, css: 'linear-gradient(135deg, #e0eafc, #cfdef3, #8ec5fc)', anim: true, glow: true },
             { id: 'void_prime', name: 'Void Prime', price: 3800, css: 'linear-gradient(135deg, #0f0c29, #302b63, #24243e)', anim: true, glow: true },
+            { id: 'solar_flare', name: 'Солнечная вспышка', price: 6000, css: 'linear-gradient(135deg, #ff512f, #f09819, #ff512f)', anim: true, glow: true },
+            { id: 'northern_lights', name: 'Северное сияние', price: 8500, css: 'linear-gradient(135deg, #43e97b, #38f9d7, #6a3fd6, #43e97b)', anim: true, glow: true },
+            { id: 'blood_moon', name: 'Кровавая луна', price: 12000, css: 'radial-gradient(circle at 60% 30%, #8b0000, #2a0000, #000000)', anim: true, glow: true },
+            { id: 'celestial', name: 'Небесный трон', price: 18000, css: 'linear-gradient(135deg, #fffbe0, #ffd700, #fff0a0, #ffd700)', anim: true, glow: true },
+            { id: 'obsidian_king', name: 'Обсидиановый король', price: 25000, css: 'linear-gradient(135deg, #1a1a1a, #d7b45d, #1a1a1a, #d7b45d)', anim: true, glow: true },
+            { id: 'pepe_swarm', name: 'Рой Пеп', price: 10000000, css: 'linear-gradient(135deg, #1a2e1a, #0a1a0a)', anim: true, glow: true, pepeSwarm: true },
         ],
         init() { this.apply(); },
         owned() { return LS.g('dydx_bg_owned', ['default']); },
@@ -3335,12 +3349,43 @@
             const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='46' height='46'><text x='23' y='30' font-size='20' text-anchor='middle' fill='white' fill-opacity='0.16'>${s}</text></svg>`;
             return `url("data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}")`;
         },
+        _pepeSwarmCache: null,
+        async renderPepeSwarm(header, enabled) {
+            let layer = header.querySelector('.pepe-swarm-layer');
+            if (!enabled) { if (layer) layer.remove(); return; }
+            if (layer) return; // уже отрисован, не пересоздаём каждый раз
+            layer = document.createElement('div');
+            layer.className = 'pepe-swarm-layer';
+            layer.style.cssText = 'position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:0; border-radius:inherit;';
+            header.style.position = header.style.position || 'relative';
+            header.insertBefore(layer, header.firstChild);
+
+            try {
+                if (!this._pepeSwarmCache) {
+                    const res = await fetch('gifts/gift_065/default.json');
+                    this._pepeSwarmCache = await res.json();
+                }
+                // Шахматный порядок — 4 ряда, чётные ряды сдвинуты на половину ячейки
+                const cell = 34;
+                for (let row = 0; row < 4; row++) {
+                    for (let col = 0; col < 8; col++) {
+                        const offset = (row % 2 === 1) ? cell / 2 : 0;
+                        const holder = document.createElement('div');
+                        holder.style.cssText = `position:absolute; width:${cell}px; height:${cell}px; left:${col*cell + offset}px; top:${row*cell}px; opacity:0.16;`;
+                        layer.appendChild(holder);
+                        const inst = lottie.loadAnimation({ container: holder, renderer: 'svg', loop: false, autoplay: false, animationData: this._pepeSwarmCache });
+                        inst.goToAndStop(0, true);
+                    }
+                }
+            } catch (e) { layer.remove(); }
+        },
         apply() {
             const item = this.catalog.find(b => b.id === this.selected()) || this.catalog[0];
             const header = document.querySelector('.profile-header');
             if (!header) return;
             header.classList.toggle('bg-anim', !!item.anim);
             header.classList.toggle('bg-glow', !!item.glow);
+            this.renderPepeSwarm(header, !!item.pepeSwarm);
             const pinned = LS.g('dydx_pinned_gift', null);
             const patternLayer = (pinned && pinned.patternSym) ? this.patternOverlayUri(pinned.patternSym) : null;
             // item.css бывает либо градиентом (linear-gradient/radial-gradient — валиден
@@ -4696,7 +4741,11 @@
         mod(act) { if(this.pl) return; window.Sound && window.Sound.click(); let v = Math.floor(Number(document.getElementById('slots-bet').value)) || 0; if(act==='half') v=Math.floor(v/2); if(act==='double') v*=2; if(act==='max') v=window.App.balance; document.getElementById('slots-bet').value = Math.max(0, Math.min(v, window.App.balance)); },
         set(v) { if(!this.pl) document.getElementById('slots-bet').value=v; },
         emojiFor(sym) {
-            const map = { cherry:'🍒', lemon:'🍋', star:'⭐', diamond:'💎', grape:'🍇', pepe:'🐸', bomb:'💣', blank1:'◽', blank2:'▫️' };
+            const map = {
+                cherry:'🍒', lemon:'🍋', star:'⭐', diamond:'💎', grape:'🍇', pepe:'🐸', bomb:'💣',
+                blank1: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--text-muted)" stroke-width="1.5" opacity="0.5"><path d="M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21 8 13.5 2.5 9h7z"/></svg>',
+                blank2: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--text-muted)" stroke-width="1.5" opacity="0.4"><path d="M12 3l9 9-9 9-9-9z"/></svg>',
+            };
             if (sym === 'seven') return window.sevenSvg();
             return map[sym] || '❔';
         },
@@ -4742,10 +4791,10 @@
                     const cell = document.getElementById('slots-cell-' + i);
                     if (cell) cell.innerHTML = this.emojiFor(symbols[Math.floor(Math.random()*symbols.length)]);
                 }
-            }, 110);
+            }, 150);
 
             const resultPromise = sb.rpc('slots_spin_v2', { p_telegram_id: window.ME.id, p_bet: bet });
-            const minDelay = new Promise(r => setTimeout(r, 2000));
+            const minDelay = new Promise(r => setTimeout(r, 3200));
             const [{ data, error }] = await Promise.all([resultPromise, minDelay]);
             clearInterval(cycleTimer);
 
@@ -4767,7 +4816,7 @@
                 cell.classList.remove('spinning');
                 const sym = res.grid[i];
                 setTimeout(() => {
-                    cell.style.transition = 'opacity 0.18s ease';
+                    cell.style.transition = 'opacity 0.28s ease';
                     cell.style.opacity = '0';
                     setTimeout(() => {
                         if (sym === 'pepe') { cell.innerHTML = ''; this.loadFrozenPepe(cell); }
@@ -4775,8 +4824,8 @@
                         if (sym === res.matched_symbol && res.matched_count >= 3) cell.classList.add('matched');
                         if (sym === 'bomb') cell.classList.add('bomb-cell');
                         cell.style.opacity = '1';
-                    }, 180);
-                }, i * 55);
+                    }, 280);
+                }, i * 85);
             }
 
             setTimeout(() => {
@@ -4800,7 +4849,7 @@
                 window.Tasks.chk('win', res.win_amount);
                 this.pl = false; this.lk = false;
                 btn.className = 'main-btn btn-green'; btn.innerText = '🎰 КРУТИТЬ';
-            }, 25 * 55 + 500);
+            }, 25 * 85 + 280 + 500);
         }
     };
 
