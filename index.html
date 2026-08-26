@@ -1721,11 +1721,6 @@
                 <span class="settings-nav-arrow">›</span>
             </div>
 
-            <div class="settings-nav-row" onclick="App.s('settings', null, 'Настройки')">
-                <span>⚙️ Настройки</span>
-                <span class="settings-nav-arrow">›</span>
-            </div>
-
             <div class="panel" style="margin: 10px 10px 0;">
                 <div class="panel-title">Сводка</div>
                 <div class="crypto-stat-grid" id="profile-summary-grid"></div>
@@ -1750,11 +1745,6 @@
                 <div style="font-size:10px; color:var(--text-muted); margin-top:8px; text-align:center;">Промокоды рассылает организатор тусовки в чат</div>
             </div>
 
-            <div class="panel" style="margin: 14px 10px 0 10px; margin-bottom: 0;" id="nft-gallery-panel-title">
-                <div class="panel-title">✨ Улучшенные подарки</div>
-            </div>
-            <div class="nft-gallery" id="nft-gallery"></div>
-
             <div class="panel" style="margin: 14px 10px 20px 10px;">
                 <div class="panel-title">👥 Пригласи друга</div>
                 <div style="font-size:11px; color:var(--text-muted); margin-bottom:10px;">
@@ -1768,6 +1758,14 @@
                     <div class="crypto-stat-box"><div class="crypto-stat-label">Приглашено</div><div class="crypto-stat-val" id="ref-count">0</div></div>
                     <div class="crypto-stat-box"><div class="crypto-stat-label">Заработано всего</div><div class="crypto-stat-val" id="ref-earned">0</div></div>
                 </div>
+                <div style="font-size:9.5px; color:var(--text-muted); margin-top:10px; line-height:1.5; text-align:center; opacity:0.75;">
+                    ⚠️ Звёзды⭐ в игре — виртуальная валюта без реальной ценности, обмен на настоящие деньги запрещён. Реферальная система — просто игровой бонус, не заработок.
+                </div>
+            </div>
+
+            <div class="settings-nav-row" onclick="App.s('settings', null, 'Настройки')" style="margin-bottom:20px;">
+                <span>⚙️ Настройки</span>
+                <span class="settings-nav-arrow">›</span>
             </div>
         </div>
 
@@ -2182,7 +2180,10 @@
             }
             const r = data[0];
             window.App.balance = r.new_balance; window.App.updBalUI();
-            revealText.innerText = r.gift_name;
+            const diff = Number(r.gift_value) - Number(r.box_price);
+            const diffColor = diff >= 0 ? 'var(--green)' : 'var(--red)';
+            const diffSign = diff >= 0 ? '+' : '';
+            revealText.innerHTML = `${r.gift_name}<br><span style="font-size:20px; font-weight:900; color:${diffColor};">${diffSign}${diff.toLocaleString()}⭐</span><br><span style="font-size:9px;">(гифт стоит ${Number(r.gift_value).toLocaleString()}⭐, коробка — ${Number(r.box_price).toLocaleString()}⭐)</span>`;
             revealAnim.classList.add('result-win');
             setTimeout(() => revealAnim.classList.remove('result-win'), 1000);
             if (window.Showcase) window.Showcase.playCard(r.catalog_id, revealAnim, undefined, 'blindbox-reveal::' + Date.now());
